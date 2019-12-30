@@ -30,10 +30,12 @@ module.exports = {
     //     functions: 'ignore'
     //   }
     // ],
-    // 'no-console': 1,
+    'no-restricted-syntax': 0,
+    'no-console': 0,
     // 'import/prefer-default-export': 0,
     // 'import/no-extraneous-dependencies': [2, { devDependencies: true }],
     'react/prop-types': 0,
+    'no-unused-vars': 1,
     // 'react/forbid-prop-types': 0,
     // 'jsx-a11y/anchor-is-valid': 0,
 

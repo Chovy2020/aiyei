@@ -1,7 +1,7 @@
 import React from 'react'
 
 
-class DataQuery extends React.Component {
+class MapGallery extends React.Component {
   constructor(props) {
     super(props)
     this.state = {}
@@ -9,11 +9,9 @@ class DataQuery extends React.Component {
 
   render() {
     return (
-      <div>Data Query
-        <input />
-      </div>
+      <div>Map Gallery</div>
     )
   }
 }
 
-export default DataQuery
+export default MapGallery

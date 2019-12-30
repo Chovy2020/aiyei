@@ -2,39 +2,16 @@ import React from 'react'
 import { BrowserRouter, Route, Switch, Redirect, Link } from 'react-router-dom'
 import { Icon } from 'antd'
 import { Header, Logo, Container, Menu, Main } from './style'
+import { MENUS } from '@/utils/const'
 
 // Router
 import HomePage from '@/pages/Home/Loadable'
-import DataQuery from '@/pages/Toolbox/DataQuery/Loadable'
+import Toolbox from '@/pages/Toolbox'
 
 const routes = {
-  '/toolbox': DataQuery,
+  '/toolbox': Toolbox,
   '/': HomePage
 }
-
-// Menu
-const MENU = [
-  {
-    link: 'excursion',
-    title: 'Excursion',
-    icon: 'dashboard'
-  },
-  {
-    link: 'baseline',
-    icon: 'file-image',
-    title: 'Baseline Reporting'
-  },
-  {
-    link: 'toolbox',
-    icon: 'tool',
-    title: 'Toolbox'
-  },
-  {
-    link: 'setup',
-    icon: 'setting',
-    title: 'Set Up'
-  }
-]
 
 const generateRoute = (route, key) => <Route key={key} exact={route === '/'} path={route} component={routes[route]} />
 
@@ -53,7 +30,7 @@ class App extends React.Component {
         <Container>
           <Menu>
             <ul>
-              {MENU.map(m => (
+              {MENUS.map(m => (
                 <li className='' key={m.link}>
                   <Link to={m.link}>
                     <Icon type={m.icon} />
