@@ -1,0 +1,29 @@
+/* Reset.css */
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Avenir', Helvetica, Arial, sans-serif;
+    overflow: hidden;
+}
+
+a {
+    text-decoration: none;
+}
+
+a:active,
+a:hover {
+    outline: 0;
+}
+
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+img {
+    display: block;
+}
