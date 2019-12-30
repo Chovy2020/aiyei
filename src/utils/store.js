@@ -1,14 +1,15 @@
-import { createStore, combineReducers } from 'redux'
+import {
+  createStore,
+  combineReducers
+} from 'redux'
 import initReducer from './reducer'
 
-const staticReducers = {
-  init: initReducer,
-}
+const staticReducers = { init: initReducer }
 
 function createReducer(asyncReducers) {
   return combineReducers({
     ...staticReducers,
-    ...asyncReducers,
+    ...asyncReducers
   })
 }
 
