@@ -27,3 +27,8 @@ table {
 img {
     display: block;
 }
+
+/* ant-design */
+.ant-form-item {
+    margin-bottom: 10px;
+}

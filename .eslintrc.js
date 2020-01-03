@@ -41,9 +41,12 @@ module.exports = {
 
     // VSCode 的 ESLint 扩展插件暂时无法正确修复这条规则带来的错误
     'react/jsx-one-expression-per-line': 0,
+    'class-methods-use-this': 1,
+    'guard-for-in': 0,
 
     // 自定义
     semi: [2, 'never'],
+    'max-len': ["error", { "code": 120 }],
     'react/jsx-filename-extension': [2, { extensions: ['.js', '.jsx', '.tsx'] }],
     'jsx-quotes': ['error', 'prefer-single'],
     'react/prefer-stateless-function': 0,

@@ -31,4 +31,10 @@ export const Content = styled.div`
   .ant-tabs-nav .ant-tabs-tab-active {
     font-weight: inherit;
   }
+  .ant-tabs-bar {
+    margin: 0;
+  }
+  .ant-tabs .ant-tabs-top-content {
+    padding: 20px;
+  }
 `

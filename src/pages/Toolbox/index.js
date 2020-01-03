@@ -1,5 +1,5 @@
 import React from 'react'
-import { Icon, Tabs, Button } from 'antd'
+import { Icon, Tabs } from 'antd'
 import { TOOLS } from '@/utils/const'
 import { StyleToolbox, Tools, Content } from './style'
 import DataQuery from './DataQuery'
