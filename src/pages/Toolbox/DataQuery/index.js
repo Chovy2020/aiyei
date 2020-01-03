@@ -1,12 +1,9 @@
 /* eslint-disable react/jsx-props-no-spreading */
 import React from 'react'
-import { Form, DatePicker, Checkbox, Button, Card, Input } from 'antd'
+import { Form, DatePicker, Checkbox, Button, Input } from 'antd'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 // import moment from 'moment'
-import { StyleDataQuery, Title, LoaderGroup, LoaderDefect, DragContainer, DragItem } from './style'
-
-const { Item } = Form
-const { RangePicker } = DatePicker
+import { StyleDataQuery, Title, LoaderGroup, LoaderDefect, DragContainer, DragItem, DragCard, DragList } from './style'
 
 const DATA_QUERY_QUERY = {
   'Product ID': 'product_id',
@@ -32,42 +29,13 @@ const generateData = () => {
   return data
 }
 
-// fake data generator
-const getItems = count => Array.from({ length: count }, (v, k) => k).map(k => ({
-  id: `item-${k}`,
-  content: `item ${k}`
-}))
-
 // a little function to help us with reordering the result
 const reorder = (list, startIndex, endIndex) => {
   const result = Array.from(list)
   const [removed] = result.splice(startIndex, 1)
   result.splice(endIndex, 0, removed)
-
   return result
 }
-
-const grid = 8
-
-const getItemStyle = (isDragging, draggableStyle) => ({
-  // some basic styles to make the items look a bit nicer
-  userSelect: 'none',
-  padding: grid * 2,
-  margin: `0 ${grid}px 0 0`,
-
-  // change background colour if dragging
-  background: isDragging ? 'lightgreen' : 'grey',
-
-  // styles we need to apply on draggables
-  ...draggableStyle
-})
-
-const getListStyle = isDraggingOver => ({
-  background: isDraggingOver ? 'lightblue' : 'lightgrey',
-  display: 'flex',
-  padding: grid,
-  overflow: 'auto'
-})
 
 class DataQuery extends React.Component {
   constructor(props) {
@@ -82,7 +50,7 @@ class DataQuery extends React.Component {
         seeLastScan: false, // 多次scan只看最后一次
         time: ['', ''] // 开始日期 结束日期 yyyy-MM-dd
       },
-      items: getItems(10)
+      items: DATA_QUERY_INIT.map(i => DATA_QUERY_QUERY[i])
     }
     this.onDragEnd = this.onDragEnd.bind(this)
   }
@@ -106,6 +74,7 @@ class DataQuery extends React.Component {
 
   onQueryChange = value => {
     console.log('onQueryChange', value)
+    this.setState({ items: value })
   }
 
   onDragEnd(result) {
@@ -117,6 +86,13 @@ class DataQuery extends React.Component {
 
   render() {
     const { dataLoaderList, dataLoader, items } = this.state
+    const data = [
+      'Racing car sprays burning fuel into crowd.',
+      'Japanese princess to wed commoner.',
+      'Australian walks 100km after outback crash.',
+      'Man charged over missing wedding girl.',
+      'Los Angeles battles huge wildfires.'
+    ]
 
     return (
       <StyleDataQuery>
@@ -127,50 +103,57 @@ class DataQuery extends React.Component {
         <LoaderDefect>
           <Title>Defect</Title>
           <Form layout='vertical' labelCol={{ span: 2 }}>
-            <Item label='Filter:'>
+            <Form.Item label='Filter:'>
               <Checkbox onChange={e => this.onCheckboxChange('existsImg', e)}>有照片</Checkbox>
               <Checkbox onChange={e => this.onCheckboxChange('mbHave', e)}>Manual Classified</Checkbox>
               <Checkbox onChange={e => this.onCheckboxChange('secondScan', e)}>有前层scan结果</Checkbox>
               <Checkbox onChange={e => this.onCheckboxChange('seeLastScan', e)}>多次scan只看最后一次</Checkbox>
-            </Item>
-            <Item label='Time:'>
-              <RangePicker onChange={this.onDatePickerChange} />
-            </Item>
-            <Item label='Query:'>
-              <Checkbox.Group options={generateData()} defaultValue={DATA_QUERY_INIT} onChange={this.onQueryChange} />
-            </Item>
-            <Item label='Inspector:'>
-              <DragDropContext onDragEnd={this.onDragEnd}>
-                <Droppable droppableId='droppable' direction='horizontal'>
-                  {(p1, s1) => (
-                    <DragContainer ref={p1.innerRef} style={getListStyle(s1.isDraggingOver)} {...p1.droppableProps}>
-                      {items.map((item, index) => (
-                        <Draggable key={item.id} draggableId={item.id} index={index}>
-                          {(p2, s2) => (
-                            <DragItem
-                              ref={p2.innerRef}
-                              {...p2.draggableProps}
-                              {...p2.dragHandleProps}
-                              style={getItemStyle(s2.isDragging, p2.draggableProps.style)}
-                            >
-                              <Card>
-                                <p>{item.content}</p>
-                                <Input.Search onSearch={value => console.log(value)} />
-                              </Card>
-                            </DragItem>
-                          )}
-                        </Draggable>
-                      ))}
-                      {p1.placeholder}
-                    </DragContainer>
-                  )}
-                </Droppable>
-              </DragDropContext>
-            </Item>
-            <Item label=' '>
+            </Form.Item>
+            <Form.Item label='Time:'>
+              <DatePicker.RangePicker onChange={this.onDatePickerChange} />
+            </Form.Item>
+            <Form.Item label='Query:'>
+              <Checkbox.Group
+                options={generateData()}
+                defaultValue={DATA_QUERY_INIT.map(i => DATA_QUERY_QUERY[i])}
+                onChange={this.onQueryChange}
+              />
+            </Form.Item>
+            {items.length > 0 ? (
+              <Form.Item label='Inspector:'>
+                <DragDropContext onDragEnd={this.onDragEnd}>
+                  <Droppable droppableId='droppable' direction='horizontal'>
+                    {p1 => (
+                      <DragContainer ref={p1.innerRef} {...p1.droppableProps}>
+                        {items.map((item, index) => (
+                          <Draggable key={item} draggableId={item} index={index}>
+                            {p2 => (
+                              <DragItem ref={p2.innerRef} {...p2.draggableProps} {...p2.dragHandleProps}>
+                                <DragCard>
+                                  <h4>{item}</h4>
+                                  <Input.Search onSearch={value => console.log(value)} size='small' />
+                                  <DragList
+                                    dataSource={data}
+                                    renderItem={text => (
+                                      <p>{text}</p>
+                                    )}
+                                  />
+                                </DragCard>
+                              </DragItem>
+                            )}
+                          </Draggable>
+                        ))}
+                        {p1.placeholder}
+                      </DragContainer>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+              </Form.Item>
+            ) : null}
+            <Form.Item label=' '>
               <Button type='dashed'>Reset</Button>
               <Button type='primary'>Load</Button>
-            </Item>
+            </Form.Item>
           </Form>
         </LoaderDefect>
       </StyleDataQuery>
