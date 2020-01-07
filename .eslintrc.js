@@ -35,7 +35,8 @@ module.exports = {
     // 'import/prefer-default-export': 0,
     // 'import/no-extraneous-dependencies': [2, { devDependencies: true }],
     'react/prop-types': 0,
-    'no-unused-vars': 1,
+    'no-param-reassign': 0,
+    'no-unused-vars': 0,
     // 'react/forbid-prop-types': 0,
     // 'jsx-a11y/anchor-is-valid': 0,
 
@@ -45,7 +46,7 @@ module.exports = {
     'guard-for-in': 0,
 
     // 自定义
-    semi: [2, 'never'],
+    'semi': [2, 'never'],
     'max-len': ["error", { "code": 120 }],
     'react/jsx-filename-extension': [2, { extensions: ['.js', '.jsx', '.tsx'] }],
     'jsx-quotes': ['error', 'prefer-single'],
@@ -62,6 +63,8 @@ module.exports = {
         ImportDeclaration: { multiline: true },
         ExportDeclaration: { multiline: true }
       }
-    ]
+    ],
+    'jsx-a11y/click-events-have-key-events': 0,
+    'jsx-a11y/no-noninteractive-element-interactions': 0
   }
 }

@@ -57,8 +57,12 @@ export const DragCard = styled(Card)`
   }
 `
 export const DragList = styled(List)`
-  overflow: hidden;
   padding: 2px 0;
+  .ant-list-items {
+    overflow-y: auto;
+    margin-top: 3px;
+    height: 167px;
+  }
   p {
     margin: 0;
     font-size: 12px;
