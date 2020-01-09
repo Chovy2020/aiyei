@@ -6,7 +6,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import _ from 'lodash'
 import { injectReducer } from '@/utils/store'
 import { delay } from '@/utils/web'
-import { changeForm, changeItems } from './action'
+import { changeForm, changeItems, changeItemSelected } from './action'
 import { DATA_QUERY_QUERY, DATA_QUERY_INIT } from './constant'
 import reducer from './reducer'
 import dataQuerySearch from './service'
@@ -38,10 +38,8 @@ class DataQuery extends React.Component {
     this.state = {
       dataLoaderList: ['Defect', 'Metrology', 'MES', 'EAP', 'WAT', 'CP', 'iEMS', 'SPC'], // Data Loader 列表,
       dataLoader: ['Defect'], // Data Loader 已选列表
-      items: DATA_QUERY_INIT.map(i => DATA_QUERY_QUERY[i]),
       itemData: [], // 拖拽框列表数据
-      itemKeyword: [], // 拖拽框搜索关键词
-      itemSelected: [] // 拖拽框选中的结果列表
+      itemKeyword: [] // 拖拽框搜索关键词
     }
     this.onDragEnd = this.onDragEnd.bind(this)
   }
@@ -55,12 +53,12 @@ class DataQuery extends React.Component {
   }
 
   onSelect = (index, text) => {
-    const { items, itemSelected } = this.state
+    const { items, itemSelected } = this.props
     let list = itemSelected[index]
     if (list.includes(text)) list = _.remove(list, n => text !== n)
     else list.push(text)
     itemSelected[index] = list
-    this.setState({ itemSelected })
+    this.props.changeItemSelected(itemSelected)
     // 更新下一列的数据
     if (index < items.length - 1) this.onSearch(index + 1)
   }
@@ -68,17 +66,16 @@ class DataQuery extends React.Component {
   onSearch = async index => {
     const res = await this.search(index)
     // 第一列 则标记高亮 同时触发更新第二列数据，后续列为更新列表
-    const { items } = this.state
+    const { items } = this.props
+    const { itemSelected } = this.props
     if (index === 0) {
-      const { itemSelected } = this.state
       itemSelected[0] = res
-      this.setState({ itemSelected })
+      this.props.changeItemSelected(itemSelected)
       this.onSearch(1)
       return
     }
-    const { itemData, itemKeyword, itemSelected } = this.state
+    const { itemData, itemKeyword } = this.state
     itemData[index] = res
-    // this.clearOthers(index)
     // 清空后续列表
     for (const i in items) {
       if (i > index) {
@@ -87,13 +84,14 @@ class DataQuery extends React.Component {
       }
       if (i >= index) itemSelected[i] = []
     }
-    this.setState({ itemData, itemKeyword, itemSelected })
+    this.setState({ itemData, itemKeyword })
+    this.props.changeItemSelected(itemSelected)
   }
 
   onCheckboxChange(key, checked) {
     const { defect } = this.props
     defect[key] = checked
-    changeForm(defect)
+    this.props.changeForm(defect)
     this.resetItems()
   }
 
@@ -108,12 +106,12 @@ class DataQuery extends React.Component {
     const [startTm, endTm] = dateStrings
     defect.startTm = startTm
     defect.endTm = endTm
-    changeForm(defect)
+    this.props.changeForm(defect)
     this.resetItems()
   }
 
   onQueryChange = value => {
-    this.setState({ items: value })
+    this.props.changeItems(value)
     this.resetItems()
   }
 
@@ -123,27 +121,28 @@ class DataQuery extends React.Component {
     const source = result.source.index
     const destination = result.destination.index
     const min = Math.min(source, destination)
-    const { items } = this.state
-    this.setState({ items: reorder(items, result.source.index, result.destination.index) })
+    const { items } = this.props
+    this.props.changeItems(reorder(items, result.source.index, result.destination.index))
     if (min === 0) this.resetItems()
     else this.onSearch(min)
   }
 
   resetItems = async () => {
     await delay(1)
-    const { items } = this.state
+    const { items } = this.props
     this.setState({
       itemData: items.map(() => []),
-      itemKeyword: items.map(() => ''),
-      itemSelected: items.map(() => [])
+      itemKeyword: items.map(() => '')
     })
+    this.props.changeItemSelected(items.map(() => []))
     this.setState({ itemData: [await this.search(0)] })
   }
 
   search = async index => {
     await delay(1)
     const comboBoxes = []
-    const { items, itemSelected, itemKeyword } = this.state
+    const { items, itemSelected } = this.props
+    const { itemKeyword } = this.state
     for (let i = 0; i < items.length; i += 1) {
       // 按下标顺序来，不是当前列 就统计选中的list作为参数
       if (i < index) {
@@ -163,8 +162,7 @@ class DataQuery extends React.Component {
       }
     }
     // 实时更新，store的defect仅点击load 才更新，用于其他非dataQuery页面的查询
-    const { defect } = this.props
-    const { existsImg, mbHave, secondScan, seeLastScan, startTm, endTm } = defect
+    const { existsImg, mbHave, secondScan, seeLastScan, startTm, endTm } = this.props.defect
     const data = {
       existsImg: existsImg ? 'Y' : 'N',
       mbHave: mbHave ? 'Y' : 'N',
@@ -179,8 +177,8 @@ class DataQuery extends React.Component {
   }
 
   render() {
-    const { dataLoaderList, dataLoader, items, itemData, itemSelected } = this.state
-    const { defect } = this.props
+    const { dataLoaderList, dataLoader, itemData } = this.state
+    const { items, defect, itemSelected } = this.props
     const { existsImg, mbHave, secondScan, seeLastScan } = defect
 
     return (
@@ -216,11 +214,7 @@ class DataQuery extends React.Component {
               <DatePicker.RangePicker onChange={this.onDatePickerChange} />
             </Form.Item>
             <Form.Item label='Query:'>
-              <Checkbox.Group
-                options={generateData()}
-                defaultValue={DATA_QUERY_INIT.map(i => DATA_QUERY_QUERY[i])}
-                onChange={this.onQueryChange}
-              />
+              <Checkbox.Group options={generateData()} defaultValue={items} onChange={this.onQueryChange} />
             </Form.Item>
             {items.length > 0 ? (
               <Form.Item label='Inspector:'>
@@ -278,5 +272,5 @@ class DataQuery extends React.Component {
 
 injectReducer('DataQuery', reducer)
 const mapStateToProps = state => ({ ...state.DataQuery })
-const mapDispatchToProps = { changeForm, changeItems }
+const mapDispatchToProps = { changeForm, changeItems, changeItemSelected }
 export default connect(mapStateToProps, mapDispatchToProps)(DataQuery)

@@ -2,9 +2,11 @@ import {
   createStore,
   combineReducers
 } from 'redux'
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { devToolsEnhancer } from 'redux-devtools-extension/logOnlyInProduction'
 import initReducer from './reducer'
 
-const staticReducers = { init: initReducer }
+const staticReducers = { Init: initReducer }
 
 function createReducer(asyncReducers) {
   return combineReducers({
@@ -13,7 +15,7 @@ function createReducer(asyncReducers) {
   })
 }
 
-const store = createStore(createReducer())
+const store = createStore(createReducer(), devToolsEnhancer())
 
 store.asyncReducers = {}
 

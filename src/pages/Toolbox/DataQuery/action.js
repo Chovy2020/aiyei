@@ -1,15 +1,15 @@
 // 表单输入
-const changeForm = payload => ({
+export const changeForm = payload => ({
   type: 'CHANGE_FORM',
   payload
 })
 
-const changeItems = payload => ({
+export const changeItems = payload => ({
   type: 'CHANGE_ITEMS',
   payload
 })
 
-module.exports = {
-  changeForm,
-  changeItems
-}
+export const changeItemSelected = payload => ({
+  type: 'CHANGE_ITEM_SELECTED',
+  payload
+})

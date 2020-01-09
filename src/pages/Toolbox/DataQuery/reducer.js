@@ -1,4 +1,8 @@
+import { DATA_QUERY_QUERY, DATA_QUERY_INIT } from './constant'
+
 const initState = {
+  items: DATA_QUERY_INIT.map(i => DATA_QUERY_QUERY[i]),
+  itemSelected: [],
   defect: {
     existsImg: false, // 有照片
     mbHave: true, // Manual Classified
@@ -15,6 +19,16 @@ export default (state = initState, action) => {
       return {
         ...state,
         defect: action.payload
+      }
+    case 'CHANGE_ITEMS':
+      return {
+        ...state,
+        items: action.payload
+      }
+    case 'CHANGE_ITEM_SELECTED':
+      return {
+        ...state,
+        itemSelected: action.payload
       }
     default:
       return state

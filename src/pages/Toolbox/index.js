@@ -1,15 +1,23 @@
 import React from 'react'
+import { connect } from 'react-redux'
 import { Icon, Tabs } from 'antd'
 import { TOOLS } from '@/utils/const'
+import { changePreviousPage, initPage } from './action'
 import { StyleToolbox, Tools, Content } from './style'
 import DataQuery from './DataQuery'
 import MapGallery from './MapGallery'
 
 const { TabPane } = Tabs
 
-const PAGES = {
-  'Data Query': <DataQuery />,
-  'Map Gallery': <MapGallery />
+const generatePage = ({ type, name }) => {
+  switch (type) {
+    case 'Data Query':
+      return <DataQuery name={name} />
+    case 'Map Gallery':
+      return <MapGallery name={name} />
+    default:
+      return null
+  }
 }
 
 class Toolbox extends React.Component {
@@ -22,6 +30,10 @@ class Toolbox extends React.Component {
     }
   }
 
+  componentDidMount() {
+    this.props.initPage('1')
+  }
+
   onTabChange = activeKey => {
     // console.log(activeKey)
     this.setState({ activeKey })
@@ -29,24 +41,30 @@ class Toolbox extends React.Component {
 
   addTab = toolType => {
     const { panes } = this.state
-    let { tabCount } = this.state
+    let { tabCount, activeKey } = this.state
+    // 存store
+    this.props.changePreviousPage(activeKey)
     tabCount += 1
-    panes.push({ type: toolType, name: `${tabCount}` })
-    this.setState({ panes, tabCount })
+    activeKey = `${tabCount}`
+    panes.push({ type: toolType, name: activeKey })
+    this.setState({ activeKey, panes, tabCount })
+    this.props.initPage(activeKey)
   }
 
   onEdit = (targetKey, action) => {
-    // console.log(targetKey, action)
     if (action === 'remove') {
-      const { panes } = this.state
-      // eslint-disable-next-line no-unused-vars
-      for (const i in panes) {
-        if (panes[i].name === targetKey) {
-          panes.splice(i, 1)
-          break
+      this.props.initPage(targetKey)
+      let { panes, activeKey } = this.state
+      if (activeKey === targetKey) {
+        for (const i in panes) {
+          if (panes[i].name === targetKey) {
+            activeKey = panes[i - 1].name
+            break
+          }
         }
       }
-      this.setState({ panes })
+      panes = panes.filter(p => p.name !== targetKey)
+      this.setState({ activeKey, panes })
     }
   }
 
@@ -63,7 +81,7 @@ class Toolbox extends React.Component {
           <Tabs hideAdd onChange={this.onTabChange} activeKey={activeKey} type='editable-card' onEdit={this.onEdit}>
             {panes.map(pane => (
               <TabPane tab={pane.type} key={pane.name} closable={pane.name !== '1'}>
-                {PAGES[pane.type]}
+                {generatePage(pane)}
               </TabPane>
             ))}
           </Tabs>
@@ -73,4 +91,9 @@ class Toolbox extends React.Component {
   }
 }
 
-export default Toolbox
+const mapStateToProps = state => ({ ...state.Init })
+const mapDispatchToProps = {
+  changePreviousPage,
+  initPage
+}
+export default connect(mapStateToProps, mapDispatchToProps)(Toolbox)

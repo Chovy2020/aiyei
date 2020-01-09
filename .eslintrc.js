@@ -44,6 +44,7 @@ module.exports = {
     'react/jsx-one-expression-per-line': 0,
     'class-methods-use-this': 1,
     'guard-for-in': 0,
+    'react/destructuring-assignment': 0,
 
     // 自定义
     'semi': [2, 'never'],
