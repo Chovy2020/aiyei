@@ -88,7 +88,30 @@ export const StyleWafer = styled.div`
   }
 `
 
-
 export const StylePareto = styled.div`
   flex: 1;
+`
+
+export const StyleInfo = styled.div`
+  margin: 20px 0;
+  .infoList {
+    display: flex;
+    .infoName {
+      display: inline-block;
+      width: 100px;
+    }
+    .infoName + span {
+      width: calc(100% - 100px);
+    }
+    .infoDetail {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+  }
+`
+
+export const StyleParetoChart = styled.div`
+  width: 100%;
+  height: 400px;
 `
