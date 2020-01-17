@@ -23,14 +23,16 @@ import zrender from 'zrender'
 import Heatmap from 'heatmap.js'
 // import { injectReducer } from '@/utils/store'
 import moment from 'moment'
+import echarts from 'echarts/lib/echarts'
+import 'echarts/lib/chart/bar'
 import { delay } from '@/utils/web'
 // import { changeForm, changeItems } from './action'
 import { changeWaferSelected } from '@/utils/action'
 // import { DATA_QUERY_QUERY, DATA_QUERY_INIT } from './constant'
 // import reducer from './reducer'
 import { reclassifyParams, getImages, updateCorrect, deleteCorrect } from './service'
-import { post, download } from '@/utils/api'
-import { StyleSingleMap, StyleWafer, StylePareto } from './style'
+import { get, post, download } from '@/utils/api'
+import { StyleSingleMap, StyleWafer, StylePareto, StyleInfo, StyleParetoChart } from './style'
 import CommonDrawer from '@/components/CommonDrawer'
 
 const commands = ['Rotation', 'Export to CSV', 'Export klarf', 'Send to review', 'Overlap']
@@ -55,6 +57,7 @@ let chosedArea = []
 let chosedPoints = {}
 let zoomRecords = {}
 let mouseDownStartInner = false
+let paretoChart = null
 
 const printTime = (sign = '') => {
   console.log(sign, `${moment(new Date()).second()}-${moment(new Date()).millisecond()}`)
@@ -117,7 +120,7 @@ class SingleMap extends React.Component {
       x: {},
       x2n: {},
       y: {},
-      resData: null,
+      paretoData: null,
       ifAvg: 'sum',
       allBar: [],
 
@@ -138,7 +141,7 @@ class SingleMap extends React.Component {
         { label: '升序', value: '1' },
         { label: '降序', value: '2' }
       ],
-      resData: null,
+      dsaData: null,
       colorsArr: [],
       selectBar: [],
       disappearBar: [],
@@ -177,19 +180,50 @@ class SingleMap extends React.Component {
         stepId: '4628_KTCTBRDP',
         scanTm: '2009-07-06 09:34:44',
         defects: [],
-        defectIdRedisKey: '12a94eee-3d66-4511-a665-210ddcd79649'
-        // lotId: "B0001.000",
-        // stepId: "M1_CMP",
-        // waferNo: "1",
-        // productId: "Device01",
-        // scanTm: "2018-05-31 12:30:35",
-        // defects: [],
-        // defectIdRedisKey: "59118255-e158-4f59-960f-2c538f1629c7"
-      }
+        defectIdRedisKey: 'd9a18175-bbc1-4eba-9c2b-306ba1cd02a4'
+      },
+      // {
+      //   lotId: 'B0001.000',
+      //   stepId: 'P1_ASI',
+      //   waferNo: '1',
+      //   productId: 'Device01',
+      //   scanTm: '2018-06-05 12:30:35',
+      //   defects: [],
+      //   defectIdRedisKey: 'f92d494a-636d-49a3-aa4f-fb3fff77aa5a'
+      // },
+      // {
+      //   lotId: 'B0001.000',
+      //   stepId: 'M3_CMP',
+      //   waferNo: '1',
+      //   productId: 'Device01',
+      //   scanTm: '2018-06-05 12:30:35',
+      //   defects: [],
+      //   defectIdRedisKey: '9c409953-3a35-46b8-bf3b-d6b5d19c4d7e'
+      // }
     ]
     this.setState({ singleWaferKey })
+    const paretoChartDom = document.getElementById('pareto-chart')
+    if (!paretoChartDom) {
+      console.log('paretoChartDom not found')
+      return
+    }
+    paretoChart = echarts.init(paretoChartDom)
     await delay(1)
+    this.initWaferInfo()
     this.onInit()
+    this.onParetoInit()
+  }
+
+  initWaferInfo = () => {
+    const { infos, singleWaferKey } = this.state
+    singleWaferKey.forEach(item => {
+      infos['Lot ID'].push(item.lotId)
+      infos['Wafer No'].push(item.waferNo)
+      infos['Product ID'].push(item.productId)
+      infos['Step ID'].push(item.stepId)
+      infos['Scan Time'].push(item.scanTm)
+    })
+    this.setState({ infos })
   }
 
   // computed
@@ -201,10 +235,10 @@ class SingleMap extends React.Component {
   // watch selectAction change
   onSelectActionChange = () => {
     this.init(zoomRecords)
+    this.initSwp()
   }
 
   onInit = async () => {
-    printTime('onInit')
     const { name } = this.props
     const zrDom = document.getElementById(`main-${name}`)
     if (!zrDom) {
@@ -293,7 +327,6 @@ class SingleMap extends React.Component {
 
   //选择区域
   checkArea = () => {
-    printTime('checkArea')
     let x, y, distanceX, distanceY, moveRect
     zr.on('mousedown', e => {
       const { selectedAction } = this.state
@@ -352,15 +385,64 @@ class SingleMap extends React.Component {
       angel: 0
     })
     this.renderRects()
-    const { data } = this.state
     const dataOption = this.getDataOption()
     const zoomTimes = dataOption.magnification || 1
     this.setState({ zoomTimes })
     if (parseInt(zoomTimes) === 1) this.drawIsogon()
   }
 
-  onMapTypeChange = e => {
-    this.setState({ mapType: e.target.value })
+  onMapTypeChange = async e => {
+    const mapType = e.target.value
+    this.setState({
+      mapType,
+      angel: 0,
+      overlapType: ''
+    })
+    await this.init()
+    await delay(1)
+    const { name } = this.props
+    const container = document.getElementById(`main-${name}`)
+    if (!container) {
+      console.log('heat map dom not found')
+      return
+    }
+    if (mapType === 'Heat Map') {
+      this.renderHeatmap(container)
+    } else {
+      container.style.borderRadius = ''
+      container.style.overflow = ''
+      if (container.getElementsByClassName('heatmap-canvas')[0]) {
+        container.removeChild(container.getElementsByClassName('heatmap-canvas')[0])
+      }
+    }
+  }
+
+  // 热力图
+  renderHeatmap = container => {
+    const dataOption = this.getDataOption()
+    if (!dataOption || !dataOption.dies) {
+      console.log('no data')
+      return
+    }
+    const dieHeat = dataOption.dies.filter(item => item.dc > 0)
+    // console.log(dieHeat)
+    const data = []
+    let max = dieHeat[0].dc
+    let min = dieHeat[0].dc
+    dieHeat.forEach(item => {
+      min = Math.min(min, item.dc)
+      max = Math.max(max, item.dc)
+      data.push({ x: item.x, y: item.y, value: item.dc })
+    })
+    this.setState({
+      heatMax: max,
+      heatMin: min
+    })
+    const config = { container, maxOpacity: 1, minOpacity: 0.1, blur: 1, radius: 20 * 4 }
+    const heatmapInstance = Heatmap.create(config)
+    heatmapInstance.setData({ min, max, data })
+    container.style.borderRadius = '50%'
+    container.style.overflow = 'hidden'
   }
 
   // image detail
@@ -448,19 +530,13 @@ class SingleMap extends React.Component {
 
   init = async options => {
     group.removeAll()
-    await delay(1)
     const res = await this.getData(options)
     this.setState({ data: res })
-    // await delay(1)
     const { mapType, data } = this.state
     if (mapType === 'Map/Pareto' || mapType === 'Heat Map') this.renderOutterCircle()
-    printTime('renderRects')
     this.renderRects()
-    printTime('renderPoints')
     this.renderPoints()
-    printTime('recordZoom')
     this.recordZoom()
-    printTime('recordZoom end')
     if (mapType === 'Map/Pareto' && data[0].magnification == 1) this.drawIsogon()
     // const { dsa } = this.state
     // if (dsa) {
@@ -470,6 +546,7 @@ class SingleMap extends React.Component {
     // }
   }
   getData = async ({ times = 1, x = 200, y = 200 } = {}) => {
+    await delay(1)
     let src = ''
     const { dsaInfo, mapType } = this.state
     if (_.isEmpty(dsaInfo)) {
@@ -490,7 +567,7 @@ class SingleMap extends React.Component {
   }
 
   // 记录本次放大数据
-  recordZoom() {
+  recordZoom = () => {
     const dataOption = this.getDataOption()
     const { magnification: times, centralLocation: center } = dataOption
     zoomRecords = { times, x: center.x, y: center.y }
@@ -740,7 +817,7 @@ class SingleMap extends React.Component {
     reclassifyForm[key] = value
     this.setState({ reclassifyForm })
   }
-  
+
   // 选中下载点及基本信息
   downloadPoints() {
     const singleMapArr = []
@@ -761,7 +838,7 @@ class SingleMap extends React.Component {
   }
   // 分类
   onReclassify = async () => {
-    this.setState({reclassifyDialog: false})
+    this.setState({ reclassifyDialog: false })
     const { reclassifyForm } = this.state
     await updateCorrect({
       singleWaferKey: this.downloadPoints(),
@@ -790,13 +867,126 @@ class SingleMap extends React.Component {
     }
     if (deleteDefectsType === '清除选中点并导出') download('export', { singleWaferKey: this.deliveryPoints() })
     if (deleteDefectsType === '删除选中点' || deleteDefectsType === '删除选中点并导出') {
-      await deleteCorrect({singleWaferKey: this.downloadPoints()})
+      await deleteCorrect({ singleWaferKey: this.downloadPoints() })
       chosedPoints = {}
       this.setState({ selectAction: '' })
       this.init()
     }
     if (deleteDefectsType === '删除选中点并导出') download('export', { singleWaferKey })
     this.setState({ deleteDefectsType: '' })
+  }
+
+  // 切换信息 显示与隐藏
+  onInfoToggle = index => {
+    const { indexStyle } = this.state
+    indexStyle[index] = !indexStyle[index]
+    this.setState({ indexStyle })
+  }
+
+  /* pareto */
+  onParetoInit = async () => {
+    const { xValue, x2ndValue } = this.state
+    const x = await get('swp/1stxaxis')
+    const x2n = await get(`swp/2ndxaxis/${xValue}`)
+    const y = await get(`swp/yaxis/${xValue},${x2ndValue}`)
+    this.setState({ x, x2n, y })
+    this.initSwp()
+  }
+
+  onGenerateParetoChart = () => {
+    const { paretoData, x, x2n, y, xValue, stxaxis, ifAvg, singleWaferKey } = this.state
+    const opt = {
+      legend: { type: 'scroll' },
+      tooltip: {},
+      xAxis: { type: 'category', name: x[xValue] },
+      yAxis: { type: 'value', name: y[stxaxis.yCode] },
+      dataZoom: [
+        {
+          show: true,
+          startValue: 0,
+          endValue: 9,
+          xAxisIndex: [0]
+        }
+      ],
+      dataset: {
+        source: []
+      },
+      series: []
+    }
+    if (paretoData) {
+      // 处理数据
+      const arr = []
+      const hold = []
+      const holdArr = []
+      const colorArr = []
+      const seriesArr = []
+      arr[0] = ['product']
+      let responseData = _.cloneDeep(paretoData)
+      if (responseData.paretoValue.xAxisData.length && responseData.paretoValue.series.length) {
+        responseData.paretoValue.xAxisData.forEach((item, index) => {
+          arr[index + 1] = [item]
+        })
+        responseData.paretoValue.series.forEach(item => {
+          arr[0].push(item.name)
+          item.data.forEach((jtem, j) => {
+            if (ifAvg === 'avg') {
+              arr[j + 1].push(Math.round(jtem / singleWaferKey.length))
+            } else {
+              arr[j + 1].push(jtem)
+            }
+          })
+          hold.push(item.holdValue)
+          colorArr.push('#' + this.getColor(item.name))
+        })
+        hold.forEach((item, i) => {
+          holdArr.push({
+            value: item,
+            xAxis: i,
+            yAxis: item
+          })
+        })
+        const { selectedBar } = this.state
+        colorArr.forEach(item => {
+          seriesArr.push({
+            type: 'bar',
+            // barWidth: 20,
+            markPoint: {
+              data: holdArr
+            },
+            itemStyle: {
+              color: param => {
+                param.seriesName = param.seriesName.substring(0, 6) === 'series' ? '' : param.seriesName
+                const idx = selectedBar.indexOf(param.name + '-' + param.seriesName)
+                return ~idx ? '#ccc' : item
+              }
+            },
+            label: {
+              normal: {
+                show: true,
+                position: 'top'
+              }
+            }
+          })
+        })
+      }
+      // 填充值
+      opt.dataset.source = arr
+      opt.series = seriesArr
+    }
+    if (paretoChart) paretoChart.setOption(opt)
+  }
+
+  initSwp = async obj => {
+    await delay(1)
+    const { singleWaferKey, filter, stxaxis, selectAction } = this.state
+    const paretoData = await post('swp', {
+      singleWaferKey,
+      canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
+      filter,
+      pareto: obj || stxaxis,
+      selectAction
+    })
+    this.setState({ paretoData })
   }
 
   onFilterSubmit = () => {}
@@ -819,9 +1009,13 @@ class SingleMap extends React.Component {
       rotationDialog
     } = this.state
     const { overlapTypeOptions, overlapDialog } = this.state
-    const { reclassifyDialog, correct, reclassifyForm } = this.state
+    const { reclassifyDialog, correct } = this.state
     const { deleteDefectsDialog, deleteDefectsOptions } = this.state
-    const { x, x2n, y } = this.state
+    const { x, x2n, y, xValue, x2ndValue, yValue } = this.state
+
+    const { infos, indexStyle } = this.state
+
+    this.onGenerateParetoChart()
 
     return (
       <StyleSingleMap>
@@ -981,9 +1175,15 @@ class SingleMap extends React.Component {
               onCancel={() => this.setState({ reclassifyDialog: false })}
               footer={
                 <div>
-                    <Button type='dashed' onClick={() => this.setState({ reclassifyDialog: false })}>Cancel</Button>
-                    <Button type='primary' onClick={this.onReclassify}>重新分类</Button>
-                    <Button type='primary' onClick={this.onReclassifyDownload}>重新分类并下载Klarf</Button>
+                  <Button type='dashed' onClick={() => this.setState({ reclassifyDialog: false })}>
+                    Cancel
+                  </Button>
+                  <Button type='primary' onClick={this.onReclassify}>
+                    重新分类
+                  </Button>
+                  <Button type='primary' onClick={this.onReclassifyDownload}>
+                    重新分类并下载Klarf
+                  </Button>
                 </div>
               }
             >
@@ -1016,18 +1216,18 @@ class SingleMap extends React.Component {
 
           {/* Pareto */}
           <StylePareto>
-            <Form layout='inline'>
-              <Form.Item label='X轴'>
-                <Select onChange={xValue => this.setState({ xValue })}>
+            <Form layout='inline' style={{ height: 50 }}>
+              <Form.Item label='X轴' style={{ width: 150 }}>
+                <Select onChange={xValue => this.setState({ xValue })} defaultValue={xValue} style={{ width: 110 }}>
                   {Object.keys(x).map(key => (
-                    <Select.Option key={key} value={x[key]} style={{ width: 100 }}>
+                    <Select.Option key={key} value={x[key]}>
                       {x[key]}
                     </Select.Option>
                   ))}
                 </Select>
               </Form.Item>
-              <Form.Item label='2nd X'>
-                <Select onChange={x2ndValue => this.setState({ x2ndValue })}>
+              <Form.Item label='2nd X' style={{ width: 170 }}>
+                <Select onChange={x2ndValue => this.setState({ x2ndValue })} defaultValue={x2ndValue} style={{ width: 110 }}>
                   {Object.keys(x2n).map(key => (
                     <Select.Option key={key} value={x2n[key]}>
                       {x2n[key]}
@@ -1035,8 +1235,8 @@ class SingleMap extends React.Component {
                   ))}
                 </Select>
               </Form.Item>
-              <Form.Item label='Y轴'>
-                <Select onChange={yValue => this.setState({ yValue })}>
+              <Form.Item label='Y轴' style={{ width: 150 }}>
+                <Select onChange={yValue => this.setState({ yValue })} defaultValue={yValue} style={{ width: 110 }}>
                   {Object.keys(y).map(key => (
                     <Select.Option key={key} value={y[key]}>
                       {y[key]}
@@ -1044,7 +1244,7 @@ class SingleMap extends React.Component {
                   ))}
                 </Select>
               </Form.Item>
-              <Form.Item label=' '>
+              <Form.Item>
                 <Button onClick={this.onParetoSearch} type='primary' style={{ marginRight: 10 }}>
                   Search
                 </Button>
@@ -1052,17 +1252,35 @@ class SingleMap extends React.Component {
                   Clear
                 </Button>
               </Form.Item>
-              {singleWaferKey.length - 1 > 0 ? (
-                <Form.Item label='SUM or AVG'>
-                  <Select onChange={ifAvg => this.setState({ ifAvg })}>
-                    <Select.Option value='sum'>sum</Select.Option>
-                    <Select.Option value='avg'>avg</Select.Option>
+              {singleWaferKey.length - 1 >= 0 ? (
+                <Form.Item>
+                  <Select onChange={ifAvg => this.setState({ ifAvg })} style={{ width: 110 }}>
+                    <Select.Option value='sum'>SUM</Select.Option>
+                    <Select.Option value='avg'>AVG</Select.Option>
                   </Select>
                 </Form.Item>
               ) : null}
             </Form>
+            <StyleParetoChart id='pareto-chart' />
           </StylePareto>
         </div>
+
+        <StyleInfo>
+          {Object.keys(infos).map((key, index) => (
+            <div key={index} className='infoList'>
+              <span className='infoName'>{key}</span>
+              <span className={indexStyle[index] ? 'infoDetail' : ''} onClick={() => this.onInfoToggle(index)}>
+                {infos[key].map((item, index) => (
+                  <span key={index}>
+                    {index > 0 ? ', ' : ''}
+                    {item}
+                  </span>
+                ))}
+              </span>
+            </div>
+          ))}
+        </StyleInfo>
+
         <CommonDrawer ref={r => (this.drawer = r)} width={550}>
           <section>
             <h3 style={{ width: 60 }}>Filters</h3>
