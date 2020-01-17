@@ -6,7 +6,7 @@ module.exports = {
     es6: true
   },
   extends: 'airbnb', // 使用 eslint-config-airbnb
-  parser: 'babel-eslint', // 增强语法识别能力
+  // parser: 'babel-eslint', // 增强语法识别能力
   parserOptions: {
     ecmaFeatures: {
       jsx: true
@@ -36,7 +36,7 @@ module.exports = {
     // 'import/no-extraneous-dependencies': [2, { devDependencies: true }],
     'react/prop-types': 0,
     'no-param-reassign': 0,
-    'no-unused-vars': 0,
+    'no-unused-vars': 1,
     // 'react/forbid-prop-types': 0,
     // 'jsx-a11y/anchor-is-valid': 0,
 

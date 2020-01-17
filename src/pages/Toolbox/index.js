@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from 'react'
 import { connect } from 'react-redux'
 import { Icon, Tabs } from 'antd'
@@ -6,6 +7,8 @@ import { changePreviousPage, initPage } from './action'
 import { StyleToolbox, Tools, Content } from './style'
 import DataQuery from './DataQuery'
 import MapGallery from './MapGallery'
+import ImageGallery from './ImageGallery'
+import SingleMap from './SingleMap'
 
 const { TabPane } = Tabs
 
@@ -15,6 +18,10 @@ const generatePage = ({ type, name }) => {
       return <DataQuery name={name} />
     case 'Map Gallery':
       return <MapGallery name={name} />
+    case 'Image Gallery':
+      return <ImageGallery name={name} />
+    case 'Single Map':
+      return <SingleMap name={name} />
     default:
       return null
   }
@@ -26,7 +33,8 @@ class Toolbox extends React.Component {
     this.state = {
       activeKey: '1',
       tabCount: 1,
-      panes: [{ type: 'Data Query', name: '1' }]
+      // panes: [{ type: 'Data Query', name: '1' }]
+      panes: [{ type: 'Single Map', name: '1' }]
     }
   }
 

@@ -1,3 +1,4 @@
+/* eslint-disable */
 /* eslint-disable react/jsx-props-no-spreading */
 import React from 'react'
 import { connect } from 'react-redux'
@@ -7,7 +8,7 @@ import _ from 'lodash'
 import { injectReducer } from '@/utils/store'
 import { delay } from '@/utils/web'
 import { changeForm, changeItems, changeItemSelected } from './action'
-import { DATA_QUERY_QUERY, DATA_QUERY_INIT } from './constant'
+import { DATA_QUERY_QUERY } from './constant'
 import reducer from './reducer'
 import dataQuerySearch from './service'
 import { StyleDataQuery, Title, LoaderGroup, LoaderDefect, DragContainer, DragItem, DragCard, DragList } from './style'
@@ -46,10 +47,6 @@ class DataQuery extends React.Component {
 
   componentDidMount() {
     this.resetItems()
-  }
-
-  onLoaderChange = dataLoader => {
-    this.setState({ dataLoader })
   }
 
   onSelect = (index, text) => {
@@ -185,7 +182,11 @@ class DataQuery extends React.Component {
       <StyleDataQuery>
         <Title className='bold'>Data Loader</Title>
         <LoaderGroup>
-          <Checkbox.Group options={dataLoaderList} defaultValue={dataLoader} onChange={this.onLoaderChange} />
+          <Checkbox.Group
+            options={dataLoaderList}
+            defaultValue={dataLoader}
+            onChange={v => this.setState({ dataLoader: v })}
+          />
         </LoaderGroup>
         <LoaderDefect>
           <Title>Defect</Title>

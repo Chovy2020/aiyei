@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { Card, List } from 'antd'
+// import { Card, List } from 'antd'
 
 export const StyleMapGallery = styled.div`
   .ant-form-item button + button {
