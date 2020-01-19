@@ -7,10 +7,13 @@ import { MENUS } from '@/utils/const'
 // Router
 import HomePage from '@/pages/Home/Loadable'
 import Toolbox from '@/pages/Toolbox'
+import Setup from '@/pages/Setup'
+
 
 const routes = {
   '/toolbox': Toolbox,
-  '/': HomePage
+  '/': HomePage,
+  '/setup': Setup
 }
 
 const generateRoute = (route, key) => <Route key={key} exact={route === '/'} path={route} component={routes[route]} />
