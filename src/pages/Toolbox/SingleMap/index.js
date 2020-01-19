@@ -30,7 +30,7 @@ import { delay } from '@/utils/web'
 import { changeWaferSelected } from '@/utils/action'
 // import { DATA_QUERY_QUERY, DATA_QUERY_INIT } from './constant'
 // import reducer from './reducer'
-import { reclassifyParams, getImages, updateCorrect, deleteCorrect } from './service'
+import { reclassifyParams, getImages, updateCorrect, deleteCorrect, getX, getX2nd, getY } from './service'
 import { get, post, download } from '@/utils/api'
 import { StyleSingleMap, StyleWafer, StylePareto, StyleInfo, StyleParetoChart } from './style'
 import CommonDrawer from '@/components/CommonDrawer'
@@ -173,33 +173,33 @@ class SingleMap extends React.Component {
   async componentDidMount() {
     // const { items, itemSelected, defect } = this.props
     const singleWaferKey = [
-      {
-        lotId: 'SQCA00019',
-        productId: 'GDM119',
-        waferNo: '10.10',
-        stepId: '4628_KTCTBRDP',
-        scanTm: '2009-07-06 09:34:44',
-        defects: [],
-        defectIdRedisKey: 'd9a18175-bbc1-4eba-9c2b-306ba1cd02a4'
-      },
       // {
-      //   lotId: 'B0001.000',
-      //   stepId: 'P1_ASI',
-      //   waferNo: '1',
-      //   productId: 'Device01',
-      //   scanTm: '2018-06-05 12:30:35',
+      //   lotId: 'SQCA00019',
+      //   productId: 'GDM119',
+      //   waferNo: '10.10',
+      //   stepId: '4628_KTCTBRDP',
+      //   scanTm: '2009-07-06 09:34:44',
       //   defects: [],
-      //   defectIdRedisKey: 'f92d494a-636d-49a3-aa4f-fb3fff77aa5a'
+      //   defectIdRedisKey: 'd9a18175-bbc1-4eba-9c2b-306ba1cd02a4'
       // },
-      // {
-      //   lotId: 'B0001.000',
-      //   stepId: 'M3_CMP',
-      //   waferNo: '1',
-      //   productId: 'Device01',
-      //   scanTm: '2018-06-05 12:30:35',
-      //   defects: [],
-      //   defectIdRedisKey: '9c409953-3a35-46b8-bf3b-d6b5d19c4d7e'
-      // }
+      {
+        lotId: 'B0001.000',
+        stepId: 'P1_ASI',
+        waferNo: '1',
+        productId: 'Device01',
+        scanTm: '2018-06-05 12:30:35',
+        defects: [],
+        defectIdRedisKey: 'f92d494a-636d-49a3-aa4f-fb3fff77aa5a'
+      },
+      {
+        lotId: 'B0001.000',
+        stepId: 'M3_CMP',
+        waferNo: '1',
+        productId: 'Device01',
+        scanTm: '2018-06-05 12:30:35',
+        defects: [],
+        defectIdRedisKey: '9c409953-3a35-46b8-bf3b-d6b5d19c4d7e'
+      }
     ]
     this.setState({ singleWaferKey })
     const paretoChartDom = document.getElementById('pareto-chart')
@@ -208,6 +208,7 @@ class SingleMap extends React.Component {
       return
     }
     paretoChart = echarts.init(paretoChartDom)
+    paretoChart.on('click', params => this.onParetoChartClick(params))
     await delay(1)
     this.initWaferInfo()
     this.onInit()
@@ -236,6 +237,10 @@ class SingleMap extends React.Component {
   onSelectActionChange = () => {
     this.init(zoomRecords)
     this.initSwp()
+  }
+  onSelectedBarChange = async () => {
+    await delay(1)
+    this.renderPoints()
   }
 
   onInit = async () => {
@@ -599,7 +604,7 @@ class SingleMap extends React.Component {
     this.clearRects()
     // 单个方格宽度、单个方格高度、有效方格数据、填充方格数据
     const dataOption = this.getDataOption()
-    console.log('dataOption', dataOption)
+    // console.log('dataOption', dataOption)
     const { dieWidth: width, dieHeight: height, dies = [], noScanDies = [] } = dataOption
     let firstDie = dies[0] || { bin: 0 }
     let binMax = firstDie.bin
@@ -662,7 +667,7 @@ class SingleMap extends React.Component {
   // 渲染单张图的点
   renderSingleMap = (defectInfos, index) => {
     const { pointIdsMapping, selectedBar } = this.state
-    console.log('renderSingleMap', pointIdsMapping)
+    // console.log('renderSingleMap', selectedBar)
     pointIdsMapping[index] = {}
     this.setState({ pointIdsMapping })
     for (let name in defectInfos) {
@@ -886,9 +891,9 @@ class SingleMap extends React.Component {
   /* pareto */
   onParetoInit = async () => {
     const { xValue, x2ndValue } = this.state
-    const x = await get('swp/1stxaxis')
-    const x2n = await get(`swp/2ndxaxis/${xValue}`)
-    const y = await get(`swp/yaxis/${xValue},${x2ndValue}`)
+    const x = await getX()
+    const x2n = await getX2nd(xValue)
+    const y = await getY(xValue, x2ndValue)
     this.setState({ x, x2n, y })
     this.initSwp()
   }
@@ -989,10 +994,92 @@ class SingleMap extends React.Component {
     this.setState({ paretoData })
   }
 
-  onFilterSubmit = () => {}
+  onChangeX = async xValue => {
+    this.setState({
+      xValue,
+      x2ndValue: '',
+      yValue: ''
+    })
+    const x2n = await getX2nd(xValue)
+    const y = await getY(xValue, '')
+    this.setState({ x2n, y })
+  }
 
-  onParetoSearch = () => {}
-  onParetoClear = () => {}
+  onChangeX2nd = async x2ndValue => {
+    this.setState({
+      x2ndValue,
+      yValue: ''
+    })
+    const { xValue } = this.state
+    const y = await getY(xValue, x2ndValue)
+    this.setState({ y })
+  }
+
+  onChangeY = yValue => {
+    this.setState({ yValue })
+  }
+
+  onParetoSearch = () => {
+    this.setState({
+      selectedBar: []
+    })
+    const { xValue, x2ndValue, yValue } = this.state
+    const paretoObj = {
+      '1stXCode': xValue,
+      '2ndXCode': x2ndValue,
+      yCode: yValue
+    }
+    this.initSwp(paretoObj)
+    this.setState({
+      stxaxis: paretoObj
+    })
+  }
+  onParetoClear = () => {
+    const allBar = []
+    const { paretoData } = this.state
+    if (!paretoData || !paretoData.paretoValue || !paretoData.paretoValue.xAxisData || !paretoData.paretoValue.series) {
+      consoe.log('paretoData data error')
+      return
+    }
+    paretoData.paretoValue.xAxisData.forEach(x => {
+      paretoData.paretoValue.series.forEach(s => {
+        allBar.push(x + '-' + s.name)
+      })
+    })
+    this.setState({
+      allBar,
+      selectedBar: allBar
+    })
+    this.onSelectedBarChange()
+  }
+
+  onAvgChange = async ifAvg => {
+    this.setState({ ifAvg })
+    await delay(1)
+    this.onGenerateParetoChart()
+  }
+
+  onParetoChartClick = data => {
+    const { selectedBar } = this.state
+    const bar = _.cloneDeep(selectedBar)
+    data.seriesName = data.seriesName.substring(0, 6) === 'series' ? '' : data.seriesName
+    const index = bar.indexOf(data.name + '-' + data.seriesName)
+    if (~index) {
+      bar.splice(index, 1)
+    } else {
+      bar.push(data.name + '-' + data.seriesName)
+    }
+    this.setState({ selectedBar: bar })
+    // this.onSelectedBarChange()
+  }
+  
+  /* DSA */
+  onDsaToggle = () => {
+    const { dsa } = this.state
+    this.setState({ dsa: !dsa })
+  }
+
+  onFilterSubmit = () => {}
 
   render() {
     const { name } = this.props
@@ -1011,9 +1098,9 @@ class SingleMap extends React.Component {
     const { overlapTypeOptions, overlapDialog } = this.state
     const { reclassifyDialog, correct } = this.state
     const { deleteDefectsDialog, deleteDefectsOptions } = this.state
-    const { x, x2n, y, xValue, x2ndValue, yValue } = this.state
-
+    const { x, x2n, y, xValue, x2ndValue, yValue, ifAvg } = this.state
     const { infos, indexStyle } = this.state
+    const { dsa } = this.state
 
     this.onGenerateParetoChart()
 
@@ -1215,54 +1302,56 @@ class SingleMap extends React.Component {
           </StyleWafer>
 
           {/* Pareto */}
-          <StylePareto>
-            <Form layout='inline' style={{ height: 50 }}>
-              <Form.Item label='X轴' style={{ width: 150 }}>
-                <Select onChange={xValue => this.setState({ xValue })} defaultValue={xValue} style={{ width: 110 }}>
-                  {Object.keys(x).map(key => (
-                    <Select.Option key={key} value={x[key]}>
-                      {x[key]}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-              <Form.Item label='2nd X' style={{ width: 170 }}>
-                <Select onChange={x2ndValue => this.setState({ x2ndValue })} defaultValue={x2ndValue} style={{ width: 110 }}>
-                  {Object.keys(x2n).map(key => (
-                    <Select.Option key={key} value={x2n[key]}>
-                      {x2n[key]}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-              <Form.Item label='Y轴' style={{ width: 150 }}>
-                <Select onChange={yValue => this.setState({ yValue })} defaultValue={yValue} style={{ width: 110 }}>
-                  {Object.keys(y).map(key => (
-                    <Select.Option key={key} value={y[key]}>
-                      {y[key]}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-              <Form.Item>
-                <Button onClick={this.onParetoSearch} type='primary' style={{ marginRight: 10 }}>
-                  Search
-                </Button>
-                <Button onClick={this.onParetoClear} type='dashed'>
-                  Clear
-                </Button>
-              </Form.Item>
-              {singleWaferKey.length - 1 >= 0 ? (
-                <Form.Item>
-                  <Select onChange={ifAvg => this.setState({ ifAvg })} style={{ width: 110 }}>
-                    <Select.Option value='sum'>SUM</Select.Option>
-                    <Select.Option value='avg'>AVG</Select.Option>
+          {!dsa ? (
+            <StylePareto>
+              <Form layout='inline' style={{ height: 50 }}>
+                <Form.Item label='X轴' style={{ width: 150 }}>
+                  <Select onChange={this.onChangeX} value={xValue} style={{ width: 110 }}>
+                    {Object.keys(x).map(key => (
+                      <Select.Option key={key} value={key}>
+                        {x[key]}
+                      </Select.Option>
+                    ))}
                   </Select>
                 </Form.Item>
-              ) : null}
-            </Form>
-            <StyleParetoChart id='pareto-chart' />
-          </StylePareto>
+                <Form.Item label='2nd X' style={{ width: 170 }}>
+                  <Select onChange={this.onChangeX2nd} value={x2ndValue} style={{ width: 110 }}>
+                    {Object.keys(x2n).map(key => (
+                      <Select.Option key={key} value={key}>
+                        {x2n[key]}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+                <Form.Item label='Y轴' style={{ width: 150 }}>
+                  <Select onChange={this.onChangeY} value={yValue} style={{ width: 110 }}>
+                    {Object.keys(y).map(key => (
+                      <Select.Option key={key} value={key}>
+                        {y[key]}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+                <Form.Item>
+                  <Button onClick={this.onParetoSearch} type='primary' style={{ marginRight: 10 }}>
+                    Search
+                  </Button>
+                  <Button onClick={this.onParetoClear} type='dashed'>
+                    Clear
+                  </Button>
+                </Form.Item>
+                {singleWaferKey.length > 1 ? (
+                  <Form.Item>
+                    <Select onChange={this.onAvgChange} value={ifAvg} style={{ width: 110 }}>
+                      <Select.Option value='sum'>SUM</Select.Option>
+                      <Select.Option value='avg'>AVG</Select.Option>
+                    </Select>
+                  </Form.Item>
+                ) : null}
+              </Form>
+              <StyleParetoChart id='pareto-chart' />
+            </StylePareto>
+          ) : null}
         </div>
 
         <StyleInfo>
@@ -1280,6 +1369,8 @@ class SingleMap extends React.Component {
             </div>
           ))}
         </StyleInfo>
+
+        <Button type='primary' onClick={this.onDsaToggle}>{dsa ? 'Single Wafer' : 'DSA'}</Button>
 
         <CommonDrawer ref={r => (this.drawer = r)} width={550}>
           <section>
