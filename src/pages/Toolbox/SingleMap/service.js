@@ -16,3 +16,7 @@ export const getX = () => get('swp/1stxaxis')
 export const getX2nd = xValue => get(`swp/2ndxaxis/${xValue}`)
 
 export const getY = (xValue, x2ndValue) => get(`swp/yaxis/${xValue},${x2ndValue}`)
+
+export const getDp = data => post('dp', data)
+
+export const getDSATableData = data => post('dl', data)

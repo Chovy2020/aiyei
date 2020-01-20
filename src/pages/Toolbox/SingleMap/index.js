@@ -13,7 +13,7 @@ import {
   Checkbox,
   Button,
   Input,
-  Upload,
+  Table,
   Icon,
   message
 } from 'antd'
@@ -28,11 +28,11 @@ import 'echarts/lib/chart/bar'
 import { delay } from '@/utils/web'
 // import { changeForm, changeItems } from './action'
 import { changeWaferSelected } from '@/utils/action'
-// import { DATA_QUERY_QUERY, DATA_QUERY_INIT } from './constant'
+import { SORT_LIST, SORT_ORDER_LIST } from './constant'
 // import reducer from './reducer'
-import { reclassifyParams, getImages, updateCorrect, deleteCorrect, getX, getX2nd, getY } from './service'
+import { reclassifyParams, getImages, updateCorrect, deleteCorrect, getX, getX2nd, getY, getDp, getDSATableData } from './service'
 import { get, post, download } from '@/utils/api'
-import { StyleSingleMap, StyleWafer, StylePareto, StyleInfo, StyleParetoChart } from './style'
+import { StyleSingleMap, StyleWafer, StylePareto, StyleInfo, StyleChart, StyleDSA } from './style'
 import CommonDrawer from '@/components/CommonDrawer'
 
 const commands = ['Rotation', 'Export to CSV', 'Export klarf', 'Send to review', 'Overlap']
@@ -58,6 +58,7 @@ let chosedPoints = {}
 let zoomRecords = {}
 let mouseDownStartInner = false
 let paretoChart = null
+let dsaChart = null
 
 const printTime = (sign = '') => {
   console.log(sign, `${moment(new Date()).second()}-${moment(new Date()).millisecond()}`)
@@ -129,21 +130,10 @@ class SingleMap extends React.Component {
       infoPages: [],
 
       /* dsa pareto */
-      formInline: {
-        sort: '1',
-        sortOrder: '1'
-      },
-      sortArr: [
-        { label: 'STEP_ID', value: '1' },
-        { label: 'SCAN_TM', value: '2' }
-      ],
-      sortOrderArr: [
-        { label: '升序', value: '1' },
-        { label: '降序', value: '2' }
-      ],
+      sortName: '1',
+      dsaOrder: '1',
       dsaData: null,
       colorsArr: [],
-      selectBar: [],
       disappearBar: [],
       allSelectBar: [],
       allDisappearBar: [],
@@ -182,37 +172,96 @@ class SingleMap extends React.Component {
       //   defects: [],
       //   defectIdRedisKey: 'd9a18175-bbc1-4eba-9c2b-306ba1cd02a4'
       // },
+      // {
+      //   lotId: 'B0001.000',
+      //   stepId: 'P1_ASI',
+      //   waferNo: '1',
+      //   productId: 'Device01',
+      //   scanTm: '2018-06-05 12:30:35',
+      //   defects: [],
+      //   defectIdRedisKey: 'f92d494a-636d-49a3-aa4f-fb3fff77aa5a'
+      // },
+      // {
+      //   lotId: 'B0001.000',
+      //   stepId: 'M3_CMP',
+      //   waferNo: '1',
+      //   productId: 'Device01',
+      //   scanTm: '2018-06-05 12:30:35',
+      //   defects: [],
+      //   defectIdRedisKey: '9c409953-3a35-46b8-bf3b-d6b5d19c4d7e'
+      // }
       {
-        lotId: 'B0001.000',
-        stepId: 'P1_ASI',
-        waferNo: '1',
-        productId: 'Device01',
-        scanTm: '2018-06-05 12:30:35',
+        lotId: "B0001.000",
+        stepId: "M3_CMP",
+        waferNo: "1",
+        productId: "Device01",
+        scanTm: "2018-06-05 12:30:35",
         defects: [],
-        defectIdRedisKey: 'f92d494a-636d-49a3-aa4f-fb3fff77aa5a'
+        defectIdRedisKey: "58ba0d53-caee-49da-af83-b7a190ccac2c"
       },
       {
-        lotId: 'B0001.000',
-        stepId: 'M3_CMP',
-        waferNo: '1',
-        productId: 'Device01',
-        scanTm: '2018-06-05 12:30:35',
+        lotId: "B0001.000",
+        stepId: "P1_ASI",
+        waferNo: "1",
+        productId: "Device01",
+        scanTm: "2018-06-05 12:30:35",
         defects: [],
-        defectIdRedisKey: '9c409953-3a35-46b8-bf3b-d6b5d19c4d7e'
+        defectIdRedisKey: "ff8d6098-8f9b-447b-857c-c284323b2d50"
+      },
+      {
+        lotId: "B0001.000",
+        stepId: "M1_CMP",
+        waferNo: "1",
+        productId: "Device01",
+        scanTm: "2018-05-31 13:12:35",
+        defects: [],
+        defectIdRedisKey: "4e9d46fe-2bc4-47a2-a7aa-78d8b6714112"
+      },
+      {
+        lotId: "B0001.000",
+        stepId: "SIN_RM",
+        waferNo: "1",
+        productId: "Device01",
+        scanTm: "2018-06-04 12:30:35",
+        defects: [],
+        defectIdRedisKey: "9f18f167-7a86-43e7-9306-3ad27de14078"
+      },
+      {
+        lotId: "B0001.000",
+        stepId: "M5_CMP",
+        waferNo: "1",
+        productId: "Device01",
+        scanTm: "2018-06-09 12:30:35",
+        defects: [],
+        defectIdRedisKey: "6891bd43-9aaa-48d5-9639-4089602de5e9"
       }
     ]
     this.setState({ singleWaferKey })
-    const paretoChartDom = document.getElementById('pareto-chart')
-    if (!paretoChartDom) {
-      console.log('paretoChartDom not found')
-      return
-    }
-    paretoChart = echarts.init(paretoChartDom)
-    paretoChart.on('click', params => this.onParetoChartClick(params))
+    this.onParetoChartInit()
+    this.onDSAChartInit()
     await delay(1)
     this.initWaferInfo()
     this.onInit()
     this.onParetoInit()
+  }
+
+  onParetoChartInit = () => {
+    const paretoChartDom = document.getElementById('pareto-chart')
+    if (paretoChartDom) {
+      paretoChart = echarts.init(paretoChartDom)
+      paretoChart.on('click', params => this.onParetoChartClick(params))
+    } else {
+      console.log('paretoChartDom not found')
+    }
+  }
+  onDSAChartInit = () => {
+    const dsaChartDom = document.getElementById('dsa-chart')
+    if (dsaChartDom) {
+      dsaChart = echarts.init(dsaChartDom)
+      dsaChart.on('click', params => this.onDSAChartClick(params))
+    } else {
+      console.log('dsaChartDom not found')
+    }
   }
 
   initWaferInfo = () => {
@@ -234,13 +283,20 @@ class SingleMap extends React.Component {
   }
 
   // watch selectAction change
-  onSelectActionChange = () => {
+  watchSelectAction = () => {
     this.init(zoomRecords)
     this.initSwp()
   }
-  onSelectedBarChange = async () => {
+  watchSelectedBar = async () => {
     await delay(1)
     this.renderPoints()
+  }
+  watchDSASort = async () => {
+    await delay(1)
+    this.setState({
+      disappearBar: [],
+      selectedBar: []
+    })
   }
 
   onInit = async () => {
@@ -868,7 +924,7 @@ class SingleMap extends React.Component {
         singleWaferKey: this.deliveryPoints(),
         selectAction: 'clean'
       })
-      this.onSelectActionChange()
+      this.watchSelectAction()
     }
     if (deleteDefectsType === '清除选中点并导出') download('export', { singleWaferKey: this.deliveryPoints() })
     if (deleteDefectsType === '删除选中点' || deleteDefectsType === '删除选中点并导出') {
@@ -898,9 +954,11 @@ class SingleMap extends React.Component {
     this.initSwp()
   }
 
-  onGenerateParetoChart = () => {
+  onGenerateParetoChart = async () => {
+    await delay(1)
     const { paretoData, x, x2n, y, xValue, stxaxis, ifAvg, singleWaferKey } = this.state
     const opt = {
+      width: 'auto',
       legend: { type: 'scroll' },
       tooltip: {},
       xAxis: { type: 'category', name: x[xValue] },
@@ -992,6 +1050,7 @@ class SingleMap extends React.Component {
       selectAction
     })
     this.setState({ paretoData })
+    this.onGenerateParetoChart()
   }
 
   onChangeX = async xValue => {
@@ -1050,7 +1109,7 @@ class SingleMap extends React.Component {
       allBar,
       selectedBar: allBar
     })
-    this.onSelectedBarChange()
+    this.watchSelectedBar()
   }
 
   onAvgChange = async ifAvg => {
@@ -1070,13 +1129,184 @@ class SingleMap extends React.Component {
       bar.push(data.name + '-' + data.seriesName)
     }
     this.setState({ selectedBar: bar })
-    // this.onSelectedBarChange()
   }
-  
+
   /* DSA */
   onDsaToggle = () => {
     const { dsa } = this.state
     this.setState({ dsa: !dsa })
+    if(!dsa) {
+      this.onDSAInit()
+    } else {
+      this.onParetoInit()
+    }
+  }
+
+  onDSASortChange = (index, value) => {
+    if (index === 1) this.setState({ dsaOrder: value })
+    else this.setState({ sortName: value })
+    this.onDSAInit()
+  }
+
+  onDSAInit = async () => {
+    await delay(1)
+    const { singleWaferKey, dsaOrder, sortName } = this.state
+    const dsaData = await getDp({
+      singleWaferKey,
+      dsaOrder,
+      sortName
+    })
+    this.setState({
+      dsaData,
+      allDisappearBar: [],
+      allSelectBar: []
+    })
+    this.dealDsaData()
+  }
+  dealDsaData = async () => {
+    await delay(1)
+    const { dsaData, colorsArr, allDisappearBar, allSelectBar } = this.state
+    dsaData.paretoValue.series.forEach(s => {
+      const tagLength = s.tag.length
+      colorsArr.push('#' + this.getColor(s.name))
+      s.tag.forEach((t, index) => {
+        if (index > tagLength / 2) {
+          allDisappearBar.push(s.name + '-' + t)
+        } else {
+          allSelectBar.push(s.name + '-' + t)
+        }
+      })
+    })
+    const colorsObj = {}
+    const len = colorsArr.length || 1
+    dsaData.paretoValue.series.forEach(s => {
+      s.tag.forEach((t, index) => {
+        colorsObj[s.name + '-' + t] = colorsArr[index % len]
+      })
+    })
+    this.setState({ colorsArr, allDisappearBar, allSelectBar, colorsObj })
+    this.onGenerateDSAChart()
+  }
+
+  onGenerateDSAChart = async () => {
+    await delay(1)
+    const { dsaData, selectedBar, disappearBar } = this.state
+    const opt = {
+      width: '800',
+      legend: {},
+      tooltip: {
+        formatter(params) {
+          let tag = ''
+          dsaData.paretoValue.series.some(item => {
+            if (item.name == params.name) {
+              tag = item['tag'][params.seriesIndex]
+            }
+          })
+          return tag
+        }
+      },
+      dataset: {
+        source: []
+      },
+      xAxis: { type: 'category' },
+      yAxis: {},
+      series: []
+    }
+    if (dsaData) {
+      const series = dsaData.paretoValue.series
+      const colors = []
+      series.forEach(item => {
+        opt.dataset.source.push([item.name, ...item.data])
+        colors.push(this.getColor(item.name))
+      })
+      series[0].data.forEach((item, index) => {
+        const i = index
+        opt.series.push({
+          type: 'bar',
+          stack: 'one',
+          label: {
+            normal: {
+              show: true,
+              position: 'inside',
+              color: '#fff'
+            }
+          },
+          itemStyle: {
+            color: param => {
+              let tag = ''
+              const len = colors.length || 1
+              dsaData.paretoValue.series.some(item => {
+                if (item.name == param.name) {
+                  tag = item['tag'][param.seriesIndex]
+                }
+              })
+              const value = param.value[param.seriesIndex + 1]
+              let idx = 0
+              if (value > 0) {
+                idx = selectedBar.indexOf(param.name + '-' + tag)
+              }
+              if (value < 0) {
+                idx = disappearBar.indexOf(param.name + '-' + tag)
+              }
+              return ~idx ? '#ccc' : '#' + colors[i % len]
+            }
+          }
+        })
+      })
+    }
+    if (dsaChart) dsaChart.setOption(opt)
+  }
+
+  onDSAChartClick = params => {
+    let tag = ''
+    const { dsaData,  selectedBar } = this.state
+    dsaData.paretoValue.series.some(item => {
+      if (item.name == params.name) {
+        tag = item['tag'][params.seriesIndex]
+      }
+    })
+    if (params.value[params.seriesIndex + 1] > 0) {
+      let idx = selectedBar.indexOf(params.name + '-' + tag)
+      if (~idx) {
+        selectedBar.splice(idx, 1)
+      } else {
+        selectedBar.push(params.name + '-' + tag)
+      }
+      this.setState({
+        typeBar: '',
+        disappearBar: [],
+        selectedBar
+      })
+    } else {
+      const { allSelectBar, allDisappearBar } = this.state
+      let { typeBar, disappearBar } = this.state
+      const disBar = _.cloneDeep(allDisappearBar)
+      if (typeBar !== params.name) {
+        typeBar = params.name
+        const index = disBar.indexOf(params.name + '-' + tag)
+        disBar.splice(index, 1)
+        disappearBar = disBar
+      } else {
+        const index = disappearBar.indexOf(params.name + '-' + tag)
+        // console.log(disappearBar)
+        if (~index) {
+          disappearBar.splice(index, 1)
+        } else {
+          disappearBar.push(params.name + '-' + tag)
+        }
+      }
+      this.setState({
+        typeBar,
+        disappearBar,
+        selectedBar: _.cloneDeep(allSelectBar)
+      })
+    }
+  }
+
+  onDSATableInit = async () => {
+    const { singleWaferKey } = this.state
+    const res = await getDSATableData(singleWaferKey)
+    
   }
 
   onFilterSubmit = () => {}
@@ -1100,9 +1330,16 @@ class SingleMap extends React.Component {
     const { deleteDefectsDialog, deleteDefectsOptions } = this.state
     const { x, x2n, y, xValue, x2ndValue, yValue, ifAvg } = this.state
     const { infos, indexStyle } = this.state
-    const { dsa } = this.state
+    const { dsa, sortName, dsaOrder } = this.state
 
-    this.onGenerateParetoChart()
+    if (dsa) this.onGenerateDSAChart()
+    else this.onGenerateParetoChart()
+
+    const dsaTableColumns = [
+      { title: 'Name', dataIndex: 'name', key: 'name' },
+      { title: 'Age', dataIndex: 'age', key: 'age' },
+      { title: 'Address', dataIndex: 'address', key: 'address' }
+    ]
 
     return (
       <StyleSingleMap>
@@ -1302,8 +1539,8 @@ class SingleMap extends React.Component {
           </StyleWafer>
 
           {/* Pareto */}
-          {!dsa ? (
-            <StylePareto>
+          <StylePareto style={{ display: `${dsa ? 'none' : 'block'}` }} >
+            {!dsa ? (
               <Form layout='inline' style={{ height: 50 }}>
                 <Form.Item label='X轴' style={{ width: 150 }}>
                   <Select onChange={this.onChangeX} value={xValue} style={{ width: 110 }}>
@@ -1349,9 +1586,36 @@ class SingleMap extends React.Component {
                   </Form.Item>
                 ) : null}
               </Form>
-              <StyleParetoChart id='pareto-chart' />
-            </StylePareto>
-          ) : null}
+            ) : null}
+            <StyleChart id='pareto-chart' style={{ display: `${dsa ? 'none' : 'block'}` }} />
+          </StylePareto>
+
+          {/* DSA */}
+          <StyleDSA style={{ display: `${dsa ? 'block' : 'none'}` }}>
+            {dsa ? (
+              <Form layout='inline' style={{ height: 50 }}>
+                <Form.Item label='排序' style={{ width: 200 }}>
+                  <Select onChange={v => this.onDSASortChange(0, v)} value={sortName} style={{ width: 110 }}>
+                    {SORT_LIST.map(item => (
+                      <Select.Option key={item.label} value={item.value}>
+                        {item.label}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+                <Form.Item label='排序' style={{ width: 200 }}>
+                  <Select onChange={v => this.onDSASortChange(1, v)} value={dsaOrder} style={{ width: 110 }}>
+                    {SORT_ORDER_LIST.map(item => (
+                      <Select.Option key={item.label} value={item.value}>
+                        {item.label}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Form>
+            ) : null}
+            <StyleChart id='dsa-chart' style={{ display: `${dsa ? 'block' : 'none'}` }} />
+          </StyleDSA>
         </div>
 
         <StyleInfo>
@@ -1370,7 +1634,13 @@ class SingleMap extends React.Component {
           ))}
         </StyleInfo>
 
-        <Button type='primary' onClick={this.onDsaToggle}>{dsa ? 'Single Wafer' : 'DSA'}</Button>
+        <Button type='primary' onClick={this.onDsaToggle}>
+          {dsa ? 'Single Wafer' : 'DSA'}
+        </Button>
+
+        {dsa ? (
+          <Table columns={dsaTableColumns} dataSource={dsaTableData} />
+        ) : null}
 
         <CommonDrawer ref={r => (this.drawer = r)} width={550}>
           <section>

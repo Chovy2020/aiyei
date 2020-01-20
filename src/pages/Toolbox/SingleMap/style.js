@@ -91,6 +91,9 @@ export const StyleWafer = styled.div`
 export const StylePareto = styled.div`
   flex: 1;
 `
+export const StyleDSA = styled.div`
+  flex: 1;
+`
 
 export const StyleInfo = styled.div`
   margin: 20px 0;
@@ -111,7 +114,7 @@ export const StyleInfo = styled.div`
   }
 `
 
-export const StyleParetoChart = styled.div`
-  width: 100%;
+export const StyleChart = styled.div`
+  width: 850px;
   height: 400px;
 `
