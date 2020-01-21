@@ -8,3 +8,8 @@ export const StyleSetUp = styled.div`
     margin-bottom: 20px;
   }
 `
+
+export const StyleCluster = styled.div`
+  display: flex;
+  flex-direction: column;
+`

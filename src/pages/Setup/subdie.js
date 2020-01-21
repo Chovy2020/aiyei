@@ -1,11 +1,11 @@
 import React from 'react'
+import _ from 'lodash'
 import { delay } from '@/utils/web'
-import { Form,Input, Select, Button,Modal,message,Table} from 'antd'
+import { Form,Input,InputNumber, Select, Button,Modal,message,Table} from 'antd'
 import { getSubDie } from './service'
 
 const { Option } = Select;
 const { Column, ColumnGroup } = Table;
-const data = []
 
 const formItemLayout = {
   labelCol: { span: 4 },
@@ -19,7 +19,8 @@ class HorizontalLoginForm extends React.Component {
       productStepId: [],
       visible: false,
       addSubdieProduct:'',
-      addSubdieStepId: ''
+      addSubdieStepId: '',
+      tableData: []
     }
   }
   componentDidMount() {
@@ -34,7 +35,7 @@ class HorizontalLoginForm extends React.Component {
 
   showModal = () => {
     this.setState({visible: true,addSubdieProduct: '',addSubdieStepId: ''})
-  };
+  }
 
   handleOk = () => {
     let {addSubdieProduct,addSubdieStepId,productStepId} = this.state
@@ -52,8 +53,8 @@ class HorizontalLoginForm extends React.Component {
   }
   changeCfgDbPrimaryKeys = (e) => {
     this.setState({cfgDbPrimaryKeys: [this.state.productStepId[e]].productId+'-'+[this.state.productStepId[e]].stepId})
-    getSubDie({cfgDbPrimaryKeys:[this.state.productStepId[e]]}).then(data => {
-      console.log(data)
+    getSubDie({cfgDbPrimaryKeys:[this.state.productStepId[e]]}).then(response => {
+      this.setState({tableData: response[0].subDieIds})
     })
   }
   changeSubProduct = (e) => {
@@ -61,6 +62,29 @@ class HorizontalLoginForm extends React.Component {
   }
   changeSubStepId = (e) => {
     this.setState({addSubdieStepId:e.target.value})
+  }
+
+  addTableCell = () => {
+    let endId = this.state.tableData[this.state.tableData.length-1].subDieId
+    let newCell = {
+      subDieId: endId+1,
+      subDieName: '',
+      startX: '',
+      endX: '',
+      startY: '',
+      endY: ''
+    }
+    this.setState({tableData: [...this.state.tableData,newCell]})
+  }
+
+  saveTable = () => {
+
+  }
+  
+  changeCell = (value, id, cellName) => {
+    let newTableData = _.cloneDeep(this.state.tableData)
+    newTableData[id-1][cellName] = value
+    this.setState({tableData: newTableData})
   }
   render() {
     return (
@@ -92,16 +116,26 @@ class HorizontalLoginForm extends React.Component {
             </Form.Item>
           </Form>
         </Modal>
-        <Table dataSource={data}>
-          <Column title="ID" dataIndex="id" key="id" />
-          <Column title="Name" dataIndex="name" key="name" />
-          <ColumnGroup title="LL Coordinate">
-            <Column title="X" dataIndex="startX" key="startX" />
-            <Column title="Y" dataIndex="startY" key="startY" />
+        <Table dataSource={this.state.tableData} bordered>
+          <Column title="ID" dataIndex="subDieId" key="subDieId" />
+          <Column title="Name" dataIndex="subDieName" key="subDieName" render={(text, record) => (
+            <Input value={text} onChange={(e) => this.changeCell(e.target.value,record.subDieId,'subDieName')}/>
+          )}/>
+          <ColumnGroup title="LL Coordinate" align="center">
+            <Column title="X" dataIndex="startX" key="startX"  align="center" render={(text, record) => (
+            <InputNumber value={text} onChange={(value) => this.changeCell(value,record.subDieId,'startX')}/>
+          )}/>
+            <Column title="Y" dataIndex="startY" key="startY"  align="center" render={(text, record) => (
+            <InputNumber value={text} onChange={(value) => this.changeCell(value,record.subDieId,'startY')}/>
+          )}/>
           </ColumnGroup>
-          <ColumnGroup title="UR Coordinate">
-            <Column title="X" dataIndex="endX" key="endX" />
-            <Column title="Y" dataIndex="endY" key="endY" />
+          <ColumnGroup title="UR Coordinate" align="center">
+            <Column title="X" dataIndex="endX" key="endX"  align="center" render={(text, record) => (
+            <InputNumber value={text} onChange={(value) => this.changeCell(value,record.subDieId,'endX')}/>
+          )}/>
+            <Column title="Y" dataIndex="endY" key="endY"  align="center" render={(text, record) => (
+            <InputNumber value={text} onChange={(value) => this.changeCell(value,record.subDieId,'endY')}/>
+          )}/>
           </ColumnGroup>
           <Column
             title="Action"
@@ -113,6 +147,8 @@ class HorizontalLoginForm extends React.Component {
             )}
           />
         </Table>
+        <Button type="primary" onClick={this.addTableCell}>Add</Button>
+        <Button type="primary" onClick={this.saveTable}>Save</Button>
       </div>
       
     );
