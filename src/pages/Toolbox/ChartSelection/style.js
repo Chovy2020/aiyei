@@ -11,7 +11,6 @@ export const StyleTooltip = styled.div`
     margin: 5px;
     height: 20px;
   }
-
   i.checked,
   i:hover {
     color: #409eff;
@@ -31,4 +30,10 @@ export const StyleCrossModuleForm = styled.div`
 `
 
 export const StyleCorrelationForm = styled.div`
+`
+
+export const FormItemLabel = styled.span`
+  display: inline-block;
+  width: 60px;
+  text-align: right;
 `

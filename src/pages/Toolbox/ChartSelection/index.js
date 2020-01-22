@@ -17,12 +17,13 @@ import {
   StyleChart,
   StyleOperBtn,
   StyleCrossModuleForm,
-  StyleCorrelationForm
+  StyleCorrelationForm,
+  FormItemLabel
 } from './style'
 import CrossModuleChart from './component/CrossModuleChart'
+import CorrelationChart from './component/CorrelationChart'
 
 let chart = null
-const CA_DATA_MAPPING = { WAT: 'wat' }
 
 class ChartSelection extends React.Component {
   constructor(props) {
@@ -39,7 +40,7 @@ class ChartSelection extends React.Component {
       selectedBar: [],
       formInline: {
         xValue: 'lwc',
-        x2ndValue: '',
+        x2ndValue: 'add',
         yValue: '100',
         normalized: ''
       },
@@ -144,21 +145,21 @@ class ChartSelection extends React.Component {
     const singleWaferKey = [
       {
         lotId: 'B0001.000',
-        stepId: 'P1_ASI',
+        stepId: 'M5_CMP',
         waferNo: '1',
         productId: 'Device01',
-        scanTm: '2018-06-05 12:30:35',
+        scanTm: '2018-06-09 12:30:35',
         defects: [],
-        defectIdRedisKey: '35f83fe7-c255-4c59-87b8-b02a9272f66e'
+        defectIdRedisKey: '81fb0163-fa13-4f54-baec-4e8fceb32b6b'
       },
       {
-        lotId: 'B0001.000',
-        stepId: 'M3_CMP',
+        lotId: 'B0002.000',
+        stepId: 'M1_CMP',
         waferNo: '1',
         productId: 'Device01',
-        scanTm: '2018-06-05 12:30:35',
+        scanTm: '2018-06-01 12:30:35',
         defects: [],
-        defectIdRedisKey: '5862214d-7a94-456f-9c80-3fe8cd7d392e'
+        defectIdRedisKey: 'a6775cb9-dbd3-4184-8da8-21992756a93f'
       }
     ]
     this.setState({ singleWaferKey })
@@ -531,8 +532,9 @@ class ChartSelection extends React.Component {
   onCMInit = async () => {
     await delay(1)
     const { singleWaferKey } = this.state
-    const res = await getPcCmStep({ singleWaferKey })
+    let res = await getPcCmStep({ singleWaferKey })
     if (res) {
+      // res = _.uniq(res)
       const cmStepData = []
       for (const i in res) {
         const obj = {
@@ -594,22 +596,28 @@ class ChartSelection extends React.Component {
       this.setState({ LineCharts })
     }
   }
+  onCMremove = index => {
+    const { LineCharts } = this.state
+    LineCharts.splice(index, 1)
+    this.setState({ LineCharts })
+  }
 
   onBarClear = () => {}
 
   /* Correlation Analysis */
   onCAInit = async () => {
     const { singleWaferKey } = this.state
-    const res = await getCaWatTreeData({ singleWaferKey })
+    let res = await getCaWatTreeData({ singleWaferKey })
     if (res) {
       const caWatTreeData = []
       for (const i in res) {
+        const arr = _.uniq(res[i])
         caWatTreeData.push({
           title: i,
           value: i,
           key: i,
           selectable: false,
-          children: res[i].map(item => {
+          children: arr.map(item => {
             return {
               title: item,
               value: item,
@@ -660,8 +668,10 @@ class ChartSelection extends React.Component {
       wat: caWat.tree
     }
     if (caRegression.checked) correlation.greaterThanValue = caRegression.value
-    const filter = {}
-    filter[formInline.x2ndValue] = AnalysisCondition
+    const filter = {
+      add: ['Y']
+    }
+    // filter[formInline.x2ndValue] = AnalysisCondition
     const pareto = {
       '1stXCode': formInline.xValue,
       '2ndXCode': formInline.x2ndValue,
@@ -699,7 +709,7 @@ class ChartSelection extends React.Component {
       caRegression: {
         value: false,
         filter: 0
-      },
+      }
     })
   }
 
@@ -725,14 +735,15 @@ class ChartSelection extends React.Component {
       caCpBins,
       caIFTools,
       caIFParameters,
-      caIFTimeRages
+      caIFTimeRages,
+      caCharts
     } = this.state
 
     return (
       <StyleChartSelection>
         <Form layout='vertical' labelCol={{ span: 2 }}>
           <Form.Item>
-            <span>X轴:</span>
+            <FormItemLabel>X轴:</FormItemLabel>
             <Select onChange={this.onXchange} value={xValue} style={{ width: 120, marginRight: 10 }}>
               {Object.keys(x).map(key => (
                 <Select.Option value={key} key={key}>
@@ -740,7 +751,7 @@ class ChartSelection extends React.Component {
                 </Select.Option>
               ))}
             </Select>
-            <span>2nd X:</span>
+            <FormItemLabel>2nd X:</FormItemLabel>
             <Select onChange={this.onX2nchange} value={x2ndValue} style={{ width: 120, marginRight: 10 }}>
               {Object.keys(x2n).map(key => (
                 <Select.Option value={key} key={key}>
@@ -748,7 +759,7 @@ class ChartSelection extends React.Component {
                 </Select.Option>
               ))}
             </Select>
-            <span>Y轴:</span>
+            <FormItemLabel>Y轴:</FormItemLabel>
             <Select onChange={this.onYchange} value={yValue} style={{ width: 120, marginRight: 10 }}>
               {Object.keys(y).map(key => (
                 <Select.Option value={key} key={key}>
@@ -758,7 +769,7 @@ class ChartSelection extends React.Component {
             </Select>
             {normShow ? (
               <div>
-                <span>Normalized by:</span>
+                <FormItemLabel>Normalized by:</FormItemLabel>
                 <Select
                   defaultValue={normalized}
                   style={{ width: 60, marginRight: 10 }}
@@ -776,22 +787,22 @@ class ChartSelection extends React.Component {
               <Checkbox value='Show Value'>Show Value</Checkbox>
               <Checkbox value='Show Common'>Show Common</Checkbox>
             </Checkbox.Group>
-            <Button onClick={this.onBarClear} type='dashed'>
+            <Button onClick={this.onBarClear} type='danger'>
               Clear
             </Button>
           </Form.Item>
-          <Form.Item label='操作Y轴:'>
-            <span>Min:</span>
+          <Form.Item>
+            <FormItemLabel>Min:</FormItemLabel>
             <Input
               onChange={e => this.onYAxisOperChange('min', e.target.value)}
               style={{ width: 120, marginRight: 10 }}
             />
-            <span>Max:</span>
+            <FormItemLabel>Max:</FormItemLabel>
             <Input
               onChange={e => this.onYAxisOperChange('max', e.target.value)}
               style={{ width: 120, marginRight: 10 }}
             />
-            <span>Interval:</span>
+            <FormItemLabel>Interval:</FormItemLabel>
             <Input
               onChange={e => this.onYAxisOperChange('interval', e.target.value)}
               style={{ width: 120, marginRight: 10 }}
@@ -804,7 +815,7 @@ class ChartSelection extends React.Component {
             <Tooltip key={item.func} className='item' placement='top' title={item.content}>
               <Icon
                 onClick={() => this.onDoAction(item.func)}
-                className={`fa fa-${item.i} ${selectedAction === item.func ? 'checked' : ''}`}
+                className={`fa fa-${item.i} ${selectedAction === item.i ? 'checked' : ''}`}
                 type={item.i}
               />
             </Tooltip>
@@ -867,7 +878,7 @@ class ChartSelection extends React.Component {
             <h4>Cross Module Chart</h4>
             <div style={{ display: 'flex' }}>
               <TreeSelect
-                style={{ width: 'calc(100% - 110px)' }}
+                style={{ width: 'calc(100% - 110px)', marginRight: 10 }}
                 value={cmStepValue}
                 allowClear
                 multiple
@@ -882,7 +893,7 @@ class ChartSelection extends React.Component {
               </Button>
             </div>
             {LineCharts.map((data, index) => (
-              <CrossModuleChart name={name} data={data} index={index} key={index} />
+              <CrossModuleChart name={name} data={data} index={index} key={index} onCMremove={this.onCMremove} />
             ))}
           </StyleCrossModuleForm>
         ) : null}
@@ -1026,10 +1037,17 @@ class ChartSelection extends React.Component {
                 <InputNumber min={0} max={1} step={0.01} onChange={v => this.onCARegressionChange('value', v)} />
               </Form.Item>
               <Form.Item label=' '>
-                <Button onClick={this.onCASearch} type='primary'>Search</Button>
-                <Button onClick={this.onCAReset} type='danger'>Reset</Button>
+                <Button onClick={this.onCASearch} type='primary'>
+                  Search
+                </Button>
+                <Button onClick={this.onCAReset} type='danger'>
+                  Reset
+                </Button>
               </Form.Item>
             </Form>
+            {caCharts.map((chart, index) => (
+              <CorrelationChart data={chart} name={name} key={index} index={index} />
+            ))}
           </StyleCorrelationForm>
         ) : null}
       </StyleChartSelection>

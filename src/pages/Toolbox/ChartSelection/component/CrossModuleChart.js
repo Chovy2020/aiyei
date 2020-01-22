@@ -11,7 +11,7 @@ const StyleOperBtn = styled.div`
   justify-content: flex-end;
   padding: 10px 0;
   button {
-    width: 100px
+    width: 100px;
   }
 `
 const StyleTooltip = styled.div`
@@ -62,24 +62,25 @@ class CrossModuleChart extends React.Component {
     }
     this.init('line-chart')
     const legendData = []
-      const tableData = []
-      data.series.forEach(item => {
-        legendData.push(item.type)
-        let singleData = _.cloneDeep(item.data)
-        let newSingleData = singleData.filter(item => item !== null)
-        let total = 0
-        newSingleData.forEach(item => {
-          total += item
-        })
-        tableData.push({
-          name: item.type,
-          sampleCount: newSingleData.length,
-          avg: Math.round(total / newSingleData.length),
-          max: Math.max(...newSingleData),
-          min: Math.min(...newSingleData)
-        })
+    const tableData = []
+    data.series.forEach((item, index) => {
+      legendData.push(item.type)
+      let singleData = _.cloneDeep(item.data)
+      let newSingleData = singleData.filter(item => item !== null)
+      let total = 0
+      newSingleData.forEach(item => {
+        total += item
       })
-      this.setState({ legendData, tableData })
+      tableData.push({
+        key: index,
+        name: item.type,
+        sampleCount: newSingleData.length,
+        avg: Math.round(total / newSingleData.length),
+        max: Math.max(...newSingleData),
+        min: Math.min(...newSingleData)
+      })
+    })
+    this.setState({ legendData, tableData })
   }
 
   init = type => {
@@ -143,7 +144,7 @@ class CrossModuleChart extends React.Component {
     await delay(1)
     const { data } = this.props
     const { seriesData } = this.state
-    const opt =  {
+    const opt = {
       tooltip: {
         trigger: 'item'
       },
@@ -175,16 +176,48 @@ class CrossModuleChart extends React.Component {
     if (chart) chart.setOption(opt)
   }
 
-  onCMshowPM = () => {}
-  onCMremove = index => {
-    const { LineCharts } = this.state
-    LineCharts.splice(index, 1)
-    this.setState({ LineCharts })
-    this.onCMChartInit()
+  onCMshowPM = () => {
+    const { data, legendData, seriesData } = this.props
+    data.series.forEach((item, index) => {
+      const remark = []
+      if (item.remark) {
+        item.remark.forEach((i, idx) => {
+          legendData.push(item.type)
+          if (i === 'PM') {
+            remark.push({
+              value: 'PM',
+              xAxis: idx,
+              yAxis: item.data[idx]
+            })
+          }
+        })
+        seriesData[index].markPoint.data = remark
+      }
+    })
+    this.setState({ legendData, seriesData })
+  }
+
+  onDoAction = func => {
+    if (func === 'lineChart') {
+      this.setState({
+        selectedAction: 'line-chart'
+      })
+      this.init('line-chart')
+    } else if (func === 'stackBarChart') {
+      this.setState({
+        selectedAction: 'database'
+      })
+      this.init('database')
+    } else if (func === 'boxChart') {
+      this.setState({
+        selectedAction: 'cube'
+      })
+      this.init('cube')
+    }
   }
 
   render() {
-    const { name, index } = this.props
+    const { name, index, onCMremove } = this.props
     const { btns, selectedAction, tableData } = this.state
     const cmTableColumns = [
       {
@@ -215,33 +248,31 @@ class CrossModuleChart extends React.Component {
     ]
 
     return (
-      <div>
-        <StyleCrossModuleChart>
-          <StyleOperBtn>
-            {selectedAction !== 'cube' ? (
-              <Button type='primary' onClick={this.onCMshowPM}>
-                Show PM
-              </Button>
-            ) : null}
-            <Button type='danger' onClick={this.onCMremove}>
-              Remove
+      <StyleCrossModuleChart>
+        <StyleOperBtn>
+          {selectedAction !== 'cube' ? (
+            <Button type='primary' onClick={this.onCMshowPM}>
+              Show PM
             </Button>
-          </StyleOperBtn>
-          <StyleTooltip>
-            {btns.map(item => (
-              <Tooltip key={item.func} className='item' placement='top' title={item.content}>
-                <Icon
-                  onClick={() => this.onDoAction(item.func)}
-                  className={`fa fa-${item.i} ${selectedAction === item.func ? 'checked' : ''}`}
-                  type={item.i}
-                />
-              </Tooltip>
-            ))}
-          </StyleTooltip>
-          <StyleChart id={`chart-${name}-${index}`} />
-          {/* {selectedAction !== 'cube' ? <Table columns={cmTableColumns} dataSource={tableData} /> : null} */}
-        </StyleCrossModuleChart>
-      </div>
+          ) : null}
+          <Button type='danger' onClick={() => onCMremove(index)}>
+            Remove
+          </Button>
+        </StyleOperBtn>
+        <StyleTooltip>
+          {btns.map(item => (
+            <Tooltip key={item.func} className='item' placement='top' title={item.content}>
+              <Icon
+                onClick={() => this.onDoAction(item.func)}
+                className={`fa fa-${item.i} ${selectedAction === item.func ? 'checked' : ''}`}
+                type={item.i}
+              />
+            </Tooltip>
+          ))}
+        </StyleTooltip>
+        <StyleChart id={`chart-${name}-${index}`} />
+        {selectedAction !== 'cube' ? <Table columns={cmTableColumns} dataSource={tableData} /> : null}
+      </StyleCrossModuleChart>
     )
   }
 }

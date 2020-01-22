@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from 'react'
 import { Collapse, Card } from 'antd'
 import { getCluster } from './service'
