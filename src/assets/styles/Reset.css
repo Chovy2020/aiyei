@@ -56,3 +56,17 @@ img {
   width: 60px;
   text-align: center;
 }
+
+button + button,
+.ant-select + .ant-select {
+  margin-left: 10px;
+}
+.ant-form-item {
+  margin-bottom: 0;
+}
+.ant-form-vertical .ant-form-item-label {
+  padding: 6px 0 0;
+}
+.ant-btn {
+  min-width: 100px;
+}

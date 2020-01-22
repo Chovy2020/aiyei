@@ -23,8 +23,11 @@ import zrender from 'zrender'
 import Heatmap from 'heatmap.js'
 // import { injectReducer } from '@/utils/store'
 import moment from 'moment'
-import echarts from 'echarts/lib/echarts'
-import 'echarts/lib/chart/bar'
+import 'echarts/lib/component/title'
+import 'echarts/lib/component/legend'
+import 'echarts/lib/component/markPoint'
+import 'echarts/lib/component/legendScroll'
+import 'echarts/lib/component/dataZoom'
 import { delay } from '@/utils/web'
 // import { changeForm, changeItems } from './action'
 import { changeWaferSelected } from '@/utils/action'
@@ -138,6 +141,7 @@ class SingleMap extends React.Component {
       allSelectBar: [],
       allDisappearBar: [],
       typeBar: '',
+      dsaTableData: [],
 
       /* map info */
       infos: {
@@ -1162,6 +1166,7 @@ class SingleMap extends React.Component {
       allSelectBar: []
     })
     this.dealDsaData()
+    this.onDSATableInit()
   }
   dealDsaData = async () => {
     await delay(1)
@@ -1306,7 +1311,32 @@ class SingleMap extends React.Component {
   onDSATableInit = async () => {
     const { singleWaferKey } = this.state
     const res = await getDSATableData(singleWaferKey)
-    
+    const dsaTableData = []
+    res.forEach((item, index) => {
+      dsaTableData.push({
+        key: index + '',
+        dieIndex: item.dieIndex,
+        step: item.defectInfos[0].step,
+        scanTm: item.defectInfos[0].scanTm,
+        defectId: item.defectInfos[0].defectId,
+        imgUrl: item.defectInfos[0].imgUrl
+      })
+      if (item.defectInfos.length > 1) {
+        const children = []
+        item.defectInfos.forEach((jtem, index2) => {
+          children.push({
+            key: index + '-' + index2,
+            step: jtem.step,
+            scanTm: jtem.scanTm,
+            defectId: jtem.defectId,
+            imgUrl: jtem.imgUrl
+          })
+        })
+        dsaTableData[index].children = children
+      }
+    })
+    // console.log('onDSATableInit', dsaTableData)
+    this.setState({ dsaTableData })
   }
 
   onFilterSubmit = () => {}
@@ -1330,15 +1360,17 @@ class SingleMap extends React.Component {
     const { deleteDefectsDialog, deleteDefectsOptions } = this.state
     const { x, x2n, y, xValue, x2ndValue, yValue, ifAvg } = this.state
     const { infos, indexStyle } = this.state
-    const { dsa, sortName, dsaOrder } = this.state
+    const { dsa, sortName, dsaOrder, dsaTableData } = this.state
 
     if (dsa) this.onGenerateDSAChart()
     else this.onGenerateParetoChart()
 
     const dsaTableColumns = [
-      { title: 'Name', dataIndex: 'name', key: 'name' },
-      { title: 'Age', dataIndex: 'age', key: 'age' },
-      { title: 'Address', dataIndex: 'address', key: 'address' }
+      { title: 'dieIndex', dataIndex: 'dieIndex', key: 'dieIndex' },
+      { title: 'step', dataIndex: 'step', key: 'step' },
+      { title: 'defectId', dataIndex: 'defectId', key: 'defectId' },
+      { title: 'scanTime', dataIndex: 'scanTm', key: 'scanTm' },
+      { title: 'image', dataIndex: 'imgUrl', key: 'imgUrl' }
     ]
 
     return (

@@ -9,6 +9,7 @@ import DataQuery from './DataQuery'
 import MapGallery from './MapGallery'
 import ImageGallery from './ImageGallery'
 import SingleMap from './SingleMap'
+import ChartSelection from './ChartSelection'
 
 const { TabPane } = Tabs
 
@@ -22,6 +23,8 @@ const generatePage = ({ type, name }) => {
       return <ImageGallery name={name} />
     case 'Single Map':
       return <SingleMap name={name} />
+    case 'Chart Selection':
+      return <ChartSelection name={name} />
     default:
       return null
   }
@@ -34,7 +37,7 @@ class Toolbox extends React.Component {
       activeKey: '1',
       tabCount: 1,
       // panes: [{ type: 'Data Query', name: '1' }]
-      panes: [{ type: 'Single Map', name: '1' }]
+      panes: [{ type: 'Chart Selection', name: '1' }]
     }
   }
 
