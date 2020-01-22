@@ -2,6 +2,9 @@ import React from 'react'
 import { Collapse, Card } from 'antd'
 import { StyleSetUp } from './style'
 import Cluster from './cluster'
+import Adder from './adder'
+import ReticleRepeater from './reticleRepeater'
+import Zonal from './zonal'
 import SubDie from './subdie'
 
 const { Panel } = Collapse
@@ -15,16 +18,14 @@ class Setup extends React.Component {
             <Cluster />
           </Panel>
           <Panel header='Adder' key='2'>
-            <Cluster />
+            <Adder />
           </Panel>
           <Panel header='Reticle/Repeater' key='3'>
-            <Cluster />
+            <ReticleRepeater />
           </Panel>
         </Collapse>
         <Card title='Zonal Setting'>
-          <p>Card content</p>
-          <p>Card content</p>
-          <p>Card content</p>
+          <Zonal />
         </Card>
         <Card title='Sub-Die Setting'>
           <SubDie />

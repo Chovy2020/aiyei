@@ -1,19 +1,16 @@
 import React from 'react'
 import _ from 'lodash'
 import { delay } from '@/utils/web'
-import { Form,Input,InputNumber, Select, Button,Icon,Modal,message,Table} from 'antd'
-import { getSubDie } from './service'
-import {DiePitch,LayoutInline,LayoutVertical,DivStyle} from './style'
+import { Form,Input,InputNumber, Select, Button,Modal,message,Table} from 'antd'
+import { getZone } from './service'
 
 const { Option } = Select;
 const { Column, ColumnGroup } = Table;
-const ButtonGroup = Button.Group;
 
 const formItemLayout = {
   labelCol: { span: 4 },
   wrapperCol: { span: 20 },
 };
-
 class HorizontalLoginForm extends React.Component {
   constructor(props) {
     super(props)
@@ -23,12 +20,11 @@ class HorizontalLoginForm extends React.Component {
       visible: false,
       addSubdieProduct:'',
       addSubdieStepId: '',
-      tableData: [],
-      boxArr: [],
+      tableData: []
     }
   }
   componentDidMount() {
-    getSubDie({}).then(data => {
+    getZone({}).then(data => {
       let arr = []
       data.forEach(item => {
         arr.push({productId:item.productId,stepId:item.stepId})
@@ -57,7 +53,7 @@ class HorizontalLoginForm extends React.Component {
   }
   changeCfgDbPrimaryKeys = (e) => {
     this.setState({cfgDbPrimaryKeys: [this.state.productStepId[e]].productId+'-'+[this.state.productStepId[e]].stepId})
-    getSubDie({cfgDbPrimaryKeys:[this.state.productStepId[e]]}).then(response => {
+    getZone({cfgDbPrimaryKeys:[this.state.productStepId[e]]}).then(response => {
       this.setState({tableData: response[0].subDieIds})
     })
   }
@@ -82,7 +78,7 @@ class HorizontalLoginForm extends React.Component {
   }
 
   saveTable = () => {
-    this.setState({boxArr: this.state.tableData})
+
   }
   
   changeCell = (value, id, cellName) => {
@@ -120,58 +116,9 @@ class HorizontalLoginForm extends React.Component {
             </Form.Item>
           </Form>
         </Modal>
-        <LayoutInline>
-          <LayoutVertical>
-            <Table dataSource={this.state.tableData} rowKey={record => record.subDieId} bordered>
-              <Column title="ID" dataIndex="subDieId" key="subDieId" />
-              <Column title="Name" dataIndex="subDieName" key="subDieName" render={(text, record) => (
-                <Input value={text} onChange={(e) => this.changeCell(e.target.value,record.subDieId,'subDieName')}/>
-              )}/>
-              <ColumnGroup title="LL Coordinate" align="center">
-                <Column title="X" dataIndex="startX" key="startX"  align="center" render={(text, record) => (
-                <InputNumber value={text} onChange={(value) => this.changeCell(value,record.subDieId,'startX')}/>
-              )}/>
-                <Column title="Y" dataIndex="startY" key="startY"  align="center" render={(text, record) => (
-                <InputNumber value={text} onChange={(value) => this.changeCell(value,record.subDieId,'startY')}/>
-              )}/>
-              </ColumnGroup>
-              <ColumnGroup title="UR Coordinate" align="center">
-                <Column title="X" dataIndex="endX" key="endX"  align="center" render={(text, record) => (
-                <InputNumber value={text} onChange={(value) => this.changeCell(value,record.subDieId,'endX')}/>
-              )}/>
-                <Column title="Y" dataIndex="endY" key="endY"  align="center" render={(text, record) => (
-                <InputNumber value={text} onChange={(value) => this.changeCell(value,record.subDieId,'endY')}/>
-              )}/>
-              </ColumnGroup>
-              <Column
-                title="Action"
-                key="action"
-                render={(text, record) => (
-                  <span>
-                    <a>Delete</a>
-                  </span>
-                )}
-              />
-            </Table>
-            <ButtonGroup>
-              <Button type="default" onClick={this.addTableCell}><Icon type="plus" /></Button>
-              <Button type="default" onClick={this.saveTable}>Save</Button>
-            </ButtonGroup>
-          </LayoutVertical>
-          <DiePitch>
-            {
-              this.state.boxArr.map((item, index) => {
-                let divPostion = {
-                  left: item.startX+'px',
-                  top: (400-item.endY)+'px',
-                  width: (item.endX-item.startX)+'px',
-                  height: (item.endY-item.startY)+'px'
-                }
-                return (<DivStyle key={index} className="divStyle" style={divPostion}>{item.subDieName}</DivStyle>)
-              })
-            }
-          </DiePitch>
-        </LayoutInline>
+        <div>
+          
+        </div>
       </div>
       
     );
@@ -179,7 +126,7 @@ class HorizontalLoginForm extends React.Component {
 }
 
 const WrappedHorizontalLoginForm = Form.create({ name: 'horizontal_login' })(HorizontalLoginForm);
-class SubDie extends React.Component {
+class Zonal extends React.Component {
   render() {
     return (
       <WrappedHorizontalLoginForm/>
@@ -187,4 +134,4 @@ class SubDie extends React.Component {
   }
 }
 
-export default SubDie
+export default Zonal

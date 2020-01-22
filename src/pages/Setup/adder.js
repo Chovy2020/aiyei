@@ -2,11 +2,11 @@ import React from 'react'
 import { StyleCluster } from './style'
 import _ from 'lodash'
 import { Table ,Input,InputNumber,Button,Icon,Popconfirm} from 'antd'
-import { getCluster,updateCluster } from './service'
+import { getAdder,updateAdder } from './service'
 const { Column } = Table;
 const ButtonGroup = Button.Group;
 
-class Cluster extends React.Component {
+class Adder extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
@@ -18,7 +18,7 @@ class Cluster extends React.Component {
   }
 
   init = () => {
-    getCluster({}).then(response => {
+    getAdder({}).then(response => {
       let resData = _.cloneDeep(response).map((item,idx) => {
         return {key: idx, ...item}
       })
@@ -37,8 +37,7 @@ class Cluster extends React.Component {
       key: this.state.tableData.length,
       productId: '',
       stepId: '',
-      distance: 0,
-      minimalCnt: 0
+      tolerance: 0
     }
     this.setState({tableData: [...this.state.tableData, newCell]})
   }
@@ -52,19 +51,18 @@ class Cluster extends React.Component {
     this.setState({tableData: resData})
   }
   saveTable = () => {
-    let cfgClusterDefinitions = this.state.tableData.map(item => {
+    let cfgAdders = this.state.tableData.map(item => {
       return {
         "productId": item.productId,
         "stepId": item.stepId,
         "technology": "T1",
-        "distance": item.distance,
-        "minimalCnt": item.minimalCnt,
+        "tolerance": item.tolerance,
         "createBy": "xrj",
         "remarks": null,
         "updateTm": null
       }
     })
-    updateCluster({cfgClusterDefinitions}).then(response => {
+    updateAdder({cfgAdders}).then(response => {
       this.init()
     })
   }
@@ -79,11 +77,8 @@ class Cluster extends React.Component {
           <Column title="Step" dataIndex="stepId" key="stepId" render={(text, record) => (
             <Input value={text} onChange={(e) => this.changeCell(e.target.value,record.key,'stepId')}/>
           )}/>
-          <Column title="Distance" dataIndex="distance" key="distance"  align="center" render={(text, record) => (
-            <InputNumber value={text} onChange={(value) => this.changeCell(value,record.key,'distance')}/>
-          )}/>
-          <Column title="Minimal Count" dataIndex="minimalCnt" key="minimalCnt"  align="center" render={(text, record) => (
-            <InputNumber value={text} onChange={(value) => this.changeCell(value,record.key,'minimalCnt')}/>
+          <Column title="Tolerance" dataIndex="tolerance" key="tolerance"  align="center" render={(text, record) => (
+            <InputNumber value={text} onChange={(value) => this.changeCell(value,record.key,'tolerance')}/>
           )}/>
           <Column
             title="Action"
@@ -104,4 +99,4 @@ class Cluster extends React.Component {
   }
 }
 
-export default Cluster
+export default Adder
