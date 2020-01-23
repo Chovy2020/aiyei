@@ -53,7 +53,10 @@ export const DragCard = styled(Card)`
     padding: 5px;
   }
   h4 {
-    margin-bottom: 0;
+    margin-bottom: 5px;
+  }
+  button {
+    min-width: 40px;
   }
 `
 export const DragList = styled(List)`

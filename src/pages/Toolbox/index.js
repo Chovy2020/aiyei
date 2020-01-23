@@ -36,8 +36,7 @@ class Toolbox extends React.Component {
     this.state = {
       activeKey: '1',
       tabCount: 1,
-      // panes: [{ type: 'Data Query', name: '1' }]
-      panes: [{ type: 'Chart Selection', name: '1' }]
+      panes: [{ type: 'Data Query', name: '1' }]
     }
   }
 
@@ -46,7 +45,6 @@ class Toolbox extends React.Component {
   }
 
   onTabChange = activeKey => {
-    // console.log(activeKey)
     this.setState({ activeKey })
   }
 

@@ -212,7 +212,7 @@ class DataQuery extends React.Component {
               </Checkbox>
             </Form.Item>
             <Form.Item label='Time:'>
-              <DatePicker.RangePicker onChange={this.onDatePickerChange} />
+              <DatePicker.RangePicker size='small' onChange={this.onDatePickerChange} />
             </Form.Item>
             <Form.Item label='Query:'>
               <Checkbox.Group options={generateData()} defaultValue={items} onChange={this.onQueryChange} />
@@ -259,7 +259,7 @@ class DataQuery extends React.Component {
               </Form.Item>
             ) : null}
             <Form.Item label=' '>
-              <Button onClick={this.resetItems} type='dashed'>
+              <Button onClick={this.resetItems} type='danger'>
                 Reset
               </Button>
               <Button type='primary'>Load</Button>
