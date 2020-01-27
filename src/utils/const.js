@@ -24,6 +24,6 @@ export const MENUS = [
   {
     link: 'setup',
     icon: 'setting',
-    title: 'Set Up'
+    title: 'Setup'
   }
 ]

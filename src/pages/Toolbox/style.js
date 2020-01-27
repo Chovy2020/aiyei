@@ -1,4 +1,5 @@
 import styled from 'styled-components'
+import { Tabs } from 'antd'
 
 export const StyleToolbox = styled.div`
   display: flex;
@@ -34,7 +35,10 @@ export const Content = styled.div`
   .ant-tabs-bar {
     margin: 0;
   }
-  .ant-tabs .ant-tabs-top-content {
-    padding: 20px;
-  }
+`
+
+export const StyleTabPane = styled(Tabs.TabPane)`
+  height: calc(100vh - 90px);
+  overflow-y: auto;
+  padding: 20px;
 `

@@ -22,8 +22,7 @@ export const StyleImages = styled.ul`
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    border: 1px solid #f1f1f1;
-    padding: 10px;
+    padding: 5px;
     position: relative;
     img {
       width: 100%;

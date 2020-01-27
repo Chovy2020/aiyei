@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from 'react'
 import { delay } from '@/utils/web'
 import { Form,Input, Select, Button,Modal,message,Table} from 'antd'

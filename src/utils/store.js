@@ -1,7 +1,5 @@
-import {
-  createStore,
-  combineReducers
-} from 'redux'
+import { createStore, combineReducers } from 'redux'
+import _ from 'lodash'
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { devToolsEnhancer } from 'redux-devtools-extension/logOnlyInProduction'
 import initReducer from './reducer'
@@ -19,9 +17,17 @@ const store = createStore(createReducer(), devToolsEnhancer())
 
 store.asyncReducers = {}
 
-export default store
-
 export const injectReducer = (key, asyncReducer) => {
   store.asyncReducers[key] = asyncReducer
   store.replaceReducer(createReducer(store.asyncReducers))
+}
+
+export default store
+
+
+export const getWaferSelected = () => {
+  console.log(store, store.getState())
+  const { waferSelected, previousPage } = store.getState().Init
+  if (previousPage !== '' && waferSelected[previousPage] && !_.isEmpty(waferSelected[previousPage])) return waferSelected[previousPage]
+  return { wafers: [], bars: [] }
 }

@@ -12,18 +12,25 @@ import { delay } from '@/utils/web'
 import { getClassCodes, getViewFilters, getImages, updateDefectGroup } from './service'
 import { StyleImageGallery, StyleImages } from './style'
 import CommonDrawer from '@/components/CommonDrawer'
+import { getWaferSelected } from '@/utils/store'
 
 const layoutSize = [3, 4, 5]
+const getLotId = waferId => waferId.split('|')[0]
+const getWaferNo = waferId => waferId.split('|')[3]
+const getDefectId = waferId => waferId.split('|')[5]
+const getEquipId = waferId => waferId.split('|')[6]
+let drawer = null
 
 class ImageGallery extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
+      waferSelected: [], // 从MapGallery选中的wafer列表
       layout: {
         num1: 3,
         num2: 3,
-        showLabel: true
       },
+      showLabel: true,
       categoryTypes: [
         ['Manual Bin', 'mb'],
         ['Rough Bin', 'rb'],
@@ -43,25 +50,62 @@ class ImageGallery extends React.Component {
         ['scan time', 'scanTm'],
         ['review time', 'reviewTm']
       ],
-      viewFilters: ['1', '2'],
+      viewGroup: '',
+      viewFilters: [], // ！通过接口获取
+      viewFilter: [],
       images: [],
       currentImages: [],
       selected: [],
       total: 0,
-      pageNo: 1,
+      pageNo: 1
     }
   }
 
-  componentDidMount() {
-    const { items, itemSelected, defect } = this.props
-    const images = []
-    for (let i = 1;i < 100; i+= 1) {
-      images.push({id: `${i}`})
+  // getWaferSelected = () => {
+  //   const { waferSelected, previousPage } = this.props
+  //   if (previousPage !== '' && waferSelected[previousPage] && !_.isEmpty(waferSelected[previousPage])) return waferSelected[previousPage]
+  //   return { wafers: [], bars: [] }
+  // }
+
+  async componentDidMount() {
+    await this.loadClassCodes()
+    await this.loadImages()
+    this.loadViewFilters()
+  }
+
+  loadClassCodes = async () => {
+    const classCodes = await getClassCodes()
+    this.setState({ classCodes })
+  }
+  loadViewFilters = async () => {
+    const { wafers, bars } = getWaferSelected()
+    let viewFilters = await getViewFilters({ imageInfo: wafers, bars })
+    viewFilters = viewFilters.map(item => `${item}`)
+    this.setState({ viewFilters })
+  }
+  // 获取图片链接的列表 + 过滤
+  loadImages = async () => {
+    await delay(1)
+    const { viewGroup, viewFilter } = this.state
+    const { wafers, bars } = getWaferSelected()
+    console.log(wafers.length)
+    if (wafers.length === 0) return
+    const data = {
+      imageGroupBy: viewGroup,
+      mbFilter: viewFilter.map(item => parseInt(item)),
+      imageInfo: wafers,
+      singleGalleryFlag: 'galleryMap'
     }
-    this.setState({
-      images,
-      total: images.length
-    })
+    const res = await getImages(data)
+    const images = []
+    for (const id in res)
+      for (const url of res[id])
+        images.push({
+          url,
+          id
+        })
+    this.setState({ images, total: images.length || 0 })
+    // 默认显示第一页的图片
     this.generateImages()
   }
 
@@ -85,20 +129,45 @@ class ImageGallery extends React.Component {
     this.setState({ currentImages })
   }
 
-  onFormReset = () => {}
+  onSelect = id => {
+    let { selected } = this.state
+    if (selected.includes(id)) {
+      selected = _.remove(selected, n => id !== n)
+    } else {
+      selected.push(id)
+    }
+    this.setState({ selected })
+  }
 
-  onFormSubmit = () => {}
+  onFormSubmit = async () => {
+    const { selected, categoryType, classCode } = this.state
+    if (selected.length === 0) {
+      message.warning('Please select image')
+      return
+    }
+    await updateDefectGroup({
+      idList: selected,
+      type: categoryType,
+      code: classCode
+    })
+    message.success('Classification success')
+    this.setState({ selected: [] })
+    // 重新拉取图片列表
+    await this.loadImages()
+    this.loadViewFilters()
+  }
 
   onDefectClassChange = () => {}
 
   onFilterSubmit = () => {
-
+    drawer.onClose()
+    this.loadImages()
   }
 
   render() {
-    const { name } = this.props
-    const { layout, categoryTypes, classCodes, viewGroups, viewFilters, currentImages, total, pageNo } = this.state
-    const { num1, num2, showLabel } = layout
+    // const { name } = this.props
+    const { layout, categoryTypes, classCodes, categoryType, classCode, viewGroups, viewFilters, currentImages, total, pageNo, showLabel, selected } = this.state
+    const { num1, num2 } = layout
 
     return (
       <StyleImageGallery>
@@ -124,54 +193,53 @@ class ImageGallery extends React.Component {
             </Checkbox>
           </Form.Item>
           <Form.Item label='Classified:'>
-            <Select style={{ width: 120 }}>
+            <Select style={{ width: 120 }} defaultValue={categoryType} onChange={categoryType => this.setState({ categoryType })}>
               {categoryTypes.map(t => (
                 <Select.Option value={t[1]} key={t[1]}>
                   {t[0]}
                 </Select.Option>
               ))}
             </Select>
-            <Select style={{ width: 120 }}>
+            <Select style={{ width: 120 }} defaultValue={classCode} onChange={classCode => this.setState({ classCode })}>
               {classCodes.map(c => (
-                <Select.Option value={c} key={c}>
-                  {c}
+                <Select.Option value={c.classCode} key={c.classCode}>
+                  {`${c.classCode}-${c.className}`}
                 </Select.Option>
               ))}
             </Select>
             <Button onClick={this.onFormSubmit} type='primary'>
               Ok
             </Button>
-            <Button onClick={this.onFormReset} type='dashed'>
+            <Button onClick={() => this.setState({ selected: [] })} type='dashed'>
               Reset
             </Button>
           </Form.Item>
         </Form>
 
         <StyleImages className={`col${num1}`}>
-          {currentImages.map(img => (
-            <li key={img.id}>
-            {/* <img :src="`http://161.189.50.41${img.url}`" alt="" /> */}
-            <img src='../../../assets/images/logo.png' alt="" />
+          {currentImages.map((img, index) => (
+            <li key={`${img.id}-${index}`} className={selected.includes(img.id) ? 'selected' : ''} onClick={() => this.onSelect(img.id)}>
+            <img src={`http://161.189.50.41${img.url}`} />
             {showLabel ? (
               <div className='wafer-info'>
-                <p>Lot ID: {img.id}</p>
-                <p>Wafer No: {}</p>
-                <p>Defect ID: {}</p>
-                <p>Equip ID: {}</p>
+                <p>Lot ID: {getLotId(img.id)}</p>
+                <p>Wafer No: {getWaferNo(img.id)}</p>
+                <p>Defect ID: {getDefectId(img.id)}</p>
+                <p>Equip ID: {getEquipId(img.id)}</p>
               </div>
             ) : null}
           </li>
           ))}
         </StyleImages>
 
-        <Pagination total={total} showTotal={t => `Total: ${t}`} pageSize={num1 * num2} defaultCurrent={pageNo} onChange={this.onPageSizeChange} />
+        <Pagination hideOnSinglePage total={total} showTotal={t => `Total: ${t}`} pageSize={num1 * num2} defaultCurrent={pageNo} onChange={this.onPageSizeChange} />
         
-        <CommonDrawer ref={r => (this.drawer = r)} width={550}>
+        <CommonDrawer ref={r => (drawer = r)} width={550}>
           <section>
             <h3 style={{ width: 140 }}>Display Settings</h3>
             <Form layout='vertical' labelCol={{ span: 5 }}>
               <Form.Item label='Group View:'>
-                <Select style={{ width: 120 }}>
+                <Select style={{ width: 120 }} onChange={viewGroup => this.setState({ viewGroup })}>
                   {viewGroups.map(g => (
                     <Select.Option value={g[1]} key={g[1]}>
                       {g[0]}

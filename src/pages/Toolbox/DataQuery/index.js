@@ -2,13 +2,13 @@
 /* eslint-disable react/jsx-props-no-spreading */
 import React from 'react'
 import { connect } from 'react-redux'
-import { Form, DatePicker, Checkbox, Button, Input } from 'antd'
+import { Form, DatePicker, Checkbox, Button, Input, message } from 'antd'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import _ from 'lodash'
 import { injectReducer } from '@/utils/store'
 import { delay } from '@/utils/web'
 import { changeForm, changeItems, changeItemSelected } from './action'
-import { DATA_QUERY_QUERY } from './constant'
+import { DATA_QUERY_QUERY, GET_LABEL } from './constant'
 import reducer from './reducer'
 import dataQuerySearch from './service'
 import { StyleDataQuery, Title, LoaderGroup, LoaderDefect, DragContainer, DragItem, DragCard, DragList } from './style'
@@ -55,25 +55,19 @@ class DataQuery extends React.Component {
     if (list.includes(text)) list = _.remove(list, n => text !== n)
     else list.push(text)
     itemSelected[index] = list
-    this.props.changeItemSelected(itemSelected)
+    this.props.changeItemSelected(_.cloneDeep(itemSelected))
     // 更新下一列的数据
     if (index < items.length - 1) this.onSearch(index + 1)
   }
 
+  // 搜索展示
   onSearch = async index => {
     const res = await this.search(index)
     // 第一列 则标记高亮 同时触发更新第二列数据，后续列为更新列表
-    const { items } = this.props
-    const { itemSelected } = this.props
-    if (index === 0) {
-      itemSelected[0] = res
-      this.props.changeItemSelected(itemSelected)
-      this.onSearch(1)
-      return
-    }
     const { itemData, itemKeyword } = this.state
     itemData[index] = res
     // 清空后续列表
+    const { itemSelected, items } = this.props
     for (const i in items) {
       if (i > index) {
         itemData[i] = []
@@ -83,6 +77,21 @@ class DataQuery extends React.Component {
     }
     this.setState({ itemData, itemKeyword })
     this.props.changeItemSelected(itemSelected)
+  }
+
+  // 标记
+  onSearchMark = async index => {
+    const res = await this.search(index)
+    // 如果跳跃列选择，待选择列表为空，补充搜索结果进待选择列表
+    const { itemData } = this.state
+    if (!itemData[index] || itemData[index].length === 0) {
+      itemData[index] = res
+      this.setState({ itemData })
+    }
+    const { itemSelected, items } = this.props
+    itemSelected[index] = res
+    this.props.changeItemSelected(_.cloneDeep(itemSelected))
+    if (index < items.length - 1) this.onSearch(index + 1)
   }
 
   onCheckboxChange(key, checked) {
@@ -133,6 +142,11 @@ class DataQuery extends React.Component {
     })
     this.props.changeItemSelected(items.map(() => []))
     this.setState({ itemData: [await this.search(0)] })
+  }
+
+  loadItems = () => {
+    // message.success('Load completed!')
+    this.props.addTab('Map Gallery')
   }
 
   search = async index => {
@@ -228,10 +242,10 @@ class DataQuery extends React.Component {
                             {p2 => (
                               <DragItem ref={p2.innerRef} {...p2.draggableProps} {...p2.dragHandleProps}>
                                 <DragCard>
-                                  <h4>{item}</h4>
+                                  <h4>{GET_LABEL(item)} 【{itemSelected[index] ? itemSelected[index].length : 0 || 0}/{itemData[index] ? itemData[index].length : 0}】</h4>
                                   <Input.Search
                                     onChange={e => this.onSearchInput(index, e.target.value)}
-                                    onSearch={() => this.onSearch(index)}
+                                    onSearch={() => this.onSearchMark(index)}
                                     size='small'
                                     enterButton
                                   />
@@ -259,10 +273,8 @@ class DataQuery extends React.Component {
               </Form.Item>
             ) : null}
             <Form.Item label=' '>
-              <Button onClick={this.resetItems} type='danger'>
-                Reset
-              </Button>
-              <Button type='primary'>Load</Button>
+              <Button onClick={this.loadItems} type='primary'>Load</Button>
+              <Button onClick={this.resetItems} type='dashed'>Reset</Button>
             </Form.Item>
           </Form>
         </LoaderDefect>

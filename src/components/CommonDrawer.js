@@ -12,6 +12,7 @@ const StyleComomDrawer = styled.div`
     border-radius: 0;
     right: 0;
     bottom: 0;
+    min-width: 20px;
     width: 20px;
     padding: 0;
     height: calc(100vh - 50px);

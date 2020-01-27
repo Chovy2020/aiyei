@@ -23,11 +23,7 @@ import zrender from 'zrender'
 import Heatmap from 'heatmap.js'
 // import { injectReducer } from '@/utils/store'
 import moment from 'moment'
-import 'echarts/lib/component/title'
-import 'echarts/lib/component/legend'
-import 'echarts/lib/component/markPoint'
-import 'echarts/lib/component/legendScroll'
-import 'echarts/lib/component/dataZoom'
+import echarts from 'echarts'
 import { delay } from '@/utils/web'
 // import { changeForm, changeItems } from './action'
 import { changeWaferSelected } from '@/utils/action'
@@ -1602,10 +1598,10 @@ class SingleMap extends React.Component {
                   </Select>
                 </Form.Item>
                 <Form.Item>
-                  <Button onClick={this.onParetoSearch} type='primary' style={{ marginRight: 10 }}>
+                  <Button onClick={this.onParetoSearch} type='primary' style={{ marginRight: 10, minWidth: 50 }}>
                     Search
                   </Button>
-                  <Button onClick={this.onParetoClear} type='dashed'>
+                  <Button onClick={this.onParetoClear} type='dashed' style={{ minWidth: 50 }}>
                     Clear
                   </Button>
                 </Form.Item>
