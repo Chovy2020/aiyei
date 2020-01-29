@@ -33,6 +33,7 @@ import { reclassifyParams, getImages, updateCorrect, deleteCorrect, getX, getX2n
 import { get, post, download } from '@/utils/api'
 import { StyleSingleMap, StyleWafer, StylePareto, StyleInfo, StyleChart, StyleDSA } from './style'
 import CommonDrawer from '@/components/CommonDrawer'
+import { getWaferSelected } from '@/utils/store'
 
 const commands = ['Rotation', 'Export to CSV', 'Export klarf', 'Send to review', 'Overlap']
 const btns = [
@@ -162,34 +163,9 @@ class SingleMap extends React.Component {
 
   async componentDidMount() {
     // const { items, itemSelected, defect } = this.props
-    const singleWaferKey = [
-      // {
-      //   lotId: 'SQCA00019',
-      //   productId: 'GDM119',
-      //   waferNo: '10.10',
-      //   stepId: '4628_KTCTBRDP',
-      //   scanTm: '2009-07-06 09:34:44',
-      //   defects: [],
-      //   defectIdRedisKey: 'd9a18175-bbc1-4eba-9c2b-306ba1cd02a4'
-      // },
-      // {
-      //   lotId: 'B0001.000',
-      //   stepId: 'P1_ASI',
-      //   waferNo: '1',
-      //   productId: 'Device01',
-      //   scanTm: '2018-06-05 12:30:35',
-      //   defects: [],
-      //   defectIdRedisKey: 'f92d494a-636d-49a3-aa4f-fb3fff77aa5a'
-      // },
-      // {
-      //   lotId: 'B0001.000',
-      //   stepId: 'M3_CMP',
-      //   waferNo: '1',
-      //   productId: 'Device01',
-      //   scanTm: '2018-06-05 12:30:35',
-      //   defects: [],
-      //   defectIdRedisKey: '9c409953-3a35-46b8-bf3b-d6b5d19c4d7e'
-      // }
+    
+    // const { wafers, bars } = getWaferSelected()
+    const wafers = [
       {
         lotId: "B0001.000",
         stepId: "M3_CMP",
@@ -236,7 +212,7 @@ class SingleMap extends React.Component {
         defectIdRedisKey: "6891bd43-9aaa-48d5-9639-4089602de5e9"
       }
     ]
-    this.setState({ singleWaferKey })
+    this.setState({ singleWaferKey: wafers })
     this.onParetoChartInit()
     this.onDSAChartInit()
     await delay(1)
@@ -847,14 +823,14 @@ class SingleMap extends React.Component {
   parseColor = hexStr => {
     return hexStr.length === 4
       ? hexStr
-          .substr(1)
-          .split('')
-          .map(function(s) {
-            return 0x11 * parseInt(s, 16)
-          })
-      : [hexStr.substr(1, 2), hexStr.substr(3, 2), hexStr.substr(5, 2)].map(function(s) {
-          return parseInt(s, 16)
+        .substr(1)
+        .split('')
+        .map(function (s) {
+          return 0x11 * parseInt(s, 16)
         })
+      : [hexStr.substr(1, 2), hexStr.substr(3, 2), hexStr.substr(5, 2)].map(function (s) {
+        return parseInt(s, 16)
+      })
   }
   /* - - - - - - - - - - - - 绘图相关 End - - - - - - - - - - - -  */
 
@@ -1135,7 +1111,7 @@ class SingleMap extends React.Component {
   onDsaToggle = () => {
     const { dsa } = this.state
     this.setState({ dsa: !dsa })
-    if(!dsa) {
+    if (!dsa) {
       this.onDSAInit()
     } else {
       this.onParetoInit()
@@ -1260,7 +1236,7 @@ class SingleMap extends React.Component {
 
   onDSAChartClick = params => {
     let tag = ''
-    const { dsaData,  selectedBar } = this.state
+    const { dsaData, selectedBar } = this.state
     dsaData.paretoValue.series.some(item => {
       if (item.name == params.name) {
         tag = item['tag'][params.seriesIndex]
@@ -1335,7 +1311,7 @@ class SingleMap extends React.Component {
     this.setState({ dsaTableData })
   }
 
-  onFilterSubmit = () => {}
+  onFilterSubmit = () => { }
 
   render() {
     const { name } = this.props

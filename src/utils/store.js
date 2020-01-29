@@ -26,7 +26,6 @@ export default store
 
 
 export const getWaferSelected = () => {
-  console.log(store, store.getState())
   const { waferSelected, previousPage } = store.getState().Init
   if (previousPage !== '' && waferSelected[previousPage] && !_.isEmpty(waferSelected[previousPage])) return waferSelected[previousPage]
   return { wafers: [], bars: [] }

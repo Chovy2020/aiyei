@@ -1,4 +1,5 @@
 const initialState = {
+  toolBoxLoading: false,
   previousPage: '0',
   /**
    * waferSelected: 选中的wafer缓存，标签切换传参
@@ -40,6 +41,11 @@ const initialState = {
 
 const initReducer = (state = initialState, action) => {
   switch (action.type) {
+    case 'CHANGE_TOOLBOX_LOADING':
+      return {
+        ...state,
+        toolBoxLoading: action.payload
+      }
     case 'CHANGE_PREVIOUS_PAGE':
       return {
         ...state,

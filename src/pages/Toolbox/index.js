@@ -1,7 +1,7 @@
 /* eslint-disable */
 import React from 'react'
 import { connect } from 'react-redux'
-import { Icon, Tabs } from 'antd'
+import { Icon, Tabs, Spin } from 'antd'
 import { TOOLS } from '@/utils/const'
 import { changePreviousPage, initPage } from './action'
 import { StyleToolbox, Tools, Content, StyleTabPane } from './style'
@@ -78,23 +78,27 @@ class Toolbox extends React.Component {
 
   render() {
     const { activeKey, panes } = this.state
+    const { toolBoxLoading } = this.props
+
     return (
+    <Spin spinning={toolBoxLoading} style={{ maxHeight: '100vh' }}>
       <StyleToolbox>
-        <Tools>
-          {TOOLS.map(t => (
-            <Icon type={t.icon} key={t.icon} theme='filled' onClick={() => this.addTab(t.type)} />
-          ))}
-        </Tools>
-        <Content>
-          <Tabs hideAdd onChange={this.onTabChange} activeKey={activeKey} type='editable-card' onEdit={this.onEdit}>
-            {panes.map(pane => (
-              <StyleTabPane tab={pane.type} key={pane.name} closable={pane.name !== '1'}>
-                {this.generatePage(pane)}
-              </StyleTabPane>
+          <Tools>
+            {TOOLS.map(t => (
+              <Icon type={t.icon} key={t.icon} theme='filled' onClick={() => this.addTab(t.type)} />
             ))}
-          </Tabs>
-        </Content>
+          </Tools>
+          <Content>
+            <Tabs hideAdd onChange={this.onTabChange} activeKey={activeKey} type='editable-card' onEdit={this.onEdit}>
+              {panes.map(pane => (
+                <StyleTabPane tab={pane.type} key={pane.name} closable={pane.name !== '1'}>
+                  {this.generatePage(pane)}
+                </StyleTabPane>
+              ))}
+            </Tabs>
+          </Content>
       </StyleToolbox>
+    </Spin>
     )
   }
 }

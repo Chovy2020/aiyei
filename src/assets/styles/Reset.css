@@ -71,3 +71,6 @@ button + button,
 .ant-pagination {
   text-align: center;
 }
+.ant-spin-nested-loading > div > .ant-spin {
+  max-height: inherit;
+}

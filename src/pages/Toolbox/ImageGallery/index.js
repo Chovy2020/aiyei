@@ -61,12 +61,6 @@ class ImageGallery extends React.Component {
     }
   }
 
-  // getWaferSelected = () => {
-  //   const { waferSelected, previousPage } = this.props
-  //   if (previousPage !== '' && waferSelected[previousPage] && !_.isEmpty(waferSelected[previousPage])) return waferSelected[previousPage]
-  //   return { wafers: [], bars: [] }
-  // }
-
   async componentDidMount() {
     await this.loadClassCodes()
     await this.loadImages()
