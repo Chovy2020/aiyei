@@ -13,3 +13,8 @@ export const changeItemSelected = payload => ({
   type: 'CHANGE_ITEM_SELECTED',
   payload
 })
+
+export const changeFilters = payload => ({
+  type: 'CHANGE_FILTERS',
+  payload
+})

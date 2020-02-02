@@ -7,10 +7,10 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import _ from 'lodash'
 import { injectReducer } from '@/utils/store'
 import { delay } from '@/utils/web'
-import { changeForm, changeItems, changeItemSelected } from './action'
+import { changeForm, changeItems, changeItemSelected, changeFilters } from './action'
 import { DATA_QUERY_QUERY, GET_LABEL } from './constant'
 import reducer from './reducer'
-import dataQuerySearch from './service'
+import { dataQuerySearch, getTags } from './service'
 import { StyleDataQuery, Title, LoaderGroup, LoaderDefect, DragContainer, DragItem, DragCard, DragList } from './style'
 
 const generateData = () => {
@@ -144,8 +144,18 @@ class DataQuery extends React.Component {
     this.setState({ itemData: [await this.search(0)] })
   }
 
-  loadItems = () => {
+  loadItems = async () => {
     // message.success('Load completed!')
+    const { items, itemSelected, defect } = this.props
+    const data = {
+      ...defect,
+      comboBoxes: items.map((item, index) => ({
+        key: item,
+        value: itemSelected[index]
+      }))
+    }
+    const res = await getTags(data)
+    this.props.changeFilters(res)
     this.props.addTab('Map Gallery')
   }
 
@@ -285,5 +295,5 @@ class DataQuery extends React.Component {
 
 injectReducer('DataQuery', reducer)
 const mapStateToProps = state => ({ ...state.DataQuery })
-const mapDispatchToProps = { changeForm, changeItems, changeItemSelected }
+const mapDispatchToProps = { changeForm, changeItems, changeItemSelected, changeFilters }
 export default connect(mapStateToProps, mapDispatchToProps)(DataQuery)

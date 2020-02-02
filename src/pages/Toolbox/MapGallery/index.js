@@ -11,7 +11,7 @@ import { delay } from '@/utils/web'
 // import { changeForm, changeItems } from './action'
 // import { DATA_QUERY_QUERY, DATA_QUERY_INIT } from './constant'
 // import reducer from './reducer'
-import { getTags, getFilters, getMap, getStack, downloadCSV } from './service'
+import { getFilters, getMap, getStack, downloadCSV, getNewMap, getNewStack } from './service'
 import { StyleMapGallery, StyleWaferMapGroup, StyleWaferMap } from './style'
 import { changeWaferSelected } from '@/utils/action'
 import CommonDrawer from '@/components/CommonDrawer'
@@ -59,12 +59,12 @@ class MapGallery extends React.Component {
         subDieIds: []
       },
       defectClass: null,
+      adderFlag: true,
+      defectSize: ['', ''],
       group: {
         fileId: '',
         by: []
       },
-      adderFlag: true,
-      defectSize: ['', ''],
       selected: [],
       selectedAndKey: {},
       redisCache: [],
@@ -78,16 +78,45 @@ class MapGallery extends React.Component {
   }
 
   async componentDidMount() {
-    const { items, itemSelected, defect } = this.props
+    const { filters } = this.props
+    this.setState({ tags: filters })
+    this.onFilterOrGroup()
+  }
+
+  getFormData = isDelete => {
+    const { items, itemSelected } = this.props
+    const { tagsSeleted, selected, adderFlag, pageNo, pageSize, group, defectSize } = this.state
     const data = {
-      ...defect,
+      waferList: [],
+      filter: {
+        defectType: {
+          rb: tagsSeleted.rbs,
+          adc: tagsSeleted.adc,
+          mb: tagsSeleted.mbs
+        },
+        testId: tagsSeleted.tests,
+        cluster: tagsSeleted.clusterIds,
+        adder: adderFlag ? ['Y'] : ['N'],
+        repeater: tagsSeleted.repeaterIds,
+        zoneId: tagsSeleted.zoneIds,
+        subDie: tagsSeleted.subDieIds,
+      },
+      pageNumber: pageNo,
+      pageSize,
+      groupExcelRedisKey: group.fileId,
+      groupList: group.by,
+      deleteIds: isDelete ? selected : [],
       comboBoxes: items.map((item, index) => ({
         key: item,
-        value: itemSelected[index]
+        value: itemSelected[index] || []
       }))
     }
-    this.setState({ tags: await getTags(data) })
-    this.onFilterOrGroup()
+    if (defectSize[0] === '') defectSize[0] = 0
+    if (defectSize[1] === '') defectSize[1] = 1
+    const num1 = parseFloat(defectSize[0])
+    const num2 = parseFloat(defectSize[1])
+    data.defectSize = [Math.min(num1, num2), Math.max(num1, num2)]
+    return data
   }
 
   // Drawer
@@ -132,7 +161,7 @@ class MapGallery extends React.Component {
     redisCache.length = pages
     redisCache[0] = { map, fullMap }
     this.setState({
-      total: totalCount,
+      total: totalCount || 0,
       pageNo: 1,
       redisCache
     })
@@ -156,6 +185,10 @@ class MapGallery extends React.Component {
   loadMap = async () => {
     const { redisCache, pageNo } = this.state
     const map = redisCache[pageNo - 1]
+    const data = this.getFormData()
+    // console.log('getFormData', data)
+    const res1 = await getNewMap(data)
+    console.log('newMap', res1)
     const res = await getMap(map)
     if (!res.resultMap || res.resultMap === {}) {
       message.warning('No data')

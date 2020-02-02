@@ -5,6 +5,9 @@ export const StyleSingleMap = styled.div`
   .mapPareto {
     display: flex;
   }
+  .single-map-table {
+    margin: 20px 20px 0 0;
+  }
 `
 
 export const StyleWafer = styled.div`
@@ -95,26 +98,7 @@ export const StyleDSA = styled.div`
   flex: 1;
 `
 
-export const StyleInfo = styled.div`
-  margin: 20px 0;
-  .infoList {
-    display: flex;
-    .infoName {
-      display: inline-block;
-      width: 100px;
-    }
-    .infoName + span {
-      width: calc(100% - 100px);
-    }
-    .infoDetail {
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-    }
-  }
-`
-
 export const StyleChart = styled.div`
-  width: 850px;
+  width: 830px;
   height: 400px;
 `

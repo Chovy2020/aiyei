@@ -65,14 +65,16 @@ axios.interceptors.response.use(
         window.URL.revokeObjectURL(href) // 释放掉blob对象
         return Promise.resolve()
       }
-      console.log(ERROR_CODE[res.data.code] || '未知错误!')
+      // console.log(ERROR_CODE[res.data.code] || '未知错误!')
+      message.error(ERROR_CODE[res.data.code] || '未知错误!')
     } else console.log('服务器错误!')
     return Promise.reject()
   },
   err => {
     clearTimeout(timer)
     store.dispatch({type: 'CHANGE_TOOLBOX_LOADING', payload: false})
-    console.log((err && err.response && ERROR_CODE[err.response.status]) || '连接服务器失败!')
+    // console.log((err && err.response && ERROR_CODE[err.response.status]) || '连接服务器失败!')
+    message.error((err && err.response && ERROR_CODE[err.response.status]) || '连接服务器失败!')
     return Promise.reject(err)
   }
 )

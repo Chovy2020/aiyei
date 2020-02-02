@@ -69,6 +69,7 @@ export const DragList = styled(List)`
   p {
     margin: 0;
     font-size: 12px;
+    cursor: default;
     &.active {
       font-weight: bold;
       background-color: #409eff50;

@@ -8,12 +8,14 @@ import { MENUS } from '@/utils/const'
 import HomePage from '@/pages/Home/Loadable'
 import Toolbox from '@/pages/Toolbox'
 import Setup from '@/pages/Setup'
+import Page404 from '@/pages/Account/404'
 
 
 const routes = {
   '/toolbox': Toolbox,
-  '/': HomePage,
-  '/setup': Setup
+  '/setup': Setup,
+  '/': Toolbox,
+  '/*': Page404
 }
 
 const generateRoute = (route, key) => <Route key={key} exact={route === '/'} path={route} component={routes[route]} />
@@ -47,7 +49,7 @@ class App extends React.Component {
             <Switch>
               {Object.keys(routes).map((route, key) => generateRoute(route, key))}
               <Route exact path='' component={HomePage} />
-              <Redirect to='' />
+              <Redirect form='/*' to='/404' />
             </Switch>
           </Main>
         </Container>

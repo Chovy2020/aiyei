@@ -31,7 +31,7 @@ import { SORT_LIST, SORT_ORDER_LIST } from './constant'
 // import reducer from './reducer'
 import { reclassifyParams, getImages, updateCorrect, deleteCorrect, getX, getX2nd, getY, getDp, getDSATableData } from './service'
 import { get, post, download } from '@/utils/api'
-import { StyleSingleMap, StyleWafer, StylePareto, StyleInfo, StyleChart, StyleDSA } from './style'
+import { StyleSingleMap, StyleWafer, StylePareto, StyleChart, StyleDSA } from './style'
 import CommonDrawer from '@/components/CommonDrawer'
 import { getWaferSelected } from '@/utils/store'
 
@@ -47,6 +47,12 @@ const btns = [
   { content: '刷新', i: 'sync', func: 'refresh' }
 ]
 const srcMapping = { 'Map/Pareto': '', 'Die Stack': '/ds', 'Reticle Stack': '/rs', 'Heat Map': '' }
+const defectClassList = [
+  ['mb', 'mbs'],
+  ['adc', 'adc'],
+  ['rb', 'rbs']
+]
+let drawer = null
 
 let zr = null
 let group = null
@@ -155,7 +161,33 @@ class SingleMap extends React.Component {
         3: true,
         4: true
       },
+      // filters
 
+      // 右侧各种过滤条件
+      tags: {
+        mbs: [],
+        abc: [],
+        rbs: [],
+        tests: [],
+        clusterIds: [],
+        repeaterIds: [],
+        zoneIds: [],
+        subDieIds: []
+      },
+      // 用户当前勾选的过滤条件
+      tagsSeleted: {
+        mbs: [],
+        adc: [],
+        rbs: [],
+        tests: [],
+        clusterIds: [],
+        repeaterIds: [],
+        zoneIds: [],
+        subDieIds: []
+      },
+      defectClass: null,
+      adderFlag: true,
+      defectSize: ['', ''],
       total: 0,
       pageNo: 1
     }
@@ -1311,7 +1343,36 @@ class SingleMap extends React.Component {
     this.setState({ dsaTableData })
   }
 
-  onFilterSubmit = () => { }
+  onFilterSubmit = () => {
+
+  }
+
+  // filters
+  onDefectClassChange = e => {
+    const { tagsSeleted } = this.state
+    tagsSeleted.mbs = []
+    tagsSeleted.adc = []
+    tagsSeleted.rbs = []
+    this.setState({
+      defectClass: e.target.value,
+      tagsSeleted
+    })
+  }
+  onDefectClassDetailChange = value => {
+    const { defectClass, tagsSeleted } = this.state
+    tagsSeleted[defectClass] = value
+    this.setState({ tagsSeleted })
+  }
+  onDefectSizeChange = (index, value) => {
+    const { defectSize } = this.state
+    defectSize[index] = value
+    this.setState({ defectSize })
+  }
+  onDefectFiltersChange = (key, value) => {
+    const { tagsSeleted } = this.state
+    tagsSeleted[key] = value
+    this.setState({ tagsSeleted })
+  }
 
   render() {
     const { name } = this.props
@@ -1333,6 +1394,7 @@ class SingleMap extends React.Component {
     const { x, x2n, y, xValue, x2ndValue, yValue, ifAvg } = this.state
     const { infos, indexStyle } = this.state
     const { dsa, sortName, dsaOrder, dsaTableData } = this.state
+    const { tags, tagsSeleted, defectClass } = this.state
 
     if (dsa) this.onGenerateDSAChart()
     else this.onGenerateParetoChart()
@@ -1343,6 +1405,13 @@ class SingleMap extends React.Component {
       { title: 'defectId', dataIndex: 'defectId', key: 'defectId' },
       { title: 'scanTime', dataIndex: 'scanTm', key: 'scanTm' },
       { title: 'image', dataIndex: 'imgUrl', key: 'imgUrl' }
+    ]
+    const infoColumns = [
+      { title: 'Lot ID', dataIndex: 'lotId' },
+      { title: 'Wafer No', dataIndex: 'waferNo' },
+      { title: 'Product ID', dataIndex: 'productId' },
+      { title: 'Step ID', dataIndex: 'stepId' },
+      { title: 'Scan Time', dataIndex: 'scanTm' }
     ]
 
     return (
@@ -1622,37 +1691,62 @@ class SingleMap extends React.Component {
           </StyleDSA>
         </div>
 
-        <StyleInfo>
-          {Object.keys(infos).map((key, index) => (
-            <div key={index} className='infoList'>
-              <span className='infoName'>{key}</span>
-              <span className={indexStyle[index] ? 'infoDetail' : ''} onClick={() => this.onInfoToggle(index)}>
-                {infos[key].map((item, index) => (
-                  <span key={index}>
-                    {index > 0 ? ', ' : ''}
-                    {item}
-                  </span>
-                ))}
-              </span>
-            </div>
-          ))}
-        </StyleInfo>
+        <Table pagination={false} className='single-map-table' size='small' bordered rowKey={r => `${r.lotId}${r.waferNo}${r.productId}${r.stepId}${r.scanTm}`} columns={infoColumns} dataSource={singleWaferKey} />
 
-        <Button type='primary' onClick={this.onDsaToggle}>
-          {dsa ? 'Single Wafer' : 'DSA'}
+        <Button type='primary' style={{ marginTop: 20 }} onClick={this.onDsaToggle}>
+          {dsa ? 'Single Map' : 'DSA'}
         </Button>
 
         {dsa ? (
-          <Table columns={dsaTableColumns} dataSource={dsaTableData} />
+          <Table pagination={false} className='single-map-table' size='small' bordered columns={dsaTableColumns} dataSource={dsaTableData} />
         ) : null}
 
-        <CommonDrawer ref={r => (this.drawer = r)} width={550}>
+        <CommonDrawer ref={r => (drawer = r)} width={500}>
           <section>
-            <h3 style={{ width: 60 }}>Filters</h3>
-            <Form layout='vertical' labelCol={{ span: 5 }}>
-              <Form.Item label='Defect Class:'>1</Form.Item>
-              <Form.Item label=' '>
-                <Button onClick={this.onFilterSubmit} type='primary'>
+            <h3>Filter</h3>
+            <Form layout='vertical' labelCol={{ span: 5 }} wrapperCol={{ span: 19 }}>
+              <Form.Item label='Defect class:'>
+                <Radio.Group onChange={this.onDefectClassChange}>
+                  {defectClassList.map(t => (
+                    <Radio key={t[1]} value={t[1]}>
+                      {t[0]}
+                    </Radio>
+                  ))}
+                </Radio.Group>
+              </Form.Item>
+              {defectClass ? (
+                <Form.Item label=' '>
+                  <Checkbox.Group options={tags[defectClass]} onChange={this.onDefectClassDetailChange} />
+                </Form.Item>
+              ) : null}
+              <Form.Item label='Defect size:'>
+                <Input style={{ width: 60 }} onChange={e => this.onDefectSizeChange(0, e.target.value)} size='small' />
+                -
+                <Input style={{ width: 60 }} onChange={e => this.onDefectSizeChange(1, e.target.value)} size='small' />
+              </Form.Item>
+              <Form.Item label='Test:'>
+                <Checkbox.Group options={tags.tests} onChange={v => this.onDefectFiltersChange('tests', v)} />
+              </Form.Item>
+              <Form.Item label='Cluster:'>
+                <Checkbox.Group options={tags.clusterIds} onChange={v => this.onDefectFiltersChange('clusterIds', v)} />
+              </Form.Item>
+              <Form.Item label='Adder:'>
+                <Checkbox onChange={e => this.setState({ adderFlag: e.target.checked ? ['Y'] : ['N'] })} />
+              </Form.Item>
+              <Form.Item label='Repeater:'>
+                <Checkbox.Group
+                  options={tags.repeaterIds}
+                  onChange={v => this.onDefectFiltersChange('repeaterIds', v)}
+                />
+              </Form.Item>
+              <Form.Item label='Zone:'>
+                <Checkbox.Group options={tags.zoneIds} onChange={v => this.onDefectFiltersChange('zoneIds', v)} />
+              </Form.Item>
+              <Form.Item label='Sub Die:'>
+                <Checkbox.Group options={tags.subDieIds} onChange={v => this.onDefectFiltersChange('subDieIds', v)} />
+              </Form.Item>
+              <Form.Item label=' ' style={{ textAlign: 'right' }}>
+                <Button type='primary' onClick={this.onFilterSubmit}>
                   Submit
                 </Button>
               </Form.Item>
