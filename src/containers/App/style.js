@@ -43,11 +43,16 @@ export const Menu = styled.div`
         i {
           border-radius: 50%;
           width: 40px;
-          line-height: 40px;
+          height: 40px;
+          display: flex;
+          height: 40px;
+          justify-content: center;
+          align-items: center;
+          font-size: 18px;
           background-color: rgba(255, 255, 255, 0.1);
         }
         span {
-          font-size: 14px;
+          font-size: 12px;
           font-weight: 300;
         }
       }

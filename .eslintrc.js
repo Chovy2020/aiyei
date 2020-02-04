@@ -36,7 +36,7 @@ module.exports = {
     // 'import/no-extraneous-dependencies': [2, { devDependencies: true }],
     'react/prop-types': 0,
     'no-param-reassign': 0,
-    'no-unused-vars': 1,
+    'no-unused-vars': 0,
     // 'react/forbid-prop-types': 0,
     // 'jsx-a11y/anchor-is-valid': 0,
 

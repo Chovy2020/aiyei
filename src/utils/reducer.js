@@ -1,4 +1,5 @@
 const initialState = {
+  activeMenu: 'toolbox',
   toolBoxLoading: false,
   previousPage: '0',
   /**
@@ -41,6 +42,11 @@ const initialState = {
 
 const initReducer = (state = initialState, action) => {
   switch (action.type) {
+    case 'CHANGE_MENU':
+      return {
+        ...state,
+        activeMenu: action.payload
+      }
     case 'CHANGE_TOOLBOX_LOADING':
       return {
         ...state,

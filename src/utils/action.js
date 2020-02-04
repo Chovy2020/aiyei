@@ -8,3 +8,8 @@ export const changeToolboxLoading = payload => ({
   type: 'CHANGE_TOOLBOX_LOADING',
   payload
 })
+
+export const changeMenu = payload => ({
+  type: 'CHANGE_MENU',
+  payload
+})
