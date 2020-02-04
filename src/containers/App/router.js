@@ -12,7 +12,6 @@ import Toolbox from '@/pages/Toolbox'
 import Setup from '@/pages/Setup'
 import Page404 from '@/pages/Account/404'
 
-
 const routes = {
   '/toolbox': Toolbox,
   '/setup': Setup,
@@ -33,7 +32,7 @@ class App extends React.Component {
     }
     this.props.changeMenu(activeMenu)
   }
-  
+
   onMenuChange = activeMenu => {
     this.props.changeMenu(activeMenu)
   }
@@ -50,7 +49,11 @@ class App extends React.Component {
           <Menu>
             <ul>
               {MENUS.map(m => (
-                <li onClick={() => this.onMenuChange(m.link)} className={activeMenu === m.link ? 'active' : ''} key={m.link}>
+                <li
+                  onClick={() => this.onMenuChange(m.link)}
+                  className={activeMenu === m.link ? 'active' : ''}
+                  key={m.link}
+                >
                   <Link to={m.link}>
                     <Icon type={m.icon} />
                     <span>{m.title}</span>
@@ -73,7 +76,5 @@ class App extends React.Component {
 }
 
 const mapStateToProps = state => ({ ...state.Init })
-const mapDispatchToProps = {
-  changeMenu
-}
+const mapDispatchToProps = { changeMenu }
 export default connect(mapStateToProps, mapDispatchToProps)(App)
