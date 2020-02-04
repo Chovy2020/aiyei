@@ -1,7 +1,6 @@
-/* eslint-disable */
 import React from 'react'
 import { connect } from 'react-redux'
-import { Icon, Tabs, Spin } from 'antd'
+import { Icon, Tabs, Spin, Tooltip } from 'antd'
 import { TOOLS } from '@/utils/const'
 import { changePreviousPage, initPage } from './action'
 import { StyleToolbox, Tools, Content, StyleTabPane } from './style'
@@ -17,8 +16,8 @@ class Toolbox extends React.Component {
     this.state = {
       activeKey: '1',
       tabCount: 1,
-      // panes: [{ type: 'Single Map', name: '1' }]
-      panes: [{ type: 'Data Query', name: '1' }]
+      panes: [{ type: 'Single Map', name: '1' }]
+      // panes: [{ type: 'Data Query', name: '1' }]
     }
   }
 
@@ -28,20 +27,20 @@ class Toolbox extends React.Component {
 
   generatePage = ({ type, name }) => {
     switch (type) {
-    case 'Data Query':
-      return <DataQuery name={name} addTab={this.addTab} />
-    case 'Map Gallery':
-      return <MapGallery name={name} addTab={this.addTab} />
-    case 'Image Gallery':
-      return <ImageGallery name={name} addTab={this.addTab} />
-    case 'Single Map':
-      return <SingleMap name={name} addTab={this.addTab} />
-    case 'Chart Selection':
-      return <ChartSelection name={name} addTab={this.addTab} />
-    default:
-      return null
+      case 'Data Query':
+        return <DataQuery name={name} addTab={this.addTab} />
+      case 'Map Gallery':
+        return <MapGallery name={name} addTab={this.addTab} />
+      case 'Image Gallery':
+        return <ImageGallery name={name} addTab={this.addTab} />
+      case 'Single Map':
+        return <SingleMap name={name} addTab={this.addTab} />
+      case 'Chart Selection':
+        return <ChartSelection name={name} addTab={this.addTab} />
+      default:
+        return null
+    }
   }
-}
 
   onTabChange = activeKey => {
     this.setState({ activeKey })
@@ -81,11 +80,13 @@ class Toolbox extends React.Component {
     const { toolBoxLoading } = this.props
 
     return (
-    <Spin spinning={toolBoxLoading} style={{ maxHeight: '100vh' }}>
-      <StyleToolbox>
+      <Spin spinning={toolBoxLoading} style={{ maxHeight: '100vh' }}>
+        <StyleToolbox>
           <Tools>
             {TOOLS.map(t => (
-              <Icon type={t.icon} key={t.icon} theme='filled' onClick={() => this.addTab(t.type)} />
+              <Tooltip placement='right' title={t.type} key={t.icon}>
+                <Icon type={t.icon} theme='filled' onClick={() => this.addTab(t.type)} />
+              </Tooltip>
             ))}
           </Tools>
           <Content>
@@ -97,8 +98,8 @@ class Toolbox extends React.Component {
               ))}
             </Tabs>
           </Content>
-      </StyleToolbox>
-    </Spin>
+        </StyleToolbox>
+      </Spin>
     )
   }
 }

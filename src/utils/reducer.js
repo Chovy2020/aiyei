@@ -26,13 +26,22 @@ const initialState = {
     '0': {
       wafers: [
         {
-          lotId: 'SQCA00019',
-          stepId: '4628_KTCTBRDP',
-          waferNo: '10.10',
-          productId: 'GDM119',
-          scanTm: '2009-07-06 09:34:44',
+          lotId: 'B0001.000',
+          stepId: 'P1_ASI',
+          waferNo: '1',
+          productId: 'Device01',
+          scanTm: '2018-06-05 12:30:35',
           defects: [],
-          defectIdRedisKey: 'ef5e0299-f3f0-4d8c-91be-61d79e55ce6a'
+          defectIdRedisKey: '9c7159ca-22d7-47c9-af6b-9cb0d224c024'
+        },
+        {
+          lotId: 'B0001.000',
+          stepId: 'M3_CMP',
+          waferNo: '1',
+          productId: 'Device01',
+          scanTm: '2018-06-05 12:30:35',
+          defects: [],
+          defectIdRedisKey: 'd9f559e3-94f9-4d32-809d-0332f82f0ae2'
         }
       ],
       bars: []

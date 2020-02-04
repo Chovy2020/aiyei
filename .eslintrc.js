@@ -37,8 +37,8 @@ module.exports = {
     'react/jsx-filename-extension': [2, { extensions: ['.js', '.jsx', '.tsx'] }],
     'jsx-quotes': ['error', 'prefer-single'],
     'react/prefer-stateless-function': 0,
-    'import/no-unresolved': 0,
-    'import/extensions': 0,
+    'import/no-unresolved': 1,
+    'import/extensions': 1,
     'comma-dangle': ['error', 'never'],
     'arrow-parens': ['error', 'as-needed'],
     'object-curly-newline': [

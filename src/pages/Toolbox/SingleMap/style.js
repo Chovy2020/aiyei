@@ -70,6 +70,7 @@ export const StyleWafer = styled.div`
         cursor: pointer;
         margin-bottom: 5px;
         height: 20px;
+        font-size: 18px;
       }
       i.checked,
       i:hover {
