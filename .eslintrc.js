@@ -32,8 +32,8 @@ module.exports = {
     'react/destructuring-assignment': 0,
 
     // 自定义
-    'semi': [2, 'never'],
-    'max-len': ["error", { "code": 120 }],
+    semi: [2, 'never'],
+    'max-len': ['error', { code: 120 }],
     'react/jsx-filename-extension': [2, { extensions: ['.js', '.jsx', '.tsx'] }],
     'jsx-quotes': ['error', 'prefer-single'],
     'react/prefer-stateless-function': 0,
@@ -44,10 +44,10 @@ module.exports = {
     'object-curly-newline': [
       'error',
       {
-        ObjectExpression: { multiline: true },
-        ObjectPattern: { multiline: true },
-        ImportDeclaration: { multiline: true },
-        ExportDeclaration: { multiline: true }
+        ObjectExpression: 'never',
+        ObjectPattern: 'never',
+        ImportDeclaration: 'never',
+        ExportDeclaration: 'never'
       }
     ],
     'jsx-a11y/click-events-have-key-events': 0,

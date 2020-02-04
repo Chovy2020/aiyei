@@ -1,22 +1,6 @@
 import React from 'react'
 import { connect } from 'react-redux'
-import {
-  Form,
-  Dropdown,
-  Menu,
-  Tooltip,
-  Modal,
-  Select,
-  Pagination,
-  Radio,
-  Checkbox,
-  Button,
-  Input,
-  Table,
-  Icon,
-  InputNumber,
-  message
-} from 'antd'
+import { Form, Dropdown, Menu, Tooltip, Modal, Select, Pagination, Radio, Checkbox, Button, Input, Table, Icon, InputNumber, message } from 'antd'
 import _ from 'lodash'
 import zrender from 'zrender'
 import Heatmap from 'heatmap.js'
@@ -28,18 +12,8 @@ import { changeWaferSelected } from '@/utils/action'
 import { post, download } from '@/utils/api'
 import CommonDrawer from '@/components/CommonDrawer'
 import { SORT_LIST, SORT_ORDER_LIST, COMMANDS, TOOL_TIPS, MAP_TYPES, DEFECT_CLASS_LIST } from './constant'
-import {
-  reclassifyParams,
-  getImages,
-  updateCorrect,
-  deleteCorrect,
-  getX,
-  getX2nd,
-  getY,
-  getDp,
-  getDSATableData
-} from './service'
-import { StyleSingleMap, StyleWafer, StylePareto, StyleChart, StyleDSA } from './style'
+import { reclassifyParams, getImages, updateCorrect, deleteCorrect, getX, getX2nd, getY, getDp, getDSATableData } from './service'
+import { StyleSingleMap, StyleWafer, StylePareto, StyleChart, StyleDSA, StyleImages } from './style'
 import { getWaferSelected } from '@/utils/store'
 
 // eslint-disable-next-line
@@ -77,7 +51,6 @@ class SingleMap extends React.Component {
       selectedBar: [],
       colorsObj: {},
       /* Wafer */
-      imageInfos: [],
       angel: 0,
       customizeAngel: false,
       selectedAction: '',
@@ -109,8 +82,9 @@ class SingleMap extends React.Component {
       ifAvg: 'sum',
       allBar: [],
       /* Image Detail */
-      pageSize: 10,
-      infoPages: [],
+      defectImages: [],
+      currentImages: [],
+      imagesTotal: 0,
       /* DSA Pareto */
       sortName: '1',
       dsaOrder: '1',
@@ -155,23 +129,32 @@ class SingleMap extends React.Component {
     let { wafers } = getWaferSelected()
     if (wafers.length === 0) {
       wafers = [
+        // {
+        //   lotId: 'B0001.000',
+        //   stepId: 'P1_ASI',
+        //   waferNo: '1',
+        //   productId: 'Device01',
+        //   scanTm: '2018-06-05 12:30:35',
+        //   defects: [],
+        //   defectIdRedisKey: '9c7159ca-22d7-47c9-af6b-9cb0d224c024'
+        // },
+        // {
+        //   lotId: 'B0001.000',
+        //   stepId: 'M3_CMP',
+        //   waferNo: '1',
+        //   productId: 'Device01',
+        //   scanTm: '2018-06-05 12:30:35',
+        //   defects: [],
+        //   defectIdRedisKey: 'd9f559e3-94f9-4d32-809d-0332f82f0ae2'
+        // },
         {
-          lotId: 'B0001.000',
-          stepId: 'P1_ASI',
-          waferNo: '1',
-          productId: 'Device01',
-          scanTm: '2018-06-05 12:30:35',
+          lotId: 'SQCA00019',
+          stepId: '4628_KTCTBRDP',
+          waferNo: '10.10',
+          productId: 'GDM119',
+          scanTm: '2009-07-06 09:34:44',
           defects: [],
-          defectIdRedisKey: '9c7159ca-22d7-47c9-af6b-9cb0d224c024'
-        },
-        {
-          lotId: 'B0001.000',
-          stepId: 'M3_CMP',
-          waferNo: '1',
-          productId: 'Device01',
-          scanTm: '2018-06-05 12:30:35',
-          defects: [],
-          defectIdRedisKey: 'd9f559e3-94f9-4d32-809d-0332f82f0ae2'
+          defectIdRedisKey: '7a193ae0-f889-4839-8a10-ce7cfb1d944b'
         }
       ]
     }
@@ -242,6 +225,8 @@ class SingleMap extends React.Component {
     await delay(1)
     //  判断是否点击了小圆点
     group.on('click', async e => {
+      this.setState({ imageVisible: true })
+      await delay(1)
       if (e.target.shape.r) {
         const imgDom = document.getElementById(`img-${name}`)
         if (!imgDom) {
@@ -252,10 +237,11 @@ class SingleMap extends React.Component {
         const x = e.target.shape.cx
         const y = e.target.shape.cy
         const emitObj = []
+        const { data } = this.state
         pointIdsMapping.forEach((item, index) => {
           const pointCoordinate = item[`${x},${y}`]
           if (pointCoordinate) {
-            const { lotId, waferNo, productId, stepId, scanTm } = this.data[index]
+            const { lotId, waferNo, productId, stepId, scanTm } = data[index]
             const defectsInfomation = { lotId, waferNo, productId, stepId, scanTm, defects: pointCoordinate }
             emitObj.push(defectsInfomation)
           }
@@ -276,31 +262,37 @@ class SingleMap extends React.Component {
               arr.push({ lotId, waferNo, defects, image: 'http://161.189.50.41:80' + item })
             })
           }
-          this.setState({ imageInfos: arr })
+          this.setState({ defectImages: arr, imagesTotal: arr.length })
+          await delay(1)
+          this.onImageDetailPageChange(1)
         }
       }
     })
     this.onWaferInit()
     this.checkArea()
     zr.on('mousewheel', e => {
-      const dataOption = this.getDataOption()
-      const { waferLocation } = dataOption
-      let times
       e = e || window.event
       const { mapType } = this.state
       if (mapType !== 'Heat Map' && e.wheelDelta) {
+        const dataOption = this.getDataOption()
+        const { waferLocation } = dataOption
+        let times = 1
         //第一步：先判断浏览器IE，谷歌滑轮事件
         if (e.wheelDelta > 0) {
           //当滑轮向上滚动时
           times = zoomTimes * 2
           // console.log(e.offsetX, e.offsetY)
         }
+
         if (e.wheelDelta < 0) {
           //当滑轮向下滚动时
-          if (zoomTimes !== 1) {
-            times = zoomTimes / 2
+          if (zoomTimes === 1) {
+            // message.warning('当前已经是1x，不能继续缩放。')
+            return
           }
+          times = zoomTimes / 2
         }
+        // console.log('当前的缩放倍数', zoomTimes, times)
         const x = parseInt((e.offsetX - waferLocation.x) / zoomTimes)
         const y = parseInt((e.offsetY - waferLocation.y) / zoomTimes)
         if (timeout) clearTimeout(timeout)
@@ -436,10 +428,10 @@ class SingleMap extends React.Component {
   }
   // image detail
   onImageDetailPageChange = pageNo => {
-    const pageStart = (pageNo - 1) * 10
-    const { imageInfos } = this.state
-    const infoPages = imageInfos.slice(pageStart, pageStart + 10)
-    this.setState({ infoPages })
+    const pageStart = (pageNo - 1) * 5
+    const { defectImages } = this.state
+    const currentImages = defectImages.slice(pageStart, pageStart + 5)
+    this.setState({ currentImages })
   }
   onDoAction = async func => {
     // console.log(func)
@@ -524,6 +516,8 @@ class SingleMap extends React.Component {
     group.removeAll()
     const res = await this.getData(options)
     this.setState({ data: res })
+    // 同时更新缩放倍数
+    if (res.length > 0) zoomTimes = res[0].magnification
     const { mapType } = this.state
     if (mapType === 'Map/Pareto' || mapType === 'Heat Map') this.renderOutterCircle()
     this.renderRects()
@@ -1216,7 +1210,7 @@ class SingleMap extends React.Component {
   /* - - - - - - - - - - - - DSA End - - - - - - - - - - - -  */
 
   /* - - - - - - - - - - - - Filters - - - - - - - - - - - -  */
-  onFilterSubmit = () => {}
+  onFilterSubmit = () => { }
   onDefectClassChange = e => {
     const { tagsSeleted } = this.state
     tagsSeleted.mbs = []
@@ -1250,7 +1244,8 @@ class SingleMap extends React.Component {
       singleWaferKey,
       mapType,
       angel,
-      infoPages,
+      currentImages,
+      imagesTotal,
       imageVisible,
       selectedAction,
       heatMin,
@@ -1334,13 +1329,10 @@ class SingleMap extends React.Component {
                   style={zoomTimes === 1 ? { transform: `rotate(${angel}deg)` } : {}}
                 ></div>
                 {imageVisible ? (
-                  <div id={`img-${name}`} className='single-map-img'>
-                    <br />
-                    <div ref='detailInfo'></div>
-                    {/* image detail */}
+                  <StyleImages id={`img-${name}`}>
                     <div className='imageDetail'>
                       <ul className='imageContent'>
-                        {infoPages.map((item, index) => (
+                        {currentImages.map((item, index) => (
                           <li key={index}>
                             <img src={item.image} alt='' />
                             <div>Lot Id:{item.lotId}</div>
@@ -1349,23 +1341,16 @@ class SingleMap extends React.Component {
                           </li>
                         ))}
                       </ul>
-                      <Pagination
-                        total={100}
-                        showTotal={t => `Total: ${t}`}
-                        pageSize={10}
-                        defaultCurrent={1}
-                        onChange={this.onImageDetailPageChange}
-                      />
                     </div>
-
-                    <span
-                      id={`close-${name}`}
-                      className='single-map-close'
-                      onClick={() => this.setState({ imageVisible: false })}
-                    >
-                      X
-                    </span>
-                  </div>
+                    <Pagination
+                      simple
+                      size='small'
+                      total={imagesTotal}
+                      pageSize={5}
+                      onChange={this.onImageDetailPageChange}
+                    />
+                    <Icon type='close' onClick={() => this.setState({ imageVisible: false })} />
+                  </StyleImages>
                 ) : null}
               </div>
               {mapType !== 'Heat Map' ? (
@@ -1411,7 +1396,14 @@ class SingleMap extends React.Component {
                   </Button>
                 </Form.Item>
                 <Form.Item label='自定义角度'>
-                  <InputNumber min={0} max={360} size='small' style={{ width: 100, textAlign: 'center' }} onChange={rotationDegree => this.setState({ rotationDegree })} /> °
+                  <InputNumber
+                    min={0}
+                    max={360}
+                    size='small'
+                    style={{ width: 100, textAlign: 'center' }}
+                    onChange={rotationDegree => this.setState({ rotationDegree })}
+                  />{' '}
+                  °
                 </Form.Item>
               </Form>
             </Modal>
