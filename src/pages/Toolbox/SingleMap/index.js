@@ -535,6 +535,7 @@ class SingleMap extends React.Component {
     } else {
       src = `dm${MAP_TYPES[mapType]}`
     }
+    // eslint-disable-next-line
     const { singleWaferKey, tagsSeleted, adderFlag, defectSize, stxaxis, selectAction } = this.state
     return await post(src, {
       singleWaferKey,
@@ -679,7 +680,7 @@ class SingleMap extends React.Component {
   }
   // 渲染出的点的id集合
   waferDefectsGroup = () => {
-    const waferDefects = []
+    const wafers = []
     const { data } = this.state
     for (const i in pointIdsMapping) {
       const singleWaferDefects = []
@@ -687,10 +688,10 @@ class SingleMap extends React.Component {
       for (const j in pointIdsMapping[i]) {
         singleWaferDefects.push(...pointIdsMapping[i][j])
       }
-      waferDefects.push({ lotId, waferNo, productId, stepId, scanTm, defects: singleWaferDefects || [] })
+      wafers.push({ lotId, waferNo, productId, stepId, scanTm, defects: singleWaferDefects || [] })
     }
     const { name } = this.props
-    this.props.changeWaferSelected({ page: name, wafers: waferDefects })
+    this.props.changeWaferSelected({ name, wafers, bars: [] })
   }
   // 处理单个点
   dealPoint = (coordinate, idList, pointColor, index) => {

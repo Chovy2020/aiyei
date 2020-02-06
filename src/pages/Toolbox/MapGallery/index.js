@@ -494,9 +494,9 @@ class MapGallery extends React.Component {
     this.setState({ selected, selectedAndKey })
     // 同步缓存到store
     this.props.changeWaferSelected({
-      page: name,
+      name,
       wafers,
-      selectedBar: []
+      bars: []
     })
   }
 
@@ -528,9 +528,9 @@ class MapGallery extends React.Component {
     const { name } = this.props
     this.setState({ selected: [] })
     this.props.changeWaferSelected({
-      page: name,
+      name,
       wafers: [],
-      selectedBar: []
+      bars: []
     })
   }
 

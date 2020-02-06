@@ -15,6 +15,7 @@ module.exports = {
     sourceType: 'module'
   },
   rules: {
+    'indent': ["error", 2, { "SwitchCase": 1 }],
     'no-restricted-syntax': 0,
     'no-console': 0,
     // 'import/prefer-default-export': 0,

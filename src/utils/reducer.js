@@ -85,8 +85,8 @@ const initReducer = (state = initialState, action) => {
     }
     case 'CHANGE_WAFER_SELECTED': {
       const { waferSelected } = state
-      const { page, wafers, bars } = action.payload
-      waferSelected[page] = { wafers, bars }
+      const { name, wafers, bars } = action.payload
+      waferSelected[name] = { wafers, bars }
       return {
         ...state,
         waferSelected
