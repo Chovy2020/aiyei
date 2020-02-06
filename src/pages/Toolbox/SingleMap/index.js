@@ -184,13 +184,11 @@ class SingleMap extends React.Component {
       console.log('dsaChartDom not found')
     }
   }
-
   // computed
   getDataOption = () => {
     const { data } = this.state
     return data[0] || {}
   }
-
   // watch selectAction change
   watchStxaxis = () => {
     this.onWaferInit()
@@ -537,11 +535,15 @@ class SingleMap extends React.Component {
     } else {
       src = `dm${MAP_TYPES[mapType]}`
     }
-    const { singleWaferKey, filter, stxaxis, selectAction } = this.state
+    const { singleWaferKey, tagsSeleted, adderFlag, defectSize, stxaxis, selectAction } = this.state
     return await post(src, {
       singleWaferKey,
       canvas: { canvasSize: 400, magnification: `${times}`, centralLocation: x + ',' + y },
-      filter,
+      filter: {
+        // ...tagsSeleted,
+        // adder: adderFlag ? ['Y'] : ['N'],
+        // defectSize
+      },
       pareto: stxaxis,
       selectAction,
       dsaOrder: dsaInfo.dsaOrder || '',
@@ -1006,7 +1008,11 @@ class SingleMap extends React.Component {
   /* - - - - - - - - - - - - DSA - - - - - - - - - - - -  */
   // DSA Pareto 切换
   onDsaToggle = () => {
-    const { dsa } = this.state
+    const { dsa, singleWaferKey } = this.state
+    if (singleWaferKey.length < 2) {
+      message.error('至少选择2片wafer，才能比较')
+      return
+    }
     this.setState({ dsa: !dsa, colorsObj: {}, selectedBar: [], dsaInfo: dsa ? {} : { dsaOrder: '1', sortName: '1' } })
     this.watchDSAInfo()
   }
@@ -1210,7 +1216,10 @@ class SingleMap extends React.Component {
   /* - - - - - - - - - - - - DSA End - - - - - - - - - - - -  */
 
   /* - - - - - - - - - - - - Filters - - - - - - - - - - - -  */
-  onFilterSubmit = () => { }
+  onFilterSubmit = () => {
+    drawer.onClose()
+    this.onWaferInit()
+  }
   onDefectClassChange = e => {
     const { tagsSeleted } = this.state
     tagsSeleted.mbs = []
