@@ -12,7 +12,7 @@ export const StyleImageGallery = styled.div`
 
 export const StyleImages = styled.ul`
   width: 100%;
-  padding: 0 109px;
+  padding: 0 99px;
   flex-wrap: wrap;
   box-sizing: border-box;
   display: flex;

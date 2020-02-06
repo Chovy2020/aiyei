@@ -1,56 +1,31 @@
-/* eslint-disable */
 import React from 'react'
-import { connect } from 'react-redux'
-import { Form, Select, Pagination, Radio, Checkbox, Button, Input, Upload, Icon, message } from 'antd'
-// import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
-// import _ from 'lodash'
-// import { injectReducer } from '@/utils/store'
+import { Form, Select, Pagination, Checkbox, Button, message } from 'antd'
+import CommonDrawer from '@/components/CommonDrawer'
 import { delay } from '@/utils/web'
-// import { changeForm, changeItems } from './action'
-// import { DATA_QUERY_QUERY, DATA_QUERY_INIT } from './constant'
-// import reducer from './reducer'
+import { getWaferSelected } from '@/utils/store'
+import { LAYOUT_SIZE, VIEW_GROUPS, CATEGORY_TYPES, getLotId, getWaferNo, getDefectId, getEquipId } from './constant'
 import { getClassCodes, getViewFilters, getImages, updateDefectGroup } from './service'
 import { StyleImageGallery, StyleImages } from './style'
-import CommonDrawer from '@/components/CommonDrawer'
-import { getWaferSelected } from '@/utils/store'
 
-const layoutSize = [3, 4, 5]
-const getLotId = waferId => waferId.split('|')[0]
-const getWaferNo = waferId => waferId.split('|')[3]
-const getDefectId = waferId => waferId.split('|')[5]
-const getEquipId = waferId => waferId.split('|')[6]
 let drawer = null
 
 class ImageGallery extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      waferSelected: [], // 从MapGallery选中的wafer列表
+      // store waferSelected
+      wafers: [],
+      bars: [],
+      // 图片布局
       layout: {
-        num1: 3,
+        num1: 5,
         num2: 3,
       },
       showLabel: true,
-      categoryTypes: [
-        ['Manual Bin', 'mb'],
-        ['Rough Bin', 'rb'],
-        ['ADC Bin', 'adc']
-      ],
       categoryType: 'mb',
       classCodes: [], // ！通过接口获取
       classCode: '',
-      viewGroups: [
-        ['Manual Bin', 'mb'],
-        ['Rough Bin', 'rb'],
-        ['ADC Bin', 'adc'],
-        ['Lot ID', 'lotId'],
-        ['Wafer ID', 'waferId'],
-        ['Step ID', 'stepId'],
-        ['Product ID', 'productId'],
-        ['scan time', 'scanTm'],
-        ['review time', 'reviewTm']
-      ],
-      viewGroup: '',
+      viewGroup: 'mb',
       viewFilters: [], // ！通过接口获取
       viewFilter: [],
       images: [],
@@ -62,17 +37,20 @@ class ImageGallery extends React.Component {
   }
 
   async componentDidMount() {
+    const { wafers, bars } = getWaferSelected()
+    this.setState({ wafers, bars })
     await this.loadClassCodes()
     await this.loadImages()
     this.loadViewFilters()
   }
-
+  // 通过接口获取 classCodes
   loadClassCodes = async () => {
     const classCodes = await getClassCodes()
     this.setState({ classCodes })
   }
+  // 通过接口获取 filters
   loadViewFilters = async () => {
-    const { wafers, bars } = getWaferSelected()
+    const { wafers, bars } = this.state
     let viewFilters = await getViewFilters({ imageInfo: wafers, bars })
     viewFilters = viewFilters.map(item => `${item}`)
     this.setState({ viewFilters })
@@ -80,9 +58,7 @@ class ImageGallery extends React.Component {
   // 获取图片链接的列表 + 过滤
   loadImages = async () => {
     await delay(1)
-    const { viewGroup, viewFilter } = this.state
-    const { wafers, bars } = getWaferSelected()
-    console.log(wafers.length)
+    const { viewGroup, viewFilter, wafers } = this.state
     if (wafers.length === 0) return
     const data = {
       imageGroupBy: viewGroup,
@@ -98,23 +74,23 @@ class ImageGallery extends React.Component {
           url,
           id
         })
-    this.setState({ images, total: images.length || 0 })
+    this.setState({ images, total: images.length || 0, pageNo: 1 })
     // 默认显示第一页的图片
     this.generateImages()
   }
-
+  // 修改图片布局
   onLayoutChange = (key, value) => {
     const { layout } = this.state
     layout[key] = value
     this.setState({ layout })
     this.generateImages()
   }
-
+  // 分页切换
   onPageSizeChange = pageNo => {
     this.setState({ pageNo })
     this.generateImages()
   }
-
+  // 从缓存取出图片，前端分页
   generateImages = async () => {
     await delay(1)
     const { layout, pageNo, images  } = this.state
@@ -122,7 +98,7 @@ class ImageGallery extends React.Component {
     const currentImages = images.filter((img, index) => index >= pageSize * (pageNo - 1) && index < pageSize * pageNo)
     this.setState({ currentImages })
   }
-
+  // 选择/反选图片
   onSelect = id => {
     let { selected } = this.state
     if (selected.includes(id)) {
@@ -132,7 +108,7 @@ class ImageGallery extends React.Component {
     }
     this.setState({ selected })
   }
-
+  // 图片分类提交
   onFormSubmit = async () => {
     const { selected, categoryType, classCode } = this.state
     if (selected.length === 0) {
@@ -150,17 +126,14 @@ class ImageGallery extends React.Component {
     await this.loadImages()
     this.loadViewFilters()
   }
-
-  onDefectClassChange = () => {}
-
+  // 侧边栏 筛选
   onFilterSubmit = () => {
     drawer.onClose()
     this.loadImages()
   }
 
   render() {
-    // const { name } = this.props
-    const { layout, categoryTypes, classCodes, categoryType, classCode, viewGroups, viewFilters, currentImages, total, pageNo, showLabel, selected } = this.state
+    const { layout, classCodes, categoryType, classCode, viewGroup, viewFilters, currentImages, total, pageNo, showLabel, selected } = this.state
     const { num1, num2 } = layout
 
     return (
@@ -168,7 +141,7 @@ class ImageGallery extends React.Component {
         <Form layout='vertical' labelCol={{ span: 2 }}>
           <Form.Item label='Layout:'>
             <Select defaultValue={num1} style={{ width: 60 }} onChange={v => this.onLayoutChange('num1', v)}>
-              {layoutSize.map(s => (
+              {LAYOUT_SIZE.map(s => (
                 <Select.Option value={s} key={s}>
                   {s}
                 </Select.Option>
@@ -176,7 +149,7 @@ class ImageGallery extends React.Component {
             </Select>
             <span style={{ marginRight: 10 }}>X</span>
             <Select defaultValue={num2} style={{ width: 60 }} onChange={v => this.onLayoutChange('num2', v)}>
-              {layoutSize.map(s => (
+              {LAYOUT_SIZE.map(s => (
                 <Select.Option value={s} key={s}>
                   {s}
                 </Select.Option>
@@ -188,7 +161,7 @@ class ImageGallery extends React.Component {
           </Form.Item>
           <Form.Item label='Classified:'>
             <Select style={{ width: 120 }} defaultValue={categoryType} onChange={categoryType => this.setState({ categoryType })}>
-              {categoryTypes.map(t => (
+              {CATEGORY_TYPES.map(t => (
                 <Select.Option value={t[1]} key={t[1]}>
                   {t[0]}
                 </Select.Option>
@@ -202,7 +175,7 @@ class ImageGallery extends React.Component {
               ))}
             </Select>
             <Button onClick={this.onFormSubmit} type='primary'>
-              Ok
+              Ok {selected.length > 0 ? `(${selected.length * 2})` : ''}
             </Button>
             <Button onClick={() => this.setState({ selected: [] })} type='dashed'>
               Reset
@@ -226,15 +199,15 @@ class ImageGallery extends React.Component {
           ))}
         </StyleImages>
 
-        <Pagination hideOnSinglePage total={total} showTotal={t => `Total: ${t}`} pageSize={num1 * num2} defaultCurrent={pageNo} onChange={this.onPageSizeChange} />
+        <Pagination hideOnSinglePage total={total} showTotal={t => `Total: ${t}`} pageSize={num1 * num2} current={pageNo} onChange={this.onPageSizeChange} />
         
         <CommonDrawer ref={r => (drawer = r)} width={550}>
           <section>
             <h3 style={{ width: 140 }}>Display Settings</h3>
             <Form layout='vertical' labelCol={{ span: 5 }}>
               <Form.Item label='Group View:'>
-                <Select style={{ width: 120 }} onChange={viewGroup => this.setState({ viewGroup })}>
-                  {viewGroups.map(g => (
+                <Select style={{ width: 120 }} defaultValue={viewGroup} onChange={viewGroup => this.setState({ viewGroup })}>
+                  {VIEW_GROUPS.map(g => (
                     <Select.Option value={g[1]} key={g[1]}>
                       {g[0]}
                     </Select.Option>
@@ -245,7 +218,7 @@ class ImageGallery extends React.Component {
                 <Checkbox.Group options={viewFilters} onChange={viewFilter => this.setState({ viewFilter })} />
               </Form.Item>
               <Form.Item label=' '>
-                <Button onClick={this.onFilterSubmit} type='primary'>
+                <Button onClick={this.onFilterSubmit} style={{ float: 'right' }} type='primary'>
                   Submit
                 </Button>
             </Form.Item>
@@ -257,9 +230,4 @@ class ImageGallery extends React.Component {
   }
 }
 
-// injectReducer('ImageGallery', reducer)
-const mapStateToProps = state => ({
-  ...state.Init
-})
-const mapDispatchToProps = {}
-export default connect(mapStateToProps, mapDispatchToProps)(ImageGallery)
+export default ImageGallery

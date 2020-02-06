@@ -43,7 +43,7 @@ img {
 .ant-drawer-body section {
   border: 1px solid #e4e7ed;
   min-height: 40px;
-  padding: 0 15px;
+  padding: 0 15px 5px;
 }
 .ant-drawer-body section + section {
   margin-top: 15px;

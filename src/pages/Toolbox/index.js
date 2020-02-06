@@ -16,8 +16,8 @@ class Toolbox extends React.Component {
     this.state = {
       activeKey: '1',
       tabCount: 1,
-      panes: [{ type: 'Single Map', name: '1' }]
-      // panes: [{ type: 'Data Query', name: '1' }]
+      // panes: [{ type: 'Single Map', name: '1' }]
+      panes: [{ type: 'Data Query', name: '1' }]
     }
   }
 

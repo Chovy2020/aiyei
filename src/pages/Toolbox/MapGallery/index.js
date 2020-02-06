@@ -33,7 +33,7 @@ class MapGallery extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      galleryType: 'Map', // 当前选中的类型
+      galleryType: 'Die Stack', // 当前选中的类型
       galleryTypes: ['Map', 'Die Stack', 'Reticle Stack', 'Heat Map'], // 4种类型列表
       waferListGroup: {},
       // 右侧各种过滤条件
