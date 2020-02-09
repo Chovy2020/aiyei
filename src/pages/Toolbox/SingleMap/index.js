@@ -1,53 +1,23 @@
-/* eslint-disable */
 import React from 'react'
 import { connect } from 'react-redux'
-import {
-  Form,
-  Dropdown,
-  Menu,
-  Tooltip,
-  Modal,
-  Select,
-  Pagination,
-  Radio,
-  Checkbox,
-  Button,
-  Input,
-  Table,
-  Icon,
-  message
-} from 'antd'
-// import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import { Form, Dropdown, Menu, Tooltip, Modal, Select, Pagination, Radio, Checkbox, Button, Input, Table, Icon, InputNumber, message } from 'antd'
 import _ from 'lodash'
 import zrender from 'zrender'
 import Heatmap from 'heatmap.js'
-// import { injectReducer } from '@/utils/store'
-import moment from 'moment'
-import echarts from 'echarts/lib/echarts'
-import 'echarts/lib/chart/bar'
-import { delay } from '@/utils/web'
-// import { changeForm, changeItems } from './action'
+// import moment from 'moment'
+import echarts from 'echarts'
+// eslint-disable-next-line
+import { delay, printTime, getColor, gradientColors } from '@/utils/web'
 import { changeWaferSelected } from '@/utils/action'
-import { SORT_LIST, SORT_ORDER_LIST } from './constant'
-// import reducer from './reducer'
-import { reclassifyParams, getImages, updateCorrect, deleteCorrect, getX, getX2nd, getY, getDp, getDSATableData } from './service'
-import { get, post, download } from '@/utils/api'
-import { StyleSingleMap, StyleWafer, StylePareto, StyleInfo, StyleChart, StyleDSA } from './style'
+import { post, download } from '@/utils/api'
 import CommonDrawer from '@/components/CommonDrawer'
+import { SORT_LIST, SORT_ORDER_LIST, COMMANDS, TOOL_TIPS, MAP_TYPES, DEFECT_CLASS_LIST } from './constant'
+import { reclassifyParams, getImages, updateCorrect, deleteCorrect, getX, getX2nd, getY, getDp, getDSATableData } from './service'
+import { StyleSingleMap, StyleWafer, StylePareto, StyleChart, StyleDSA, StyleImages } from './style'
+import { getWaferSelected } from '@/utils/store'
 
-const commands = ['Rotation', 'Export to CSV', 'Export klarf', 'Send to review', 'Overlap']
-const btns = [
-  { content: '截取', i: 'select', func: 'chooseArea' },
-  { content: '取消选中', i: 'undo', func: 'reply' },
-  { content: '标记', i: 'pushpin', func: 'podcast' },
-  { content: '显示选中点', i: 'check', func: 'star' },
-  { content: '显示非选中点', i: 'close', func: 'star0' },
-  { content: '选中点重新分类', i: 'apartment', func: 'reclassify' },
-  { content: '删除选中点', i: 'delete', func: 'trash' },
-  { content: '刷新', i: 'sync', func: 'refresh' }
-]
-const srcMapping = { 'Map/Pareto': '', 'Die Stack': '/ds', 'Reticle Stack': '/rs', 'Heat Map': '' }
-
+// eslint-disable-next-line
+let drawer = null
 let zr = null
 let group = null
 let rectRecords = []
@@ -55,14 +25,12 @@ let pointRecords = []
 let timeout = null
 let chosedArea = []
 let chosedPoints = {}
+let pointIdsMapping = []
 let zoomRecords = {}
 let mouseDownStartInner = false
 let paretoChart = null
 let dsaChart = null
-
-const printTime = (sign = '') => {
-  console.log(sign, `${moment(new Date()).second()}-${moment(new Date()).millisecond()}`)
-}
+let zoomTimes = 1
 
 class SingleMap extends React.Component {
   constructor(props) {
@@ -71,10 +39,7 @@ class SingleMap extends React.Component {
       /* index */
       mapType: 'Map/Pareto',
       dsa: false,
-      dsaInfo: {
-        // dsaOrder: '',
-        // sortName: ''
-      },
+      dsaInfo: {},
       singleWaferKey: [],
       selectAction: '',
       filter: {},
@@ -85,15 +50,9 @@ class SingleMap extends React.Component {
       },
       selectedBar: [],
       colorsObj: {},
-
-      /* wafer */
-      imageInfos: [],
+      /* Wafer */
       angel: 0,
       customizeAngel: false,
-      // 晶圆图实例
-      zr: null,
-      // 晶圆图组实例
-      group: null,
       selectedAction: '',
       data: [],
       // 方格实例记录
@@ -105,7 +64,6 @@ class SingleMap extends React.Component {
       heatMin: 0,
       heatMax: 0,
       // 点的坐标和它的id集合映射
-      pointIdsMapping: [],
       reclassifyDialog: false,
       correct: [],
       reclassifyForm: {},
@@ -113,7 +71,6 @@ class SingleMap extends React.Component {
       deleteDefectsDialog: false,
       deleteDefectsOptions: ['清除选中点', '清除选中点并导出', '删除选中点', '删除选中点并导出'],
       deleteDefectsType: '',
-
       /* Pareto */
       xValue: 'mb',
       x2ndValue: '',
@@ -124,12 +81,11 @@ class SingleMap extends React.Component {
       paretoData: null,
       ifAvg: 'sum',
       allBar: [],
-
-      // imageDetail
-      pageSize: 10,
-      infoPages: [],
-
-      /* dsa pareto */
+      /* Image Detail */
+      defectImages: [],
+      currentImages: [],
+      imagesTotal: 0,
+      /* DSA Pareto */
       sortName: '1',
       dsaOrder: '1',
       dsaData: null,
@@ -138,113 +94,77 @@ class SingleMap extends React.Component {
       allSelectBar: [],
       allDisappearBar: [],
       typeBar: '',
-
-      /* map info */
-      infos: {
-        'Lot ID': [],
-        'Wafer No': [],
-        'Product ID': [],
-        'Step ID': [],
-        'Scan Time': []
+      dsaTableData: [],
+      // Filters
+      tags: {
+        mbs: [],
+        abc: [],
+        rbs: [],
+        tests: [],
+        clusterIds: [],
+        repeaterIds: [],
+        zoneIds: [],
+        subDieIds: []
       },
-      indexStyle: {
-        0: true,
-        1: true,
-        2: true,
-        3: true,
-        4: true
+      // 用户当前勾选的过滤条件
+      tagsSeleted: {
+        mbs: [],
+        adc: [],
+        rbs: [],
+        tests: [],
+        clusterIds: [],
+        repeaterIds: [],
+        zoneIds: [],
+        subDieIds: []
       },
-
+      defectClass: null,
+      adderFlag: true,
+      defectSize: ['', ''],
       total: 0,
       pageNo: 1
     }
   }
 
   async componentDidMount() {
-    // const { items, itemSelected, defect } = this.props
-    const singleWaferKey = [
-      // {
-      //   lotId: 'SQCA00019',
-      //   productId: 'GDM119',
-      //   waferNo: '10.10',
-      //   stepId: '4628_KTCTBRDP',
-      //   scanTm: '2009-07-06 09:34:44',
-      //   defects: [],
-      //   defectIdRedisKey: 'd9a18175-bbc1-4eba-9c2b-306ba1cd02a4'
-      // },
-      // {
-      //   lotId: 'B0001.000',
-      //   stepId: 'P1_ASI',
-      //   waferNo: '1',
-      //   productId: 'Device01',
-      //   scanTm: '2018-06-05 12:30:35',
-      //   defects: [],
-      //   defectIdRedisKey: 'f92d494a-636d-49a3-aa4f-fb3fff77aa5a'
-      // },
-      // {
-      //   lotId: 'B0001.000',
-      //   stepId: 'M3_CMP',
-      //   waferNo: '1',
-      //   productId: 'Device01',
-      //   scanTm: '2018-06-05 12:30:35',
-      //   defects: [],
-      //   defectIdRedisKey: '9c409953-3a35-46b8-bf3b-d6b5d19c4d7e'
-      // }
-      {
-        lotId: "B0001.000",
-        stepId: "M3_CMP",
-        waferNo: "1",
-        productId: "Device01",
-        scanTm: "2018-06-05 12:30:35",
-        defects: [],
-        defectIdRedisKey: "58ba0d53-caee-49da-af83-b7a190ccac2c"
-      },
-      {
-        lotId: "B0001.000",
-        stepId: "P1_ASI",
-        waferNo: "1",
-        productId: "Device01",
-        scanTm: "2018-06-05 12:30:35",
-        defects: [],
-        defectIdRedisKey: "ff8d6098-8f9b-447b-857c-c284323b2d50"
-      },
-      {
-        lotId: "B0001.000",
-        stepId: "M1_CMP",
-        waferNo: "1",
-        productId: "Device01",
-        scanTm: "2018-05-31 13:12:35",
-        defects: [],
-        defectIdRedisKey: "4e9d46fe-2bc4-47a2-a7aa-78d8b6714112"
-      },
-      {
-        lotId: "B0001.000",
-        stepId: "SIN_RM",
-        waferNo: "1",
-        productId: "Device01",
-        scanTm: "2018-06-04 12:30:35",
-        defects: [],
-        defectIdRedisKey: "9f18f167-7a86-43e7-9306-3ad27de14078"
-      },
-      {
-        lotId: "B0001.000",
-        stepId: "M5_CMP",
-        waferNo: "1",
-        productId: "Device01",
-        scanTm: "2018-06-09 12:30:35",
-        defects: [],
-        defectIdRedisKey: "6891bd43-9aaa-48d5-9639-4089602de5e9"
-      }
-    ]
-    this.setState({ singleWaferKey })
+    let { wafers } = getWaferSelected()
+    if (wafers.length === 0) {
+      wafers = [
+        // {
+        //   lotId: 'B0001.000',
+        //   stepId: 'P1_ASI',
+        //   waferNo: '1',
+        //   productId: 'Device01',
+        //   scanTm: '2018-06-05 12:30:35',
+        //   defects: [],
+        //   defectIdRedisKey: '9c7159ca-22d7-47c9-af6b-9cb0d224c024'
+        // },
+        // {
+        //   lotId: 'B0001.000',
+        //   stepId: 'M3_CMP',
+        //   waferNo: '1',
+        //   productId: 'Device01',
+        //   scanTm: '2018-06-05 12:30:35',
+        //   defects: [],
+        //   defectIdRedisKey: 'd9f559e3-94f9-4d32-809d-0332f82f0ae2'
+        // },
+        {
+          lotId: 'SQCA00019',
+          stepId: '4628_KTCTBRDP',
+          waferNo: '10.10',
+          productId: 'GDM119',
+          scanTm: '2009-07-06 09:34:44',
+          defects: [],
+          defectIdRedisKey: '7a193ae0-f889-4839-8a10-ce7cfb1d944b'
+        }
+      ]
+    }
+    this.setState({ singleWaferKey: wafers })
     this.onParetoChartInit()
     this.onDSAChartInit()
-    await delay(1)
-    this.initWaferInfo()
-    this.onInit()
-    this.onParetoInit()
+    this.onWaferCreated()
+    this.onParetoCreated()
   }
-
+  // 初始化 ParetoChart, 绑定点击事件
   onParetoChartInit = () => {
     const paretoChartDom = document.getElementById('pareto-chart')
     if (paretoChartDom) {
@@ -254,6 +174,7 @@ class SingleMap extends React.Component {
       console.log('paretoChartDom not found')
     }
   }
+  // 初始化 DSAChart, 绑定点击事件
   onDSAChartInit = () => {
     const dsaChartDom = document.getElementById('dsa-chart')
     if (dsaChartDom) {
@@ -263,32 +184,22 @@ class SingleMap extends React.Component {
       console.log('dsaChartDom not found')
     }
   }
-
-  initWaferInfo = () => {
-    const { infos, singleWaferKey } = this.state
-    singleWaferKey.forEach(item => {
-      infos['Lot ID'].push(item.lotId)
-      infos['Wafer No'].push(item.waferNo)
-      infos['Product ID'].push(item.productId)
-      infos['Step ID'].push(item.stepId)
-      infos['Scan Time'].push(item.scanTm)
-    })
-    this.setState({ infos })
-  }
-
   // computed
   getDataOption = () => {
     const { data } = this.state
     return data[0] || {}
   }
-
   // watch selectAction change
-  watchSelectAction = () => {
-    this.init(zoomRecords)
-    this.initSwp()
+  watchStxaxis = () => {
+    this.onWaferInit()
   }
-  watchSelectedBar = async () => {
-    await delay(1)
+  watchDSAInfo = () => {
+    this.onWaferInit()
+  }
+  watchSelectAction = () => {
+    this.onWaferInit(zoomRecords)
+  }
+  watchSelectedBar = () => {
     this.renderPoints()
   }
   watchDSASort = async () => {
@@ -299,7 +210,8 @@ class SingleMap extends React.Component {
     })
   }
 
-  onInit = async () => {
+  // Wafer 创建 【点击defect查看图片、鼠标滚轮事件】
+  onWaferCreated = async () => {
     const { name } = this.props
     const zrDom = document.getElementById(`main-${name}`)
     if (!zrDom) {
@@ -309,27 +221,26 @@ class SingleMap extends React.Component {
     zr = zrender.init(zrDom)
     group = new zrender.Group()
     await delay(1)
-    // this.setState({ zr, group })
     //  判断是否点击了小圆点
     group.on('click', async e => {
+      this.setState({ imageVisible: true })
+      await delay(1)
       if (e.target.shape.r) {
-        // console.log(e)
         const imgDom = document.getElementById(`img-${name}`)
         if (!imgDom) {
           console.log('imgDom not found')
           return
         }
         imgDom.style.display = 'none'
-        let x = e.target.shape.cx
-        let y = e.target.shape.cy
-        let emitObj = []
-        this.pointIdsMapping.forEach((item, index) => {
-          let pointCoordinate = item[`${x},${y}`]
+        const x = e.target.shape.cx
+        const y = e.target.shape.cy
+        const emitObj = []
+        const { data } = this.state
+        pointIdsMapping.forEach((item, index) => {
+          const pointCoordinate = item[`${x},${y}`]
           if (pointCoordinate) {
-            let { lotId: lotId, waferNo: waferNo, productId: productId, stepId: stepId, scanTm: scanTm } = this.data[
-              index
-            ]
-            let defectsInfomation = { lotId, waferNo, productId, stepId, scanTm, defects: pointCoordinate }
+            const { lotId, waferNo, productId, stepId, scanTm } = data[index]
+            const defectsInfomation = { lotId, waferNo, productId, stepId, scanTm, defects: pointCoordinate }
             emitObj.push(defectsInfomation)
           }
         })
@@ -343,49 +254,52 @@ class SingleMap extends React.Component {
           imgDom.style.display = 'block'
           const data = _.cloneDeep(res)
           let arr = []
-          for (let defectInfo in data) {
-            let [lotId, , , waferNo, , defects] = defectInfo.split('|')
+          for (const defectInfo in data) {
+            const [lotId, , , waferNo, , defects] = defectInfo.split('|')
             data[defectInfo].forEach(item => {
               arr.push({ lotId, waferNo, defects, image: 'http://161.189.50.41:80' + item })
             })
           }
-          this.setState({ imageInfos: arr })
+          this.setState({ defectImages: arr, imagesTotal: arr.length })
+          await delay(1)
+          this.onImageDetailPageChange(1)
         }
       }
     })
-    this.init()
+    this.onWaferInit()
     this.checkArea()
     zr.on('mousewheel', e => {
-      const dataOption = this.getDataOption()
-      const { waferLocation } = dataOption
-      let times
       e = e || window.event
-      const { mapType, zoomTimes } = this.state
+      const { mapType } = this.state
       if (mapType !== 'Heat Map' && e.wheelDelta) {
+        const dataOption = this.getDataOption()
+        const { waferLocation } = dataOption
+        let times = 1
         //第一步：先判断浏览器IE，谷歌滑轮事件
         if (e.wheelDelta > 0) {
           //当滑轮向上滚动时
           times = zoomTimes * 2
           // console.log(e.offsetX, e.offsetY)
         }
+
         if (e.wheelDelta < 0) {
           //当滑轮向下滚动时
-          if (zoomTimes !== 1) {
-            times = zoomTimes / 2
+          if (zoomTimes === 1) {
+            // message.warning('当前已经是1x，不能继续缩放。')
+            return
           }
+          times = zoomTimes / 2
         }
-        let x = parseInt((e.offsetX - waferLocation.x) / this.zoomTimes)
-        let y = parseInt((e.offsetY - waferLocation.y) / this.zoomTimes)
-        if (timeout) {
-          clearTimeout(timeout)
-        }
+        // console.log('当前的缩放倍数', zoomTimes, times)
+        const x = parseInt((e.offsetX - waferLocation.x) / zoomTimes)
+        const y = parseInt((e.offsetY - waferLocation.y) / zoomTimes)
+        if (timeout) clearTimeout(timeout)
         timeout = setTimeout(() => {
-          this.init({ times, x, y })
+          this.onWaferInit({ times, x, y })
         }, 100)
       }
     })
   }
-
   //选择区域
   checkArea = () => {
     let x, y, distanceX, distanceY, moveRect
@@ -422,7 +336,7 @@ class SingleMap extends React.Component {
       }
     })
   }
-
+  // 下拉菜单展开
   onDropDownClick = ({ key }) => {
     if (key === 'Rotation') {
       this.setState({
@@ -432,26 +346,32 @@ class SingleMap extends React.Component {
     } else if (key === 'Export to CSV') {
       console.log('csv')
     } else if (key === 'Export klarf') {
-      this.download({ singleWaferKey: this.singleWaferKey })
+      download({ singleWaferKey: this.singleWaferKey })
     } else if (key === 'Send to review') {
       console.log('review')
     } else if (key === 'Overlap') {
-      this.overlapDialog = true
+      this.setState({ overlapDialog: true })
     }
   }
-
-  onDropDownReset = () => {
+  onDropDownReset = async () => {
+    // this.setState({
+    //   overlapType: '',
+    //   angel: 0
+    // })
+    // this.renderRects()
+    // const dataOption = this.getDataOption()
+    // zoomTimes = dataOption.magnification || 1
+    // if (zoomTimes === 1) this.drawIsogon()
     this.setState({
-      overlapType: '',
-      angel: 0
+      angel: 0,
+      selectAction: '',
+      selectedAction: '',
+      selectedBar: [],
+      disappearBar: []
     })
-    this.renderRects()
-    const dataOption = this.getDataOption()
-    const zoomTimes = dataOption.magnification || 1
-    this.setState({ zoomTimes })
-    if (parseInt(zoomTimes) === 1) this.drawIsogon()
+    chosedPoints = {}
+    this.onWaferInit()
   }
-
   onMapTypeChange = async e => {
     const mapType = e.target.value
     this.setState({
@@ -459,7 +379,7 @@ class SingleMap extends React.Component {
       angel: 0,
       overlapType: ''
     })
-    await this.init()
+    await this.onWaferInit()
     await delay(1)
     const { name } = this.props
     const container = document.getElementById(`main-${name}`)
@@ -477,7 +397,6 @@ class SingleMap extends React.Component {
       }
     }
   }
-
   // 热力图
   renderHeatmap = container => {
     const dataOption = this.getDataOption()
@@ -505,17 +424,15 @@ class SingleMap extends React.Component {
     container.style.borderRadius = '50%'
     container.style.overflow = 'hidden'
   }
-
   // image detail
   onImageDetailPageChange = pageNo => {
-    const pageStart = (pageNo - 1) * 10
-    const { imageInfos } = this.state
-    const infoPages = imageInfos.slice(pageStart, pageStart + 10)
-    this.setState({ infoPages })
+    const pageStart = (pageNo - 1) * 5
+    const { defectImages } = this.state
+    const currentImages = defectImages.slice(pageStart, pageStart + 5)
+    this.setState({ currentImages })
   }
-
   onDoAction = async func => {
-    console.log(func)
+    // console.log(func)
     this.setState({ selectedAction: func })
     if (func === 'chooseArea') {
       this.setState({ angel: 0 })
@@ -528,10 +445,13 @@ class SingleMap extends React.Component {
     } else if (func === 'podcast') {
       this.setState({ angel: 0 })
       if (chosedArea.length > 0) {
+        // console.log('podcast chosedArea', chosedArea)
         this.renderPoints()
+        await delay(300)
         chosedArea.forEach(item => {
           group.remove(item)
         })
+        // console.log('podcast chosedArea clean')
         chosedArea = []
       } else {
         message.info('没有选择的标记区域！')
@@ -544,7 +464,7 @@ class SingleMap extends React.Component {
           selectAction: 'hold',
           singleWaferKey: this.deliveryPoints()
         })
-        this.init(zoomRecords)
+        this.onWaferInit(zoomRecords)
       } else {
         message.info('没有被标记的点！')
       }
@@ -555,7 +475,7 @@ class SingleMap extends React.Component {
           selectAction: 'clean',
           singleWaferKey: this.deliveryPoints()
         })
-        this.init(zoomRecords)
+        this.onWaferInit(zoomRecords)
       } else {
         message.info('没有被标记的点！')
       }
@@ -585,41 +505,46 @@ class SingleMap extends React.Component {
         selectAction: ''
       })
       chosedPoints = {}
-      this.init()
+      this.onWaferInit()
     }
   }
-
-  init = async options => {
+  /* - - - - - - - - - - - - Wafer - - - - - - - - - - - -  */
+  // Wafer 初始化
+  onWaferInit = async options => {
     group.removeAll()
     const res = await this.getData(options)
     this.setState({ data: res })
-    const { mapType, data } = this.state
+    // 同时更新缩放倍数
+    if (res.length > 0) zoomTimes = res[0].magnification
+    const { mapType } = this.state
     if (mapType === 'Map/Pareto' || mapType === 'Heat Map') this.renderOutterCircle()
     this.renderRects()
     this.renderPoints()
     this.recordZoom()
-    if (mapType === 'Map/Pareto' && data[0].magnification == 1) this.drawIsogon()
-    // const { dsa } = this.state
-    // if (dsa) {
-    //   this.$refs.dsaPareto.init()
-    // } else {
-    //   this.$refs.pareto.initSwp()
-    // }
+    if (mapType === 'Map/Pareto' && zoomTimes === 1) this.drawIsogon()
+    const { dsa } = this.state
+    if (dsa) this.onDSAInit()
+    else this.onParetoInit()
   }
   getData = async ({ times = 1, x = 200, y = 200 } = {}) => {
     await delay(1)
     let src = ''
     const { dsaInfo, mapType } = this.state
     if (_.isEmpty(dsaInfo)) {
-      src = `swm${srcMapping[mapType]}`
+      src = `swm${MAP_TYPES[mapType]}`
     } else {
-      src = `dm${srcMapping[mapType]}`
+      src = `dm${MAP_TYPES[mapType]}`
     }
-    const { singleWaferKey, filter, stxaxis, selectAction } = this.state
+    // eslint-disable-next-line
+    const { singleWaferKey, tagsSeleted, adderFlag, defectSize, stxaxis, selectAction } = this.state
     return await post(src, {
       singleWaferKey,
       canvas: { canvasSize: 400, magnification: `${times}`, centralLocation: x + ',' + y },
-      filter,
+      filter: {
+        // ...tagsSeleted,
+        // adder: adderFlag ? ['Y'] : ['N'],
+        // defectSize
+      },
       pareto: stxaxis,
       selectAction,
       dsaOrder: dsaInfo.dsaOrder || '',
@@ -633,7 +558,7 @@ class SingleMap extends React.Component {
     const { magnification: times, centralLocation: center } = dataOption
     zoomRecords = { times, x: center.x, y: center.y }
   }
-  /* - - - - - - - - - - - - 绘图相关 Begin - - - - - - - - - - - -  */
+  /* - - - - - - - - - - - - 绘图相关 - - - - - - - - - - - -  */
   //画外层大圆
   renderOutterCircle = () => {
     // 半径=画布长度*放大倍数/2    canvasLength*magnification/2
@@ -662,7 +587,7 @@ class SingleMap extends React.Component {
     const dataOption = this.getDataOption()
     // console.log('dataOption', dataOption)
     const { dieWidth: width, dieHeight: height, dies = [], noScanDies = [] } = dataOption
-    let firstDie = dies[0] || { bin: 0 }
+    const firstDie = dies[0] || { bin: 0 }
     let binMax = firstDie.bin
     let binMin = firstDie.bin
     dies.forEach(({ bin }) => {
@@ -672,11 +597,10 @@ class SingleMap extends React.Component {
     // 条状渐变色填充
     let bgColor = []
     const { mapType, overlapType } = this.state
-    if (mapType === 'Map/Pareto' && overlapType === 'Bin Map') {
-      bgColor = this.gradientColors('#ff0', '#f00', binMax - binMin + 1)
-    }
+    if (mapType === 'Map/Pareto' && overlapType === 'Bin Map')
+      bgColor = gradientColors('#ff0', '#f00', binMax - binMin + 1)
     // 有效方格渲染（填充色获取+方格渲染）
-    let fillStyle = { fill: 'none', stroke: '#14f1ff', opacity: 0.5 }
+    const fillStyle = { fill: 'none', stroke: '#14f1ff', opacity: 0.5 }
     dies.forEach(({ bin, x, y }) => {
       if (mapType === 'Map/Pareto' && overlapType === 'Bin Map') {
         fillStyle.fill = bin === '0' ? '#67c23a' : bgColor[bin]
@@ -705,10 +629,12 @@ class SingleMap extends React.Component {
     zr.add(group)
   }
   // 渲染圆点
-  renderPoints = () => {
+  renderPoints = async () => {
+    await delay(1)
     this.clearPoints()
-    this.setState({ pointIdsMapping: [] })
+    pointIdsMapping = []
     const { data } = this.state
+    // console.log('renderPoints 几片wafer', data)
     data.forEach(({ defectInfos }, idx) => {
       this.renderSingleMap(defectInfos, idx)
     })
@@ -721,23 +647,25 @@ class SingleMap extends React.Component {
     })
   }
   // 渲染单张图的点
-  renderSingleMap = (defectInfos, index) => {
-    const { pointIdsMapping, selectedBar } = this.state
-    // console.log('renderSingleMap', selectedBar)
+  renderSingleMap = async (defectInfos, index) => {
+    // printTime(`第${index + 1}片wafer开始渲染`)
+    // await delay(1)
+    const { selectedBar, colorsObj } = this.state
+    // console.log('渲染单张图的点', Object.keys(defectInfos).length)
+    let pointColor
+    const colorFlag = _.isEmpty(colorsObj)
+    // 通过 seriesName 生成不同的颜色，目前seriesName都是空字符串，暂时不在循环里做重复无用计算
+    pointColor = '#' + getColor('')
     pointIdsMapping[index] = {}
-    this.setState({ pointIdsMapping })
-    for (let name in defectInfos) {
-      for (let seriesName in defectInfos[name]) {
-        const point = defectInfos[name][seriesName]
-        let pointColor
-        const { colorsObj } = this.state
-        if (_.isEmpty(colorsObj)) {
-          pointColor = '#' + this.getColor(seriesName)
-        } else {
+    for (const name in defectInfos) {
+      for (const seriesName in defectInfos[name]) {
+        if (!colorFlag) {
           pointColor = colorsObj[name + '-' + seriesName]
+          // console.log('颜色', colorFlag, pointColor)
         }
+        const point = defectInfos[name][seriesName]
         if (!selectedBar.includes(name + '-' + seriesName)) {
-          for (let coordinate in point) {
+          for (const coordinate in point) {
             const idList = point[coordinate]
             // 合并同一个坐标下的id，
             const pointIds = pointIdsMapping[index][coordinate] || []
@@ -748,54 +676,45 @@ class SingleMap extends React.Component {
         }
       }
     }
-    this.setState({ pointIdsMapping })
     zr.add(group)
   }
   // 渲染出的点的id集合
   waferDefectsGroup = () => {
-    let waferDefects = []
-    const { pointIdsMapping, data } = this.state
-    for (let i in pointIdsMapping) {
-      let singleWaferDefects = []
-      const { lotId: lotId, waferNo: waferNo, productId: productId, stepId: stepId, scanTm: scanTm } = data[i]
-      for (let j in pointIdsMapping[i]) {
+    const wafers = []
+    const { data } = this.state
+    for (const i in pointIdsMapping) {
+      const singleWaferDefects = []
+      const { lotId, waferNo, productId, stepId, scanTm } = data[i]
+      for (const j in pointIdsMapping[i]) {
         singleWaferDefects.push(...pointIdsMapping[i][j])
       }
-      waferDefects.push({ lotId, waferNo, productId, stepId, scanTm, defects: singleWaferDefects || [] })
+      wafers.push({ lotId, waferNo, productId, stepId, scanTm, defects: singleWaferDefects || [] })
     }
     const { name } = this.props
-    this.props.changeWaferSelected({ page: name, wafers: waferDefects })
+    this.props.changeWaferSelected({ name, wafers, bars: [] })
   }
   // 处理单个点
   dealPoint = (coordinate, idList, pointColor, index) => {
+    // printTime(`第${index + 1}片wafer正在渲染`)
     let [pointX, pointY] = coordinate.split(',')
+    pointX = +pointX
+    pointY = +pointY
     // 点在选中区域时需要塞进chosedPoints
-    if (chosedArea.some(area => area.contain(+pointX, +pointY))) {
+    if (chosedArea.some(area => area.contain(pointX, pointY))) {
+      // console.log('有选择区域', chosedArea)
       this.setChosedPoints(index, coordinate)
     }
     // 单个点的渲染及记录
     const { selectedAction } = this.state
     const chosedPoint = chosedPoints[index] || []
     let isStar = idList.some(id => chosedPoint.includes(id))
-    if (selectedAction === 'star') {
-      isStar = 1
-    }
-    if (selectedAction === 'star-o') {
-      isStar = 0
-    }
-    const Point = this.renderPoint({ x: +pointX, y: +pointY, color: pointColor }, isStar)
+    // console.log('chosedPoint, isStar', chosedArea, chosedPoint, isStar)
+    if (selectedAction === 'star') isStar = 1
+    if (selectedAction === 'star-o') isStar = 0
+    const Point = this.renderPoint({ x: pointX, y: pointY, color: pointColor }, isStar)
     Point.attr({ coordinate, index })
     group.add(Point)
     pointRecords.push(Point)
-  }
-  // 随机生成颜色
-  getColor = str => {
-    let hash = 1315423911
-    for (let i = str.length - 1; i >= 0; i--) {
-      let ch = str.charCodeAt(i)
-      hash ^= (hash << 5) + ch + (hash >> 2)
-    }
-    return (hash & 0x7fffff).toString(16)
   }
   // 渲染单个点({横坐标，纵坐标，填充色}，是否星形点)
   renderPoint = ({ x, y, color }, isStar) => {
@@ -803,8 +722,8 @@ class SingleMap extends React.Component {
     return new zrender[isStar ? 'Star' : 'Circle']({ shape, style: { fill: color } })
   }
   // 选中点及基本信息
-  deliveryPoints() {
-    let singleMapArr = []
+  deliveryPoints = () => {
+    const singleMapArr = []
     const { data } = this.state
     data.forEach((item, index) => {
       const { lotId, waferNo, productId, stepId, scanTm } = item
@@ -820,46 +739,8 @@ class SingleMap extends React.Component {
     })
     return singleMapArr
   }
-  // 渐变色
-  gradientColors(start, end, steps) {
-    let i,
-      j,
-      ms,
-      me,
-      output = [],
-      so = []
-    const normalize = channel => {
-      return Math.pow(channel / 255, 1)
-    }
-    start = this.parseColor(start).map(normalize)
-    end = this.parseColor(end).map(normalize)
-    for (i = 0; i < steps; i++) {
-      ms = i / (steps - 1)
-      me = 1 - ms
-      for (j = 0; j < 3; j++) {
-        so[j] = this.pad(Math.round(Math.pow(start[j] * me + end[j] * ms, 1) * 255).toString(16))
-      }
-      output.push('#' + so.join(''))
-    }
-    return output
-  }
-  // 方格背景颜色
-  parseColor = hexStr => {
-    return hexStr.length === 4
-      ? hexStr
-          .substr(1)
-          .split('')
-          .map(function(s) {
-            return 0x11 * parseInt(s, 16)
-          })
-      : [hexStr.substr(1, 2), hexStr.substr(3, 2), hexStr.substr(5, 2)].map(function(s) {
-          return parseInt(s, 16)
-        })
-  }
   /* - - - - - - - - - - - - 绘图相关 End - - - - - - - - - - - -  */
-
   setChosedPoints = (index, coordinate) => {
-    const { pointIdsMapping } = this.state
     let chosedPoint = _.cloneDeep(chosedPoints[index]) || []
     const newPoint = _.difference(pointIdsMapping[index][coordinate], chosedPoint)
     chosedPoints[index] = [...chosedPoint, ...newPoint]
@@ -871,6 +752,12 @@ class SingleMap extends React.Component {
       angel: rotationDegree,
       rotationDialog: false
     })
+  }
+  onOverlapOk = () => {
+    this.setState({ overlapDialog: false })
+    this.renderRects()
+    this.renderPoints()
+    if (zoomTimes === 1) this.drawIsogon()
   }
 
   onReclassifyFormChange = (key, value) => {
@@ -906,7 +793,7 @@ class SingleMap extends React.Component {
       correct: reclassifyForm
     })
     chosedPoints = {}
-    this.init()
+    this.onWaferInit()
   }
   // 分类 & 下载
   onReclassifyDownload = async () => {
@@ -931,32 +818,40 @@ class SingleMap extends React.Component {
       await deleteCorrect({ singleWaferKey: this.downloadPoints() })
       chosedPoints = {}
       this.setState({ selectAction: '' })
-      this.init()
+      this.onWaferInit()
     }
     if (deleteDefectsType === '删除选中点并导出') download('export', { singleWaferKey })
     this.setState({ deleteDefectsType: '' })
   }
 
-  // 切换信息 显示与隐藏
-  onInfoToggle = index => {
-    const { indexStyle } = this.state
-    indexStyle[index] = !indexStyle[index]
-    this.setState({ indexStyle })
-  }
-
-  /* pareto */
-  onParetoInit = async () => {
+  /* - - - - - - - - - - - - Pareto - - - - - - - - - - - -  */
+  // Pareto 创建
+  onParetoCreated = async () => {
     const { xValue, x2ndValue } = this.state
     const x = await getX()
     const x2n = await getX2nd(xValue)
     const y = await getY(xValue, x2ndValue)
     this.setState({ x, x2n, y })
-    this.initSwp()
+    this.onParetoInit()
   }
-
+  // Pareto 初始化
+  onParetoInit = async obj => {
+    await delay(1)
+    const { singleWaferKey, filter, stxaxis, selectAction } = this.state
+    const paretoData = await post('swp', {
+      singleWaferKey,
+      canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
+      filter,
+      pareto: obj || stxaxis,
+      selectAction
+    })
+    this.setState({ paretoData })
+    this.onGenerateParetoChart()
+  }
+  // Pareto 图表
   onGenerateParetoChart = async () => {
     await delay(1)
-    const { paretoData, x, x2n, y, xValue, stxaxis, ifAvg, singleWaferKey } = this.state
+    const { paretoData, x, y, xValue, stxaxis, ifAvg, singleWaferKey } = this.state
     const opt = {
       width: 'auto',
       legend: { type: 'scroll' },
@@ -999,7 +894,7 @@ class SingleMap extends React.Component {
             }
           })
           hold.push(item.holdValue)
-          colorArr.push('#' + this.getColor(item.name))
+          colorArr.push('#' + getColor(item.name))
         })
         hold.forEach((item, i) => {
           holdArr.push({
@@ -1038,21 +933,6 @@ class SingleMap extends React.Component {
     }
     if (paretoChart) paretoChart.setOption(opt)
   }
-
-  initSwp = async obj => {
-    await delay(1)
-    const { singleWaferKey, filter, stxaxis, selectAction } = this.state
-    const paretoData = await post('swp', {
-      singleWaferKey,
-      canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
-      filter,
-      pareto: obj || stxaxis,
-      selectAction
-    })
-    this.setState({ paretoData })
-    this.onGenerateParetoChart()
-  }
-
   onChangeX = async xValue => {
     this.setState({
       xValue,
@@ -1063,7 +943,6 @@ class SingleMap extends React.Component {
     const y = await getY(xValue, '')
     this.setState({ x2n, y })
   }
-
   onChangeX2nd = async x2ndValue => {
     this.setState({
       x2ndValue,
@@ -1073,31 +952,28 @@ class SingleMap extends React.Component {
     const y = await getY(xValue, x2ndValue)
     this.setState({ y })
   }
-
   onChangeY = yValue => {
     this.setState({ yValue })
   }
-
   onParetoSearch = () => {
-    this.setState({
-      selectedBar: []
-    })
     const { xValue, x2ndValue, yValue } = this.state
     const paretoObj = {
       '1stXCode': xValue,
       '2ndXCode': x2ndValue,
       yCode: yValue
     }
-    this.initSwp(paretoObj)
+    this.onParetoInit(paretoObj)
     this.setState({
-      stxaxis: paretoObj
+      stxaxis: paretoObj,
+      selectedBar: []
     })
+    this.watchStxaxis()
   }
   onParetoClear = () => {
     const allBar = []
     const { paretoData } = this.state
     if (!paretoData || !paretoData.paretoValue || !paretoData.paretoValue.xAxisData || !paretoData.paretoValue.series) {
-      consoe.log('paretoData data error')
+      console.log('paretoData data error')
       return
     }
     paretoData.paretoValue.xAxisData.forEach(x => {
@@ -1109,15 +985,12 @@ class SingleMap extends React.Component {
       allBar,
       selectedBar: allBar
     })
-    this.watchSelectedBar()
+    this.watchStxaxis()
   }
-
-  onAvgChange = async ifAvg => {
+  onAvgChange = ifAvg => {
     this.setState({ ifAvg })
-    await delay(1)
     this.onGenerateParetoChart()
   }
-
   onParetoChartClick = data => {
     const { selectedBar } = this.state
     const bar = _.cloneDeep(selectedBar)
@@ -1129,25 +1002,28 @@ class SingleMap extends React.Component {
       bar.push(data.name + '-' + data.seriesName)
     }
     this.setState({ selectedBar: bar })
+    this.watchSelectedBar()
   }
+  /* - - - - - - - - - - - - Pareto End - - - - - - - - - - - -  */
 
-  /* DSA */
+  /* - - - - - - - - - - - - DSA - - - - - - - - - - - -  */
+  // DSA Pareto 切换
   onDsaToggle = () => {
-    const { dsa } = this.state
-    this.setState({ dsa: !dsa })
-    if(!dsa) {
-      this.onDSAInit()
-    } else {
-      this.onParetoInit()
+    const { dsa, singleWaferKey } = this.state
+    if (singleWaferKey.length < 2) {
+      message.error('至少选择2片wafer，才能比较')
+      return
     }
+    this.setState({ dsa: !dsa, colorsObj: {}, selectedBar: [], dsaInfo: dsa ? {} : { dsaOrder: '1', sortName: '1' } })
+    this.watchDSAInfo()
   }
-
+  // DSA 排序
   onDSASortChange = (index, value) => {
     if (index === 1) this.setState({ dsaOrder: value })
     else this.setState({ sortName: value })
     this.onDSAInit()
   }
-
+  // DSA 初始化 === created
   onDSAInit = async () => {
     await delay(1)
     const { singleWaferKey, dsaOrder, sortName } = this.state
@@ -1162,13 +1038,15 @@ class SingleMap extends React.Component {
       allSelectBar: []
     })
     this.dealDsaData()
+    this.watchSelectedBar()
   }
+  // DSA 数据处理
   dealDsaData = async () => {
     await delay(1)
     const { dsaData, colorsArr, allDisappearBar, allSelectBar } = this.state
     dsaData.paretoValue.series.forEach(s => {
       const tagLength = s.tag.length
-      colorsArr.push('#' + this.getColor(s.name))
+      colorsArr.push('#' + getColor(s.name))
       s.tag.forEach((t, index) => {
         if (index > tagLength / 2) {
           allDisappearBar.push(s.name + '-' + t)
@@ -1187,7 +1065,7 @@ class SingleMap extends React.Component {
     this.setState({ colorsArr, allDisappearBar, allSelectBar, colorsObj })
     this.onGenerateDSAChart()
   }
-
+  // DSA 图表
   onGenerateDSAChart = async () => {
     await delay(1)
     const { dsaData, selectedBar, disappearBar } = this.state
@@ -1195,12 +1073,13 @@ class SingleMap extends React.Component {
       width: '800',
       legend: {},
       tooltip: {
-        formatter(params) {
+        formatter: params => {
           let tag = ''
           dsaData.paretoValue.series.some(item => {
-            if (item.name == params.name) {
+            if (item.name === params.name) {
               tag = item['tag'][params.seriesIndex]
             }
+            return item.name === params.name
           })
           return tag
         }
@@ -1217,7 +1096,7 @@ class SingleMap extends React.Component {
       const colors = []
       series.forEach(item => {
         opt.dataset.source.push([item.name, ...item.data])
-        colors.push(this.getColor(item.name))
+        colors.push(getColor(item.name))
       })
       series[0].data.forEach((item, index) => {
         const i = index
@@ -1236,9 +1115,10 @@ class SingleMap extends React.Component {
               let tag = ''
               const len = colors.length || 1
               dsaData.paretoValue.series.some(item => {
-                if (item.name == param.name) {
+                if (item.name === param.name) {
                   tag = item['tag'][param.seriesIndex]
                 }
+                return item.name === param.name
               })
               const value = param.value[param.seriesIndex + 1]
               let idx = 0
@@ -1256,17 +1136,17 @@ class SingleMap extends React.Component {
     }
     if (dsaChart) dsaChart.setOption(opt)
   }
-
   onDSAChartClick = params => {
     let tag = ''
-    const { dsaData,  selectedBar } = this.state
+    const { dsaData, selectedBar } = this.state
     dsaData.paretoValue.series.some(item => {
-      if (item.name == params.name) {
+      if (item.name === params.name) {
         tag = item['tag'][params.seriesIndex]
       }
+      return item.name === params.name
     })
     if (params.value[params.seriesIndex + 1] > 0) {
-      let idx = selectedBar.indexOf(params.name + '-' + tag)
+      const idx = selectedBar.indexOf(params.name + '-' + tag)
       if (~idx) {
         selectedBar.splice(idx, 1)
       } else {
@@ -1301,15 +1181,72 @@ class SingleMap extends React.Component {
         selectedBar: _.cloneDeep(allSelectBar)
       })
     }
+    this.watchSelectedBar()
   }
-
+  // DSA Table
   onDSATableInit = async () => {
     const { singleWaferKey } = this.state
     const res = await getDSATableData(singleWaferKey)
-    
+    const dsaTableData = []
+    res.forEach((item, index) => {
+      dsaTableData.push({
+        key: index + '',
+        dieIndex: item.dieIndex,
+        step: item.defectInfos[0].step,
+        scanTm: item.defectInfos[0].scanTm,
+        defectId: item.defectInfos[0].defectId,
+        imgUrl: item.defectInfos[0].imgUrl
+      })
+      if (item.defectInfos.length > 1) {
+        const children = []
+        item.defectInfos.forEach((jtem, index2) => {
+          children.push({
+            key: index + '-' + index2,
+            step: jtem.step,
+            scanTm: jtem.scanTm,
+            defectId: jtem.defectId,
+            imgUrl: jtem.imgUrl
+          })
+        })
+        dsaTableData[index].children = children
+      }
+    })
+    // console.log('onDSATableInit', dsaTableData)
+    this.setState({ dsaTableData })
   }
+  /* - - - - - - - - - - - - DSA End - - - - - - - - - - - -  */
 
-  onFilterSubmit = () => {}
+  /* - - - - - - - - - - - - Filters - - - - - - - - - - - -  */
+  onFilterSubmit = () => {
+    drawer.onClose()
+    this.onWaferInit()
+  }
+  onDefectClassChange = e => {
+    const { tagsSeleted } = this.state
+    tagsSeleted.mbs = []
+    tagsSeleted.adc = []
+    tagsSeleted.rbs = []
+    this.setState({
+      defectClass: e.target.value,
+      tagsSeleted
+    })
+  }
+  onDefectClassDetailChange = value => {
+    const { defectClass, tagsSeleted } = this.state
+    tagsSeleted[defectClass] = value
+    this.setState({ tagsSeleted })
+  }
+  onDefectSizeChange = (index, value) => {
+    const { defectSize } = this.state
+    defectSize[index] = value
+    this.setState({ defectSize })
+  }
+  onDefectFiltersChange = (key, value) => {
+    const { tagsSeleted } = this.state
+    tagsSeleted[key] = value
+    this.setState({ tagsSeleted })
+  }
+  /* - - - - - - - - - - - - Filters End - - - - - - - - - - - -  */
 
   render() {
     const { name } = this.props
@@ -1317,8 +1254,8 @@ class SingleMap extends React.Component {
       singleWaferKey,
       mapType,
       angel,
-      infoPages,
-      zoomTimes,
+      currentImages,
+      imagesTotal,
       imageVisible,
       selectedAction,
       heatMin,
@@ -1329,16 +1266,25 @@ class SingleMap extends React.Component {
     const { reclassifyDialog, correct } = this.state
     const { deleteDefectsDialog, deleteDefectsOptions } = this.state
     const { x, x2n, y, xValue, x2ndValue, yValue, ifAvg } = this.state
-    const { infos, indexStyle } = this.state
-    const { dsa, sortName, dsaOrder } = this.state
+    const { dsa, sortName, dsaOrder, dsaTableData } = this.state
+    const { tags, defectClass } = this.state
 
     if (dsa) this.onGenerateDSAChart()
     else this.onGenerateParetoChart()
 
     const dsaTableColumns = [
-      { title: 'Name', dataIndex: 'name', key: 'name' },
-      { title: 'Age', dataIndex: 'age', key: 'age' },
-      { title: 'Address', dataIndex: 'address', key: 'address' }
+      { title: 'dieIndex', dataIndex: 'dieIndex', key: 'dieIndex' },
+      { title: 'step', dataIndex: 'step', key: 'step' },
+      { title: 'defectId', dataIndex: 'defectId', key: 'defectId' },
+      { title: 'scanTime', dataIndex: 'scanTm', key: 'scanTm' },
+      { title: 'image', dataIndex: 'imgUrl', key: 'imgUrl' }
+    ]
+    const infoColumns = [
+      { title: 'Lot ID', dataIndex: 'lotId' },
+      { title: 'Wafer No', dataIndex: 'waferNo' },
+      { title: 'Product ID', dataIndex: 'productId' },
+      { title: 'Step ID', dataIndex: 'stepId' },
+      { title: 'Scan Time', dataIndex: 'scanTm' }
     ]
 
     return (
@@ -1367,7 +1313,7 @@ class SingleMap extends React.Component {
                     <Dropdown
                       overlay={
                         <Menu onClick={this.onDropDownClick}>
-                          {commands.map(c => (
+                          {COMMANDS.map(c => (
                             <Menu.Item key={c}>{c}</Menu.Item>
                           ))}
                         </Menu>
@@ -1393,13 +1339,10 @@ class SingleMap extends React.Component {
                   style={zoomTimes === 1 ? { transform: `rotate(${angel}deg)` } : {}}
                 ></div>
                 {imageVisible ? (
-                  <div id={`img-${name}`} className='single-map-img'>
-                    <br />
-                    <div ref='detailInfo'></div>
-                    {/* image detail */}
+                  <StyleImages id={`img-${name}`}>
                     <div className='imageDetail'>
                       <ul className='imageContent'>
-                        {infoPages.map((item, index) => (
+                        {currentImages.map((item, index) => (
                           <li key={index}>
                             <img src={item.image} alt='' />
                             <div>Lot Id:{item.lotId}</div>
@@ -1408,28 +1351,21 @@ class SingleMap extends React.Component {
                           </li>
                         ))}
                       </ul>
-                      <Pagination
-                        total={100}
-                        showTotal={t => `Total: ${t}`}
-                        pageSize={10}
-                        defaultCurrent={1}
-                        onChange={this.onImageDetailPageChange}
-                      />
                     </div>
-
-                    <span
-                      id={`close-${name}`}
-                      className='single-map-close'
-                      onClick={() => this.setState({ imageVisible: false })}
-                    >
-                      X
-                    </span>
-                  </div>
+                    <Pagination
+                      simple
+                      size='small'
+                      total={imagesTotal}
+                      pageSize={5}
+                      onChange={this.onImageDetailPageChange}
+                    />
+                    <Icon type='close' onClick={() => this.setState({ imageVisible: false })} />
+                  </StyleImages>
                 ) : null}
               </div>
               {mapType !== 'Heat Map' ? (
                 <div className='operBtn'>
-                  {btns.map(item => (
+                  {TOOL_TIPS.map(item => (
                     <Tooltip key={item.i} placement='right' title={item.content}>
                       <Icon
                         onClick={() => this.onDoAction(item.func)}
@@ -1457,20 +1393,27 @@ class SingleMap extends React.Component {
               okText='确认'
               cancelText='取消'
             >
-              <Form layout='vertical' labelCol={{ span: 2 }}>
+              <Form layout='vertical' labelCol={{ span: 4 }} wrapperCol={{ span: 20 }}>
                 <Form.Item label='预设角度'>
-                  <Button type='primary' onClick={() => this.setState({ rotationDegree: 90 })}>
+                  <Button type='primary' size='small' onClick={() => this.setState({ rotationDegree: 90 })}>
                     90°
                   </Button>
-                  <Button type='primary' onClick={() => this.setState({ rotationDegree: 180 })}>
+                  <Button type='primary' size='small' onClick={() => this.setState({ rotationDegree: 180 })}>
                     180°
                   </Button>
-                  <Button type='primary' onClick={() => this.setState({ rotationDegree: 270 })}>
+                  <Button type='primary' size='small' onClick={() => this.setState({ rotationDegree: 270 })}>
                     270°
                   </Button>
                 </Form.Item>
-                <Form.Item>
-                  <Input onChange={e => this.setState({ rotationDegree: e.target.value })} />
+                <Form.Item label='自定义角度'>
+                  <InputNumber
+                    min={0}
+                    max={360}
+                    size='small'
+                    style={{ width: 100, textAlign: 'center' }}
+                    onChange={rotationDegree => this.setState({ rotationDegree })}
+                  />{' '}
+                  °
                 </Form.Item>
               </Form>
             </Modal>
@@ -1478,7 +1421,7 @@ class SingleMap extends React.Component {
             <Modal
               title='Overlap'
               visible={overlapDialog}
-              // onOk={this.onWaferRotate}
+              onOk={this.onOverlapOk}
               onCancel={() => this.setState({ overlapDialog: false })}
               okText='确认'
               cancelText='取消'
@@ -1539,7 +1482,7 @@ class SingleMap extends React.Component {
           </StyleWafer>
 
           {/* Pareto */}
-          <StylePareto style={{ display: `${dsa ? 'none' : 'block'}` }} >
+          <StylePareto style={{ display: `${dsa ? 'none' : 'block'}` }}>
             {!dsa ? (
               <Form layout='inline' style={{ height: 50 }}>
                 <Form.Item label='X轴' style={{ width: 150 }}>
@@ -1570,10 +1513,10 @@ class SingleMap extends React.Component {
                   </Select>
                 </Form.Item>
                 <Form.Item>
-                  <Button onClick={this.onParetoSearch} type='primary' style={{ marginRight: 10 }}>
+                  <Button onClick={this.onParetoSearch} type='primary' style={{ marginRight: 10, minWidth: 50 }}>
                     Search
                   </Button>
-                  <Button onClick={this.onParetoClear} type='dashed'>
+                  <Button onClick={this.onParetoClear} type='dashed' style={{ minWidth: 50 }}>
                     Clear
                   </Button>
                 </Form.Item>
@@ -1618,37 +1561,77 @@ class SingleMap extends React.Component {
           </StyleDSA>
         </div>
 
-        <StyleInfo>
-          {Object.keys(infos).map((key, index) => (
-            <div key={index} className='infoList'>
-              <span className='infoName'>{key}</span>
-              <span className={indexStyle[index] ? 'infoDetail' : ''} onClick={() => this.onInfoToggle(index)}>
-                {infos[key].map((item, index) => (
-                  <span key={index}>
-                    {index > 0 ? ', ' : ''}
-                    {item}
-                  </span>
-                ))}
-              </span>
-            </div>
-          ))}
-        </StyleInfo>
+        <Table
+          pagination={false}
+          className='single-map-table'
+          size='small'
+          bordered
+          rowKey={r => `${r.lotId}${r.waferNo}${r.productId}${r.stepId}${r.scanTm}`}
+          columns={infoColumns}
+          dataSource={singleWaferKey}
+        />
 
-        <Button type='primary' onClick={this.onDsaToggle}>
-          {dsa ? 'Single Wafer' : 'DSA'}
+        <Button type='primary' style={{ marginTop: 20 }} onClick={this.onDsaToggle}>
+          {dsa ? 'Single Map' : 'DSA'}
         </Button>
 
         {dsa ? (
-          <Table columns={dsaTableColumns} dataSource={dsaTableData} />
+          <Table
+            pagination={false}
+            className='single-map-table'
+            size='small'
+            bordered
+            columns={dsaTableColumns}
+            dataSource={dsaTableData}
+          />
         ) : null}
 
-        <CommonDrawer ref={r => (this.drawer = r)} width={550}>
+        <CommonDrawer ref={r => (drawer = r)} width={500}>
           <section>
-            <h3 style={{ width: 60 }}>Filters</h3>
-            <Form layout='vertical' labelCol={{ span: 5 }}>
-              <Form.Item label='Defect Class:'>1</Form.Item>
-              <Form.Item label=' '>
-                <Button onClick={this.onFilterSubmit} type='primary'>
+            <h3>Filter</h3>
+            <Form layout='vertical' labelCol={{ span: 5 }} wrapperCol={{ span: 19 }}>
+              <Form.Item label='Defect class:'>
+                <Radio.Group onChange={this.onDefectClassChange}>
+                  {DEFECT_CLASS_LIST.map(t => (
+                    <Radio key={t[1]} value={t[1]}>
+                      {t[0]}
+                    </Radio>
+                  ))}
+                </Radio.Group>
+              </Form.Item>
+              {defectClass ? (
+                <Form.Item label=' '>
+                  <Checkbox.Group options={tags[defectClass]} onChange={this.onDefectClassDetailChange} />
+                </Form.Item>
+              ) : null}
+              <Form.Item label='Defect size:'>
+                <Input style={{ width: 60 }} onChange={e => this.onDefectSizeChange(0, e.target.value)} size='small' />
+                -
+                <Input style={{ width: 60 }} onChange={e => this.onDefectSizeChange(1, e.target.value)} size='small' />
+              </Form.Item>
+              <Form.Item label='Test:'>
+                <Checkbox.Group options={tags.tests} onChange={v => this.onDefectFiltersChange('tests', v)} />
+              </Form.Item>
+              <Form.Item label='Cluster:'>
+                <Checkbox.Group options={tags.clusterIds} onChange={v => this.onDefectFiltersChange('clusterIds', v)} />
+              </Form.Item>
+              <Form.Item label='Adder:'>
+                <Checkbox onChange={e => this.setState({ adderFlag: e.target.checked ? ['Y'] : ['N'] })} />
+              </Form.Item>
+              <Form.Item label='Repeater:'>
+                <Checkbox.Group
+                  options={tags.repeaterIds}
+                  onChange={v => this.onDefectFiltersChange('repeaterIds', v)}
+                />
+              </Form.Item>
+              <Form.Item label='Zone:'>
+                <Checkbox.Group options={tags.zoneIds} onChange={v => this.onDefectFiltersChange('zoneIds', v)} />
+              </Form.Item>
+              <Form.Item label='Sub Die:'>
+                <Checkbox.Group options={tags.subDieIds} onChange={v => this.onDefectFiltersChange('subDieIds', v)} />
+              </Form.Item>
+              <Form.Item label=' ' style={{ textAlign: 'right' }}>
+                <Button type='primary' onClick={this.onFilterSubmit}>
                   Submit
                 </Button>
               </Form.Item>

@@ -37,16 +37,17 @@ img {
   height: calc(100vh - 50px);
   top: 50px;
 }
+.ant-drawer-body {
+  padding: 15px;
+}
 .ant-drawer-body section {
   border: 1px solid #e4e7ed;
   min-height: 40px;
-  padding: 0 20px;
+  padding: 0 15px 5px;
 }
-
 .ant-drawer-body section + section {
-  margin-top: 20px;
+  margin-top: 15px;
 }
-
 .ant-drawer-body section h3 {
   margin-top: -13px;
   margin-left: 20px;
@@ -55,4 +56,21 @@ img {
   display: block;
   width: 60px;
   text-align: center;
+}
+button + button,
+.ant-select + .ant-select {
+  margin-left: 10px;
+}
+.ant-form-item {
+  margin-bottom: 0;
+}
+.ant-btn {
+  min-width: 100px;
+}
+/* 分页居中 */
+.ant-pagination {
+  text-align: center;
+}
+.ant-spin-nested-loading > div > .ant-spin {
+  max-height: inherit;
 }

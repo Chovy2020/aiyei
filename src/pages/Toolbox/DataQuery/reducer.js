@@ -10,6 +10,16 @@ const initState = {
     seeLastScan: false, // 多次scan只看最后一次
     startTm: '', // 开始日期 结束日期 yyyy-MM-dd
     endTm: ''
+  },
+  filters: {
+    mbs: [],
+    abc: [],
+    rbs: [],
+    tests: [],
+    clusterIds: [],
+    repeaterIds: [],
+    zoneIds: [],
+    subDieIds: []
   }
 }
 
@@ -29,6 +39,11 @@ export default (state = initState, action) => {
       return {
         ...state,
         itemSelected: action.payload
+      }
+    case 'CHANGE_FILTERS':
+      return {
+        ...state,
+        filters: action.payload
       }
     default:
       return state

@@ -12,7 +12,7 @@ export const StyleImageGallery = styled.div`
 
 export const StyleImages = styled.ul`
   width: 100%;
-  padding: 0 109px;
+  padding: 0 99px;
   flex-wrap: wrap;
   box-sizing: border-box;
   display: flex;
@@ -22,8 +22,7 @@ export const StyleImages = styled.ul`
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    border: 1px solid #f1f1f1;
-    padding: 10px;
+    padding: 5px;
     position: relative;
     img {
       width: 100%;

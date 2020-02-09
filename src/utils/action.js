@@ -4,7 +4,12 @@ export const changeWaferSelected = payload => ({
   payload
 })
 
-export const aa = payload => ({
-  type: 'aa',
+export const changeToolboxLoading = payload => ({
+  type: 'CHANGE_TOOLBOX_LOADING',
+  payload
+})
+
+export const changeMenu = payload => ({
+  type: 'CHANGE_MENU',
   payload
 })

@@ -6,7 +6,7 @@ module.exports = {
     es6: true
   },
   extends: 'airbnb', // 使用 eslint-config-airbnb
-  // parser: 'babel-eslint', // 增强语法识别能力
+  parser: 'babel-eslint', // 增强语法识别能力
   parserOptions: {
     ecmaFeatures: {
       jsx: true
@@ -15,21 +15,7 @@ module.exports = {
     sourceType: 'module'
   },
   rules: {
-    // 这里可以根据需要对 airbnb 的规则进行修改，此处仅为示例
-    // 'linebreak-style': 0,
-    // 'prefer-destructuring': 0,
-    // 'prefer-const': 0,
-    // 'one-var': 0,
-    // 'comma-dangle': [
-    //   'error',
-    //   {
-    //     arrays: 'only-multiline',
-    //     objects: 'always-multiline',
-    //     imports: 'only-multiline',
-    //     exports: 'only-multiline',
-    //     functions: 'ignore'
-    //   }
-    // ],
+    'indent': ["error", 2, { "SwitchCase": 1 }],
     'no-restricted-syntax': 0,
     'no-console': 0,
     // 'import/prefer-default-export': 0,
@@ -47,22 +33,22 @@ module.exports = {
     'react/destructuring-assignment': 0,
 
     // 自定义
-    'semi': [2, 'never'],
-    'max-len': ["error", { "code": 120 }],
+    semi: [2, 'never'],
+    'max-len': ['error', { code: 120 }],
     'react/jsx-filename-extension': [2, { extensions: ['.js', '.jsx', '.tsx'] }],
     'jsx-quotes': ['error', 'prefer-single'],
     'react/prefer-stateless-function': 0,
-    'import/no-unresolved': 0,
-    'import/extensions': 0,
+    'import/no-unresolved': 1,
+    'import/extensions': 1,
     'comma-dangle': ['error', 'never'],
     'arrow-parens': ['error', 'as-needed'],
     'object-curly-newline': [
       'error',
       {
-        ObjectExpression: { multiline: true },
-        ObjectPattern: { multiline: true },
-        ImportDeclaration: { multiline: true },
-        ExportDeclaration: { multiline: true }
+        ObjectExpression: 'never',
+        ObjectPattern: 'never',
+        ImportDeclaration: 'never',
+        ExportDeclaration: 'never'
       }
     ],
     'jsx-a11y/click-events-have-key-events': 0,

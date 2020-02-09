@@ -1,4 +1,6 @@
 import axios from 'axios'
+import { message } from 'antd'
+import store from './store'
 
 const ERROR_CODE = {
   400: '请求错误(400)',
@@ -17,20 +19,28 @@ const ERROR_CODE = {
 // 全局axios配置
 axios.defaults.baseURL = '/api'
 axios.defaults.withCredentials = true
-axios.defaults.timeout = 30000
+axios.defaults.timeout = 30 * 60 * 1000
+
+
+const LOADING_DELAY = 200
+let timer = null
 
 // http request 拦截器
 axios.interceptors.request.use(
   config => {
+    clearTimeout(timer)
+    timer = setTimeout(() => {
+      store.dispatch({type: 'CHANGE_TOOLBOX_LOADING', payload: true})
+    }, LOADING_DELAY)
     // 需要权限的接口的token验证
-    const { token } = localStorage
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
+    // const { token } = localStorage
+    // if (token) {
+    //   config.headers.Authorization = `Bearer ${token}`
+    // }
     return config
   },
   error => {
-    console.log('请求超时')
+    message.error('请求超时')
     return Promise.reject(error)
   }
 )
@@ -38,6 +48,8 @@ axios.interceptors.request.use(
 // http response 拦截器
 axios.interceptors.response.use(
   res => {
+    clearTimeout(timer)
+    store.dispatch({type: 'CHANGE_TOOLBOX_LOADING', payload: false})
     if (res && res.data) {
       if (res.data.code === 200) return res.data.data
       // todo: 针对post下载文件需要做处理
@@ -53,12 +65,16 @@ axios.interceptors.response.use(
         window.URL.revokeObjectURL(href) // 释放掉blob对象
         return Promise.resolve()
       }
-      console.log(ERROR_CODE[res.data.code] || '未知错误!')
+      // console.log(ERROR_CODE[res.data.code] || '未知错误!')
+      message.error(ERROR_CODE[res.data.code] || '未知错误!')
     } else console.log('服务器错误!')
     return Promise.reject()
   },
   err => {
-    console.log((err && err.response && ERROR_CODE[err.response.status]) || '连接服务器失败!')
+    clearTimeout(timer)
+    store.dispatch({type: 'CHANGE_TOOLBOX_LOADING', payload: false})
+    // console.log((err && err.response && ERROR_CODE[err.response.status]) || '连接服务器失败!')
+    message.error((err && err.response && ERROR_CODE[err.response.status]) || '连接服务器失败!')
     return Promise.reject(err)
   }
 )

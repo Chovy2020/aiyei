@@ -1,7 +1,7 @@
 /* eslint-disable */
 import React from 'react'
 import { connect } from 'react-redux'
-import { Form, Pagination, Radio, Checkbox, Button, Input, Upload, Icon, message } from 'antd'
+import { Form, Pagination, Radio, Checkbox, Button, Modal, Input, InputNumber, Upload, Icon, message } from 'antd'
 // import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 // import _ from 'lodash'
 import zrender from 'zrender'
@@ -11,8 +11,9 @@ import { delay } from '@/utils/web'
 // import { changeForm, changeItems } from './action'
 // import { DATA_QUERY_QUERY, DATA_QUERY_INIT } from './constant'
 // import reducer from './reducer'
-import { getTags, getFilters, getMap, getStack } from './service'
+import { getFilters, getMap, getStack, downloadCSV, getNewMap, getNewStack } from './service'
 import { StyleMapGallery, StyleWaferMapGroup, StyleWaferMap } from './style'
+import { changeWaferSelected } from '@/utils/action'
 import CommonDrawer from '@/components/CommonDrawer'
 
 const defectClassList = [
@@ -26,12 +27,13 @@ const groupByList = [
   ['Inspector', 'eqp_id'],
   ['Scan Time', 'scan_tm']
 ]
+let drawer = null
 
 class MapGallery extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      galleryType: 'Map', // 当前选中的类型
+      galleryType: 'Die Stack', // 当前选中的类型
       galleryTypes: ['Map', 'Die Stack', 'Reticle Stack', 'Heat Map'], // 4种类型列表
       waferListGroup: {},
       // 右侧各种过滤条件
@@ -57,14 +59,18 @@ class MapGallery extends React.Component {
         subDieIds: []
       },
       defectClass: null,
+      adderFlag: true,
+      defectSize: ['', ''],
       group: {
         fileId: '',
         by: []
       },
-      adderFlag: true,
-      defectSize: ['', ''],
-      waferSelected: [],
+      selected: [],
+      selectedAndKey: {},
       redisCache: [],
+      // rotation
+      degrees: 0, // 角度 输入框
+      rotationVisible: false, // 旋转弹出层是否显示
       total: 0,
       pageSize: 10,
       pageNo: 1
@@ -72,16 +78,45 @@ class MapGallery extends React.Component {
   }
 
   async componentDidMount() {
-    const { items, itemSelected, defect } = this.props
+    const { filters } = this.props
+    this.setState({ tags: filters })
+    this.onFilterOrGroup()
+  }
+
+  getFormData = isDelete => {
+    const { items, itemSelected } = this.props
+    const { tagsSeleted, selected, adderFlag, pageNo, pageSize, group, defectSize } = this.state
     const data = {
-      ...defect,
+      waferList: [],
+      filter: {
+        defectType: {
+          rb: tagsSeleted.rbs,
+          adc: tagsSeleted.adc,
+          mb: tagsSeleted.mbs
+        },
+        testId: tagsSeleted.tests,
+        cluster: tagsSeleted.clusterIds,
+        adder: adderFlag ? ['Y'] : ['N'],
+        repeater: tagsSeleted.repeaterIds,
+        zoneId: tagsSeleted.zoneIds,
+        subDie: tagsSeleted.subDieIds,
+      },
+      pageNumber: pageNo,
+      pageSize,
+      groupExcelRedisKey: group.fileId,
+      groupList: group.by,
+      deleteIds: isDelete ? selected : [],
       comboBoxes: items.map((item, index) => ({
         key: item,
-        value: itemSelected[index]
+        value: itemSelected[index] || []
       }))
     }
-    this.setState({ tags: await getTags(data) })
-    this.onFilterOrGroup()
+    if (defectSize[0] === '') defectSize[0] = 0
+    if (defectSize[1] === '') defectSize[1] = 1
+    const num1 = parseFloat(defectSize[0])
+    const num2 = parseFloat(defectSize[1])
+    data.defectSize = [Math.min(num1, num2), Math.max(num1, num2)]
+    return data
   }
 
   // Drawer
@@ -115,8 +150,8 @@ class MapGallery extends React.Component {
   }
 
   onFilterOrGroup = async isDelete => {
-    if (!isDelete) this.drawer.onClose()
-    const { map, defectCount, totalCount } = await this.loadFilters(isDelete)
+    if (!isDelete) drawer.onClose()
+    const { map, fullMap, defectCount, totalCount } = await this.loadFilters(isDelete)
     console.log('defectCount: ', defectCount)
     const { pageSize } = this.state
     // 清空并且重建缓存
@@ -124,9 +159,9 @@ class MapGallery extends React.Component {
     // 计算多少页，缓存
     const pages = Math.ceil(totalCount / pageSize)
     redisCache.length = pages
-    redisCache[0] = map
+    redisCache[0] = { map, fullMap }
     this.setState({
-      total: totalCount,
+      total: totalCount || 0,
       pageNo: 1,
       redisCache
     })
@@ -150,7 +185,11 @@ class MapGallery extends React.Component {
   loadMap = async () => {
     const { redisCache, pageNo } = this.state
     const map = redisCache[pageNo - 1]
-    const res = await getMap({ map })
+    const data = this.getFormData()
+    // console.log('getFormData', data)
+    const res1 = await getNewMap(data)
+    console.log('newMap', res1)
+    const res = await getMap(map)
     if (!res.resultMap || res.resultMap === {}) {
       message.warning('No data')
       return
@@ -172,7 +211,7 @@ class MapGallery extends React.Component {
   loadStack = async isDieStack => {
     const { redisCache, pageNo } = this.state
     const map = redisCache[pageNo - 1]
-    const waferListGroup = await getStack({ map })
+    const waferListGroup = await getStack(map)
     if (!waferListGroup) {
       message.warning('No data')
       return
@@ -262,23 +301,25 @@ class MapGallery extends React.Component {
    */
   renderDies = (group, width, height, dies, noScan) => {
     // dies
-    dies.forEach(item => {
-      const boundingRect = new zrender.Rect({
-        shape: {
-          x: item.x,
-          y: item.y,
-          width,
-          height
-        },
-        style: {
-          fill: 'none',
-          stroke: '#ddd',
-          lineWidth: 1,
-          strokeNoScale: true
-        }
+    if (dies) {
+      dies.forEach(item => {
+        const boundingRect = new zrender.Rect({
+          shape: {
+            x: item.x,
+            y: item.y,
+            width,
+            height
+          },
+          style: {
+            fill: 'none',
+            stroke: '#ddd',
+            lineWidth: 1,
+            strokeNoScale: true
+          }
+        })
+        group.add(boundingRect)
       })
-      group.add(boundingRect)
-    })
+    }
     // noScan
     if (noScan) {
       noScan.forEach(item => {
@@ -307,17 +348,19 @@ class MapGallery extends React.Component {
    * @param {Array} dieDefects
    */
   renderPoints = (group, dieDefects) => {
-    dieDefects.forEach(item => {
-      const point = new zrender.Circle({
-        shape: {
-          cx: item.x,
-          cy: item.y,
-          r: 1
-        },
-        style: { fill: '#f00' }
+    if (dieDefects) {
+      dieDefects.forEach(item => {
+        const point = new zrender.Circle({
+          shape: {
+            cx: item.x,
+            cy: item.y,
+            r: 1
+          },
+          style: { fill: '#f00' }
+        })
+        group.add(point)
       })
-      group.add(point)
-    })
+    }
   }
 
   /**
@@ -326,6 +369,7 @@ class MapGallery extends React.Component {
    * @param {Array} points
    */
   renderHeatmap = (container, points) => {
+    if (!points) return
     const data = []
     let max = 0
     let min = 9999
@@ -363,18 +407,18 @@ class MapGallery extends React.Component {
 
   loadFilters = async isDelete => {
     const { items, itemSelected } = this.props
-    const { tagsSeleted, waferSelected, adderFlag, pageNo, pageSize, group, defectSize } = this.state
+    const { tagsSeleted, selected, adderFlag, pageNo, pageSize, group, defectSize } = this.state
     const data = {
       ...tagsSeleted,
       adderFlag: adderFlag ? ['Y'] : ['N'],
-      deleteIds: isDelete ? waferSelected : [],
+      deleteIds: isDelete ? selected : [],
       pageNumber: pageNo,
       pageSize,
       groupExcelRedisKey: group.fileId,
       groupList: group.by,
       comboBoxes: items.map((item, index) => ({
         key: item,
-        value: itemSelected[index]
+        value: itemSelected[index] || []
       }))
     }
     if (defectSize[0] === '') defectSize[0] = 0
@@ -418,9 +462,97 @@ class MapGallery extends React.Component {
     await delay(1)
     const { redisCache } = this.state
     if (!redisCache[pageNo - 1]) {
-      const { map } = await this.loadFilters()
-      redisCache[pageNo - 1] = map
+      const { map, fullMap } = await this.loadFilters()
+      redisCache[pageNo - 1] = { map, fullMap }
     }
+    this.onGalleryTypeChange()
+  }
+
+  // 点击选择
+  onWaferSelect = wafer => {
+    const { waferSelected, name } = this.props
+    let { selected, selectedAndKey } = this.state
+    let wafers = waferSelected[name].wafers || []
+    if (selected.includes(wafer.id)) {
+      selected = _.remove(selected, n => wafer.id !== n)
+      wafers = _.remove(wafers, w => `${w.lotId}|${w.waferNo}|${w.productId}|${w.stepId}|${w.scanTm}` !== wafer.id)
+      selectedAndKey = _.omit(selectedAndKey, [wafer.id])
+    } else {
+      selected.push(wafer.id)
+      const { lotId, stepId, waferNo, productId, scanTm, defectIdRedisKey } = wafer
+      wafers.push({
+        lotId,
+        stepId,
+        waferNo,
+        productId,
+        scanTm,
+        defects: [],
+        defectIdRedisKey
+      })
+      selectedAndKey[wafer.id] = defectIdRedisKey
+    }
+    this.setState({ selected, selectedAndKey })
+    // 同步缓存到store
+    this.props.changeWaferSelected({
+      name,
+      wafers,
+      bars: []
+    })
+  }
+
+  onWaferRotate = () => {
+    const { selected, waferListGroup, degrees } = this.state
+    for (const key in waferListGroup) {
+      waferListGroup[key].forEach(item => {
+        if (selected.includes(item.id)) item.degrees = degrees
+      })
+    }
+    this.setState({
+      rotationVisible: false,
+      waferListGroup
+    })
+  }
+
+  onExportCSV = () => {
+    const { waferSelectedAndKey } = this.state
+    downloadCSV({ paretoExportId: waferSelectedAndKey })
+  }
+
+  onRotationClick = () => {
+    const { selected } = this.state
+    if (selected.length > 0) this.setState({ rotationVisible: true })
+    else message.warning('Please select wafer')
+  }
+  
+  onSeletedReset = () => {
+    const { name } = this.props
+    this.setState({ selected: [] })
+    this.props.changeWaferSelected({
+      name,
+      wafers: [],
+      bars: []
+    })
+  }
+
+  onSeletedRemove = async () => {
+    const { selected } = this.state
+    if (selected.length === 0) {
+      message.warning('Please select wafer')
+      return
+    }
+    const { pageSize } = this.state
+    const { map, fullMap, defectCount, totalCount } = await this.loadFilters('remove')
+    console.log('defectCount: ', defectCount)
+    const redisCache = []
+    const pages = Math.ceil(totalCount / pageSize)
+    redisCache.length = pages
+    redisCache[0] = { map, fullMap }
+    this.setState({
+      total: totalCount,
+      redisCache,
+      selected: [],
+      pageNo: 1
+    })
     this.onGalleryTypeChange()
   }
 
@@ -434,13 +566,15 @@ class MapGallery extends React.Component {
       defectClass,
       total,
       pageSize,
+      selected,
+      rotationVisible,
       pageNo
     } = this.state
 
     return (
       <StyleMapGallery>
         <Form layout='vertical' labelCol={{ span: 2 }}>
-          <Form.Item label={`Map Gallery-${name}:`} onChange={this.onGalleryTypeChange}>
+          <Form.Item label={`Gallery Type:`} onChange={this.onGalleryTypeChange}>
             <Radio.Group defaultValue={galleryType}>
               {galleryTypes.map(t => (
                 <Radio key={t} value={t}>
@@ -450,11 +584,10 @@ class MapGallery extends React.Component {
             </Radio.Group>
           </Form.Item>
           <Form.Item label='Action:'>
-            <Button type='dashed'>Reset</Button>
-            <Button type='primary'>Rotation</Button>
-            <Button type='primary'>Export to CSV</Button>
-            <Button type='primary'>Remove</Button>
-            <Button type='primary'>Test</Button>
+            <Button type='primary' onClick={this.onRotationClick}>Rotation</Button>
+            <Button type='primary' onClick={this.onExportCSV}>Export to CSV</Button>
+            <Button type='danger' onClick={this.onSeletedRemove}>Remove</Button>
+            <Button type='dashed' onClick={this.onSeletedReset}>Reset</Button>
           </Form.Item>
         </Form>
         <StyleWaferMapGroup>
@@ -463,7 +596,7 @@ class MapGallery extends React.Component {
               <h4>{group}</h4>
               <StyleWaferMap>
                 {waferListGroup[group].map(wafer => (
-                  <li key={wafer.id}>
+                  <li key={wafer.id} className={selected.includes(wafer.id) ? 'selected' : ''} onClick={() => this.onWaferSelect(wafer)}>
                     <div
                       id={`tab${name}-${wafer.id}`}
                       className={`wafer ${galleryType === 'Map' || galleryType === 'Heat Map' ? 'radius' : ''}`}
@@ -472,18 +605,18 @@ class MapGallery extends React.Component {
                     <p>Lot ID: {wafer.lotId}</p>
                     <p>Wafer No: {wafer.waferNo}</p>
                     <p>Step ID: {wafer.stepId}</p>
-                    <p>Total: {wafer.dieDefects.length || 0}</p>
+                    <p>Total: {wafer.dieDefects ? wafer.dieDefects.length : 0}</p>
                   </li>
                 ))}
               </StyleWaferMap>
             </div>
           ))}
         </StyleWaferMapGroup>
-        <Pagination total={total} showTotal={t => `Total: ${t}`} pageSize={pageSize} defaultCurrent={pageNo} onChange={this.onPageChange} />
-        <CommonDrawer ref={r => (this.drawer = r)} width={550}>
+        <Pagination total={total} showTotal={t => `Total: ${t}`} pageSize={pageSize} defaultCurrent={pageNo} onChange={this.onPageChange} style={{ width: 960 }} />
+        <CommonDrawer ref={r => (drawer = r)} width={500}>
           <section>
             <h3>Filter</h3>
-            <Form layout='vertical' labelCol={{ span: 5 }}>
+            <Form layout='vertical' labelCol={{ span: 5 }} wrapperCol={{ span: 19 }}>
               <Form.Item label='Defect class:'>
                 <Radio.Group onChange={this.onDefectClassChange}>
                   {defectClassList.map(t => (
@@ -533,11 +666,11 @@ class MapGallery extends React.Component {
           </section>
           <section>
             <h3 style={{ width: 110 }}>Group View</h3>
-            <Form layout='vertical' labelCol={{ span: 6 }}>
+            <Form layout='vertical'  labelCol={{ span: 5 }} wrapperCol={{ span: 19 }}>
               <Form.Item label='Group by:'>
                 <Checkbox.Group onChange={v => this.onGroupChange('by', v)}>
                   {groupByList.map(t => (
-                    <Checkbox key={t[1]} value={t[1]}>
+                    <Checkbox className='ant-checkbox-group-item' key={t[1]} value={t[1]}>
                       {t[0]}
                     </Checkbox>
                   ))}
@@ -558,6 +691,27 @@ class MapGallery extends React.Component {
             </Form>
           </section>
         </CommonDrawer>
+
+        <Modal
+          title='旋转角度'
+          visible={rotationVisible}
+          onOk={this.onWaferRotate}
+          onCancel={() => this.setState({ rotationVisible: false })}
+          okText='确认'
+          cancelText='取消'
+        >
+          <Form>
+            <Form.Item>
+              <Button onClick={() => this.setState({ degrees: 90 })}>90°</Button>
+              <Button onClick={() => this.setState({ degrees: 180 })}>180°</Button>
+              <Button onClick={() => this.setState({ degrees: 270 })}>270°</Button>
+            </Form.Item>
+            <Form.Item>
+              <InputNumber min={0} max={360} onChange={degrees => this.setState({ degrees })} />
+            </Form.Item>
+          </Form>
+        </Modal>
+
       </StyleMapGallery>
     )
   }
@@ -568,5 +722,7 @@ const mapStateToProps = state => ({
   ...state.Init,
   ...state.DataQuery
 })
-const mapDispatchToProps = {}
+const mapDispatchToProps = {
+  changeWaferSelected
+}
 export default connect(mapStateToProps, mapDispatchToProps)(MapGallery)
