@@ -1,8 +1,9 @@
 import React from 'react'
 import _ from 'lodash'
 import { delay } from '@/utils/web'
-import { Form,Input,InputNumber, Select, Button,Modal,message,Table} from 'antd'
+import { Form,Radio,Input,InputNumber, Select, Button,Modal,message,Table,Popconfirm,Icon} from 'antd'
 import { getZone } from './service'
+import { LayoutInline,LayoutVertical,DiePitch,StyleCluster} from './style'
 
 const { Option } = Select;
 const { Column, ColumnGroup } = Table;
@@ -20,7 +21,11 @@ class HorizontalLoginForm extends React.Component {
       visible: false,
       addSubdieProduct:'',
       addSubdieStepId: '',
-      tableData: []
+      tableData: [],
+      radialZone: 1,
+      radial: 360,
+      radiusArr: [{seq:1,value:''}],
+      theaterArr: [{seq:1,value:''}]
     }
   }
   componentDidMount() {
@@ -86,7 +91,28 @@ class HorizontalLoginForm extends React.Component {
     newTableData[id-1][cellName] = value
     this.setState({tableData: newTableData})
   }
+
+  changeValue = (value, id) => {
+    let arr = _.cloneDeep(this.state.radiusArr)
+    arr[id-1].value = value
+    this.setState({radiusArr: arr})
+  }
+
+  changeTheaterValue = (value, id) => {
+    let arr = _.cloneDeep(this.state.theaterArr)
+    arr[id-1].value = value
+    this.setState({theaterArr: arr})
+  }
+
+  changeRadialZone = (value) => {
+    this.setState({radialZone: value, radial: 360/value})
+  }
+
   render() {
+    const formItemLayout = {
+      labelCol: { span: 6 },
+      wrapperCol: { span: 14 },
+    };
     return (
       <div>
         <Form layout="inline">
@@ -116,12 +142,72 @@ class HorizontalLoginForm extends React.Component {
             </Form.Item>
           </Form>
         </Modal>
-        <div>
-          
-        </div>
+        <LayoutInline>
+          <LayoutVertical>
+            <Form {...formItemLayout}>
+              <Form.Item label="Annular Selection">
+                <Radio.Group>
+                  <Radio value="a">Automatic</Radio>
+                  <Radio value="b">Manual</Radio>
+                </Radio.Group>
+              </Form.Item>
+              <Form.Item label="Wafer Size">
+                <Select style={{ width: 400 }} >
+                  <Option value="100">100</Option>
+                  <Option value="150">150</Option>
+                </Select>
+              </Form.Item>
+              <Form.Item label="Number of annular zones">
+                <Input />
+              </Form.Item>
+              <Form.Item label="Number of radial zones">
+                <InputNumber value={this.state.radialZone} min={1} onChange={this.changeRadialZone}/>
+                <Input style={{width: '50px', marginLeft: '10px'}} disabled value={this.state.radial}/>
+              </Form.Item>
+            </Form>
+          </LayoutVertical>
+          <LayoutInline>
+            <StyleCluster>
+              <Table dataSource={this.state.radiusArr} bordered rowKey={record => record.seq}>
+                <Column title="SEQ" dataIndex="seq" key="seq"/>
+                <Column title="Value" dataIndex="value" key="value"  align="center" render={(text, record) => (
+                  <InputNumber value={text} onChange={(value) => this.changeValue(value,record.seq,'value')}/>
+                )}/>
+                <Column
+                  title="Action"
+                  key="action"
+                  render={(text, record) => (
+                    <Popconfirm title="Sure to delete?" onConfirm={() => this.handleDelete(record.seq)}>
+                      <Icon type="delete"/>
+                    </Popconfirm>
+                  )}
+                />
+              </Table>
+              <Button type="default" onClick={this.addTableCell}><Icon type="plus" /></Button>
+            </StyleCluster>
+            <StyleCluster>
+              <Table dataSource={this.state.theaterArr} bordered rowKey={record => record.seq}>
+                <Column title="SEQ" dataIndex="seq" key="seq"/>
+                <Column title="Value" dataIndex="value" key="value"  align="center" render={(text, record) => (
+                  <InputNumber value={text} onChange={(value) => this.changeTheaterValue(value,record.seq,'value')}/>
+                )}/>
+                <Column
+                  title="Action"
+                  key="action"
+                  render={(text, record) => (
+                    <Popconfirm title="Sure to delete?" onConfirm={() => this.handleDelete(record.seq)}>
+                      <Icon type="delete"/>
+                    </Popconfirm>
+                  )}
+                />
+              </Table>
+              <Button type="default" onClick={this.addTableCell}><Icon type="plus" /></Button>
+            </StyleCluster>
+          </LayoutInline>
+          <DiePitch></DiePitch>
+        </LayoutInline>
       </div>
-      
-    );
+    )
   }
 }
 
