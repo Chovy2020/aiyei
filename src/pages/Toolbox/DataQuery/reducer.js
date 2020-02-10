@@ -3,7 +3,7 @@ import { DATA_QUERY_QUERY, DATA_QUERY_INIT } from './constant'
 const initState = {
   items: DATA_QUERY_INIT.map(i => DATA_QUERY_QUERY[i]),
   itemSelected: [],
-  defect: {
+  params: {
     existsImg: false, // 有照片
     mbHave: true, // Manual Classified
     secondScan: false, // 有前层scan结果
@@ -11,24 +11,25 @@ const initState = {
     startTm: '', // 开始日期 结束日期 yyyy-MM-dd
     endTm: ''
   },
-  filters: {
-    mbs: [],
-    abc: [],
-    rbs: [],
-    tests: [],
-    clusterIds: [],
-    repeaterIds: [],
-    zoneIds: [],
-    subDieIds: []
+  filterOption: {
+    mb: [],
+    adc: [],
+    rb: [],
+    testId: [],
+    cluster: [],
+    adder: ['NO'],
+    repeater: [],
+    zoneId: [],
+    subDie: []
   }
 }
 
 export default (state = initState, action) => {
   switch (action.type) {
-    case 'CHANGE_FORM':
+    case 'CHANGE_PARAMS':
       return {
         ...state,
-        defect: action.payload
+        params: action.payload
       }
     case 'CHANGE_ITEMS':
       return {
@@ -40,10 +41,10 @@ export default (state = initState, action) => {
         ...state,
         itemSelected: action.payload
       }
-    case 'CHANGE_FILTERS':
+    case 'CHANGE_FILTER_OPTION':
       return {
         ...state,
-        filters: action.payload
+        filterOption: action.payload
       }
     default:
       return state

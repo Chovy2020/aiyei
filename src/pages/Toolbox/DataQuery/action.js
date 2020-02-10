@@ -1,6 +1,6 @@
 // 表单输入
-export const changeForm = payload => ({
-  type: 'CHANGE_FORM',
+export const changeParams = payload => ({
+  type: 'CHANGE_PARAMS',
   payload
 })
 
@@ -14,7 +14,7 @@ export const changeItemSelected = payload => ({
   payload
 })
 
-export const changeFilters = payload => ({
-  type: 'CHANGE_FILTERS',
+export const changeFilterOption = payload => ({
+  type: 'CHANGE_FILTER_OPTION',
   payload
 })
