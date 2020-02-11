@@ -3,7 +3,7 @@ export const changeSelected = payload => ({
   payload
 })
 
-export const changeWafers = payload => ({
-  type: 'CHANGE_WAFERS',
+export const changePrevWafers = payload => ({
+  type: 'CHANGE_PREV_WAFERS',
   payload
 })

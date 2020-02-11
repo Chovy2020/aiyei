@@ -6,7 +6,7 @@ import CommonDrawer from '@/components/CommonDrawer'
 import { injectReducer } from '@/utils/store'
 import { delay } from '@/utils/web'
 import { getWaferSelected } from '@/utils/store'
-import { changeSelected, changeWafers } from './action'
+import { changeSelected, changePrevWafers } from './action'
 import { LAYOUT_SIZE, VIEW_GROUPS, CATEGORY_TYPES, getLotId, getWaferNo, getDefectId, getEquipId } from './constant'
 import reducer from './reducer'
 import { getClassCodes, getViewFilters, getImages, updateDefectGroup } from './service'
@@ -19,7 +19,6 @@ class ImageGallery extends React.Component {
     this.state = {
       // store waferSelected
       wafers: [],
-      bars: [],
       // 图片布局
       layout: {
         num1: 5,
@@ -46,12 +45,12 @@ class ImageGallery extends React.Component {
   async componentDidMount() {
     // 初始化selected
     this.onClassifiedReset()
-    const { wafers, bars } = getWaferSelected()
+    const { wafers } = getWaferSelected()
     // 将wafers保存到store，跳转下一个页面使用
-    const { imageWafers, name } = this.props
-    imageWafers[name] = wafers
-    this.props.changeWafers(imageWafers)
-    this.setState({ wafers, bars })
+    const { prevWafers, name } = this.props
+    prevWafers[name] = wafers
+    this.props.changePrevWafers(prevWafers)
+    this.setState({ wafers })
     await this.loadClassCodes()
     await this.loadImages()
     this.loadViewFilters()
@@ -66,8 +65,8 @@ class ImageGallery extends React.Component {
   }
   // 通过接口获取 filters
   loadViewFilters = async () => {
-    const { wafers, bars } = this.state
-    let viewFilters = await getViewFilters({ imageInfo: wafers, bars })
+    const { wafers } = this.state
+    let viewFilters = await getViewFilters({ imageInfo: wafers })
     viewFilters = viewFilters.map(item => `${item}`)
     this.setState({ viewFilters })
   }
@@ -281,5 +280,5 @@ class ImageGallery extends React.Component {
 
 injectReducer('ImageGallery', reducer)
 const mapStateToProps = state => ({ ...state.ImageGallery })
-const mapDispatchToProps = { changeSelected, changeWafers }
+const mapDispatchToProps = { changeSelected, changePrevWafers }
 export default connect(mapStateToProps, mapDispatchToProps)(ImageGallery)

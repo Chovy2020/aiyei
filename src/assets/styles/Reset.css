@@ -67,6 +67,10 @@ button + button,
 .ant-btn {
   min-width: 100px;
 }
+.ant-btn-sm {
+  font-size: 12px;
+  min-width: 80px;
+}
 /* 分页居中 */
 .ant-pagination {
   text-align: center;

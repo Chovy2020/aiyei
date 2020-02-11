@@ -494,16 +494,16 @@ class MapGallery extends React.Component {
             </Radio.Group>
           </Form.Item>
           <Form.Item label='Action:'>
-            <Button type='primary' onClick={this.onRotationClick}>
+            <Button size='small' type='primary' onClick={this.onRotationClick}>
               Rotation
             </Button>
-            <Button type='primary' onClick={this.onExportCSV}>
+            <Button size='small' type='primary' onClick={this.onExportCSV}>
               Export to CSV
             </Button>
-            <Button type='danger' onClick={this.onSeletedRemove}>
+            <Button size='small' type='danger' onClick={this.onSeletedRemove}>
               Remove
             </Button>
-            <Button type='dashed' onClick={this.onSeletedReset}>
+            <Button size='small' type='dashed' onClick={this.onSeletedReset}>
               Reset
             </Button>
           </Form.Item>
@@ -535,6 +535,7 @@ class MapGallery extends React.Component {
           ))}
         </StyleWaferMapGroup>
         <Pagination
+          size='small'
           total={total}
           showTotal={t => `Total: ${t}`}
           pageSize={pageSize}
@@ -580,6 +581,7 @@ class MapGallery extends React.Component {
               </Form.Item>
               <Form.Item label='Adder:'>
                 <Switch
+                  size='small'
                   defaultChecked={adder[0] === 'YES'}
                   onChange={checked => this.onDefectFiltersChange('adder', checked ? ['YES'] : ['NO'])}
                 />
