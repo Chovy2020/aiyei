@@ -24,6 +24,8 @@ class HorizontalLoginForm extends React.Component {
       visible: false,
       addSubdieProduct:'',
       addSubdieStepId: '',
+      diePitchTable: [{x: '40000',y:'30000'}],
+      ratio: 1,
       tableData: [],
       boxArr: [],
     }
@@ -69,6 +71,16 @@ class HorizontalLoginForm extends React.Component {
     this.setState({addSubdieStepId:e.target.value})
   }
 
+  changeDiePatchX = (value) => {
+    let y = this.state.diePitchTable[0].y
+    this.setState({diePitchTable: [{x: value, y }]})
+  }
+
+  changeDiePatchY = (value) => {
+    let x = this.state.diePitchTable[0].x
+    this.setState({diePitchTable: [{x, y:value }]})
+  }
+
   addTableCell = () => {
     let endId = this.state.tableData[this.state.tableData.length-1].subDieId
     let newCell = {
@@ -83,7 +95,8 @@ class HorizontalLoginForm extends React.Component {
   }
 
   saveTable = () => {
-    this.setState({boxArr: this.state.tableData})
+    let diePitch = this.state.diePitchTable[0]
+    this.setState({ratio: Math.max(diePitch.x , diePitch.y)/400, boxArr: this.state.tableData})
   }
   
   changeCell = (value, id, cellName) => {
@@ -101,7 +114,7 @@ class HorizontalLoginForm extends React.Component {
             </Select>
           </Form.Item>
           <Form.Item>
-            <Button type="primary" onClick={this.showModal}>
+            <Button type="default" onClick={this.showModal}>
               New
             </Button>
           </Form.Item>
@@ -123,6 +136,16 @@ class HorizontalLoginForm extends React.Component {
         </Modal>
         <LayoutInline>
           <LayoutVertical>
+            <Table dataSource={this.state.diePitchTable} rowKey={record => record.x} bordered size="small">
+              <ColumnGroup title="Die Pitch" align="center">
+                <Column title="X" dataIndex="x" align="center" render={(text) => (
+                  <Input value={text} onChange={(e) => this.changeDiePatchX(e.target.value)} />
+                )}/>
+                <Column title="Y" dataIndex="y" align="center" render={(text) => (
+                  <Input value={text} onChange={(e) => this.changeDiePatchY(e.target.value)} />
+                )}/>
+              </ColumnGroup>
+            </Table>
             <Table dataSource={this.state.tableData} rowKey={record => record.subDieId} bordered>
               <Column title="ID" dataIndex="subDieId" key="subDieId" />
               <Column title="Name" dataIndex="subDieName" key="subDieName" render={(text, record) => (
@@ -160,13 +183,14 @@ class HorizontalLoginForm extends React.Component {
             </ButtonGroup>
           </LayoutVertical>
           <DiePitch>
+            <div style={{border: '1px solid #aaa', height: this.state.diePitchTable[0].y/this.state.ratio+'px', width: this.state.diePitchTable[0].x/this.state.ratio+'px',left:0,top:(400-this.state.diePitchTable[0].y/this.state.ratio)+'px', position: 'absolute', boxSizing: 'border-box'}}></div>
             {
               this.state.boxArr.map((item, index) => {
                 let divPostion = {
-                  left: item.startX+'px',
-                  top: (400-item.endY)+'px',
-                  width: (item.endX-item.startX)+'px',
-                  height: (item.endY-item.startY)+'px'
+                  left: item.startX/this.state.ratio+'px',
+                  top: (400-item.endY/this.state.ratio)+'px',
+                  width: (item.endX/this.state.ratio-item.startX/this.state.ratio)+'px',
+                  height: (item.endY/this.state.ratio-item.startY/this.state.ratio)+'px'
                 }
                 return (<DivStyle key={index} className="divStyle" style={divPostion}>{item.subDieName}</DivStyle>)
               })

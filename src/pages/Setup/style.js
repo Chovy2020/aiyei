@@ -7,6 +7,9 @@ export const StyleSetUp = styled.div`
   >div {
     margin-bottom: 20px;
   }
+  >.ant-collapse > .ant-collapse-item > .ant-collapse-header {
+    background: #8bc5ff;
+  }
 `
 
 export const StyleCluster = styled.div`
@@ -17,6 +20,7 @@ export const DiePitch = styled.div`
   height: 400px;
   width: 400px;
   border: 1px solid #e8e8e8;
+  box-sizing: content-box;
   overflow: hidden;
   position: relative;
 `

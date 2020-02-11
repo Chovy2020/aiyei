@@ -25,10 +25,10 @@ class Setup extends React.Component {
             <ReticleRepeater />
           </Panel>
         </Collapse>
-        <Card title='Zonal Setting'>
+        <Card title='Zonal Setting' headStyle={{backgroundColor: '#8bc5ff'}}>
           <Zonal />
         </Card>
-        <Card title='Sub-Die Setting'>
+        <Card title='Sub-Die Setting' headStyle={{backgroundColor: '#8bc5ff'}}>
           <SubDie />
         </Card>
       </StyleSetUp>
