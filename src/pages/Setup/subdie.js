@@ -3,7 +3,7 @@ import React from 'react'
 import _ from 'lodash'
 import { delay } from '@/utils/web'
 import { Form,Input,InputNumber, Select, Button,Icon,Modal,message,Table} from 'antd'
-import { getSubDie } from './service'
+import { getSubDie, updateSubDie } from './service'
 import {DiePitch,LayoutInline,LayoutVertical,DivStyle} from './style'
 
 const { Option } = Select;
@@ -19,7 +19,7 @@ class HorizontalLoginForm extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      cfgDbPrimaryKeys: {},
+      cfgDbPrimaryKeys: '',
       productStepId: [],
       visible: false,
       addSubdieProduct:'',
@@ -31,6 +31,10 @@ class HorizontalLoginForm extends React.Component {
     }
   }
   componentDidMount() {
+    this.initSubDie()
+  }
+
+  initSubDie = () => {
     getSubDie({}).then(data => {
       let arr = []
       data.forEach(item => {
@@ -50,6 +54,31 @@ class HorizontalLoginForm extends React.Component {
       let newData = {productId: addSubdieProduct, stepId: addSubdieStepId}
       this.setState({visible: false,productStepId:[...productStepId,newData],cfgDbPrimaryKeys:addSubdieProduct+'-'+addSubdieStepId})
       console.log(productStepId)
+      updateSubDie({
+        "cfgSubDies": [
+          {
+              "productId": addSubdieProduct,
+              "stepId": addSubdieStepId,
+              "technology": "T1",
+              "subDieIds": [
+                  {
+                      "subDieId": 1,
+                      "subDieName": "",
+                      "startX": null,
+                      "endX": null,
+                      "startY": null,
+                      "endY": null
+                  }
+              ],
+              "createBy": "XRJ",
+              "remarks": null,
+              "updateTm": null
+          }
+      ]
+      }).then(data => {
+        console.log(data)
+        this.initSubDie()
+      })
     }else {
       message.warning('Product和Step Id不能为空');
     }

@@ -61,10 +61,12 @@ class Adder extends React.Component {
     })
   }
 
+  // 筛选功能
+
   render() {
     return (
       <StyleCluster>
-        <Table dataSource={this.state.tableData} bordered>
+        <Table dataSource={this.state.tableData} bordered size='small' pagination={{ pageSize: 5 }}>
           <Column
             title='Product'
             dataIndex='productId'

@@ -69,7 +69,7 @@ class ReticleRepeater extends React.Component {
   render() {
     return (
       <StyleCluster>
-        <Table dataSource={this.state.tableData} bordered>
+        <Table dataSource={this.state.tableData} bordered size='small' pagination={{ pageSize: 5 }}>
           <Column
             title='Product'
             dataIndex='productId'
