@@ -1,13 +1,12 @@
-/* eslint-disable */
 /* eslint-disable react/jsx-props-no-spreading */
 import React from 'react'
 import { connect } from 'react-redux'
-import { Form, DatePicker, Checkbox, Button, Input, message } from 'antd'
+import { Form, DatePicker, Checkbox, Button, Input } from 'antd'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import _ from 'lodash'
 import { injectReducer } from '@/utils/store'
 import { delay } from '@/utils/web'
-import { changeForm, changeItems, changeItemSelected, changeFilters } from './action'
+import { changeParams, changeItems, changeItemSelected, changeFilterOption } from './action'
 import { DATA_QUERY_QUERY, GET_LABEL } from './constant'
 import reducer from './reducer'
 import { dataQuerySearch, getTags } from './service'
@@ -95,9 +94,9 @@ class DataQuery extends React.Component {
   }
 
   onCheckboxChange(key, checked) {
-    const { defect } = this.props
-    defect[key] = checked
-    this.props.changeForm(defect)
+    const { params } = this.props
+    params[key] = checked
+    this.props.changeParams(params)
     this.resetItems()
   }
 
@@ -108,11 +107,11 @@ class DataQuery extends React.Component {
   }
 
   onDatePickerChange = (dates, dateStrings) => {
-    const { defect } = this.props
+    const { params } = this.props
     const [startTm, endTm] = dateStrings
-    defect.startTm = startTm
-    defect.endTm = endTm
-    this.props.changeForm(defect)
+    params.startTm = startTm
+    params.endTm = endTm
+    this.props.changeParams(params)
     this.resetItems()
   }
 
@@ -146,16 +145,28 @@ class DataQuery extends React.Component {
 
   loadItems = async () => {
     // message.success('Load completed!')
-    const { items, itemSelected, defect } = this.props
+    const { items, itemSelected, params } = this.props
     const data = {
-      ...defect,
+      ...params,
       comboBoxes: items.map((item, index) => ({
         key: item,
         value: itemSelected[index]
       }))
     }
     const res = await getTags(data)
-    this.props.changeFilters(res)
+    if (res && res !== {}) {
+      this.props.changeFilterOption({
+        mb: res.mbs,
+        adc: res.adc,
+        rb: res.rbs,
+        testId: res.tests,
+        cluster: res.clusterIds,
+        adder: res.adderFlags[0] === 'Y' ? ['YES'] : ['NO'],
+        repeater: res.repeaterIds,
+        zoneId: res.zoneIds,
+        subDie: res.subDieIds
+      })
+    }
     this.props.addTab('Map Gallery')
   }
 
@@ -182,8 +193,8 @@ class DataQuery extends React.Component {
         break
       }
     }
-    // 实时更新，store的defect仅点击load 才更新，用于其他非dataQuery页面的查询
-    const { existsImg, mbHave, secondScan, seeLastScan, startTm, endTm } = this.props.defect
+    // 实时更新，store的params仅点击load 才更新，用于其他非dataQuery页面的查询
+    const { existsImg, mbHave, secondScan, seeLastScan, startTm, endTm } = this.props.params
     const data = {
       existsImg: existsImg ? 'Y' : 'N',
       mbHave: mbHave ? 'Y' : 'N',
@@ -199,8 +210,8 @@ class DataQuery extends React.Component {
 
   render() {
     const { dataLoaderList, dataLoader, itemData } = this.state
-    const { items, defect, itemSelected } = this.props
-    const { existsImg, mbHave, secondScan, seeLastScan } = defect
+    const { items, params, itemSelected } = this.props
+    const { existsImg, mbHave, secondScan, seeLastScan } = params
 
     return (
       <StyleDataQuery>
@@ -295,5 +306,5 @@ class DataQuery extends React.Component {
 
 injectReducer('DataQuery', reducer)
 const mapStateToProps = state => ({ ...state.DataQuery })
-const mapDispatchToProps = { changeForm, changeItems, changeItemSelected, changeFilters }
+const mapDispatchToProps = { changeParams, changeItems, changeItemSelected, changeFilterOption }
 export default connect(mapStateToProps, mapDispatchToProps)(DataQuery)

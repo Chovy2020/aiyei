@@ -8,7 +8,7 @@ import Heatmap from 'heatmap.js'
 import echarts from 'echarts'
 // eslint-disable-next-line
 import { delay, printTime, getColor, gradientColors } from '@/utils/web'
-import { changeWaferSelected } from '@/utils/action'
+import { changeWafers } from '@/utils/action'
 import { post, download } from '@/utils/api'
 import CommonDrawer from '@/components/CommonDrawer'
 import { SORT_LIST, SORT_ORDER_LIST, COMMANDS, TOOL_TIPS, MAP_TYPES, DEFECT_CLASS_LIST } from './constant'
@@ -126,6 +126,8 @@ class SingleMap extends React.Component {
   }
 
   async componentDidMount() {
+    const { filters } = this.props
+    if (filters) this.setState({ tags: filters })
     let { wafers } = getWaferSelected()
     if (wafers.length === 0) {
       wafers = [
@@ -541,9 +543,15 @@ class SingleMap extends React.Component {
       singleWaferKey,
       canvas: { canvasSize: 400, magnification: `${times}`, centralLocation: x + ',' + y },
       filter: {
-        // ...tagsSeleted,
-        // adder: adderFlag ? ['Y'] : ['N'],
-        // defectSize
+        mb: tagsSeleted.mbs,
+        adc: tagsSeleted.adc,
+        rb: tagsSeleted.rbs,
+        testId: tagsSeleted.tests,
+        cluster: tagsSeleted.clusterIds,
+        adder: adderFlag ? ['YES'] : ['NO'],
+        repeater: tagsSeleted.repeaterIds,
+        zoneId: tagsSeleted.zoneIds,
+        subDie: tagsSeleted.subDieIds
       },
       pareto: stxaxis,
       selectAction,
@@ -690,8 +698,7 @@ class SingleMap extends React.Component {
       }
       wafers.push({ lotId, waferNo, productId, stepId, scanTm, defects: singleWaferDefects || [] })
     }
-    const { name } = this.props
-    this.props.changeWaferSelected({ name, wafers, bars: [] })
+    this.props.changeWafers(wafers)
   }
   // 处理单个点
   dealPoint = (coordinate, idList, pointColor, index) => {
@@ -837,11 +844,21 @@ class SingleMap extends React.Component {
   // Pareto 初始化
   onParetoInit = async obj => {
     await delay(1)
-    const { singleWaferKey, filter, stxaxis, selectAction } = this.state
+    const { singleWaferKey, tagsSeleted, adderFlag, stxaxis, selectAction } = this.state
     const paretoData = await post('swp', {
       singleWaferKey,
       canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
-      filter,
+      filter: {
+        mb: tagsSeleted.mbs,
+        adc: tagsSeleted.adc,
+        rb: tagsSeleted.rbs,
+        testId: tagsSeleted.tests,
+        cluster: tagsSeleted.clusterIds,
+        adder: adderFlag ? ['YES'] : ['NO'],
+        repeater: tagsSeleted.repeaterIds,
+        zoneId: tagsSeleted.zoneIds,
+        subDie: tagsSeleted.subDieIds
+      },
       pareto: obj || stxaxis,
       selectAction
     })
@@ -1616,7 +1633,7 @@ class SingleMap extends React.Component {
                 <Checkbox.Group options={tags.clusterIds} onChange={v => this.onDefectFiltersChange('clusterIds', v)} />
               </Form.Item>
               <Form.Item label='Adder:'>
-                <Checkbox onChange={e => this.setState({ adderFlag: e.target.checked ? ['Y'] : ['N'] })} />
+                <Checkbox onChange={e => this.setState({ adderFlag: e.target.checked })} />
               </Form.Item>
               <Form.Item label='Repeater:'>
                 <Checkbox.Group
@@ -1645,9 +1662,10 @@ class SingleMap extends React.Component {
 
 // injectReducer('SingleMap', reducer)
 const mapStateToProps = state => ({
-  ...state.Init
+  ...state.Init,
+  ...state.DataQuery
 })
 const mapDispatchToProps = {
-  changeWaferSelected
+  changeWafers
 }
 export default connect(mapStateToProps, mapDispatchToProps)(SingleMap)

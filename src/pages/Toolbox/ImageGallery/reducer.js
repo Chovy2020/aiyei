@@ -11,7 +11,7 @@ export default (state = initState, action) => {
         ...state,
         imageSelected: action.payload
       }
-    case 'CHANGE_WAFERS':
+    case 'CHANGE_PREV_WAFERS':
       return {
         ...state,
         imageWafers: action.payload

@@ -11,6 +11,5 @@ module.exports = override(
     libraryDirectory: 'es',
     style: 'css'
   }),
-
   addWebpackAlias({ '@': joinRootPath('src') })
 )
