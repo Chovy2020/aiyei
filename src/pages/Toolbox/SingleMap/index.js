@@ -41,6 +41,7 @@ class SingleMap extends React.Component {
       dsa: false,
       dsaInfo: {},
       singleWaferKey: [],
+      showOtherMap: [],
       selectAction: '',
       filter: {},
       stxaxis: {
@@ -165,6 +166,15 @@ class SingleMap extends React.Component {
     this.onDSAChartInit()
     this.onWaferCreated()
     this.onParetoCreated()
+    this.ifShowOtherMap()
+  }
+  // productId唯一时,显示Die Stack/Reticle Stack/Heap Map
+  ifShowOtherMap = () => {
+    let arr = []
+    this.state.singleWaferKey.forEach(item => {
+        arr.push(item.productId)
+    })
+    this.setState({showOtherMap: [...new Set([arr])]})
   }
   // 初始化 ParetoChart, 绑定点击事件
   onParetoChartInit = () => {
@@ -1269,6 +1279,7 @@ class SingleMap extends React.Component {
     const { name } = this.props
     const {
       singleWaferKey,
+      showOtherMap,
       mapType,
       angel,
       currentImages,
@@ -1310,7 +1321,7 @@ class SingleMap extends React.Component {
           <Form.Item label='Single Map:'>
             <Radio.Group onChange={this.onMapTypeChange} defaultValue={mapType}>
               <Radio value='Map/Pareto'>Map/Pareto</Radio>
-              {singleWaferKey.length === 1 ? (
+              {singleWaferKey.length === 1 || showOtherMap.length === 1 ? (
                 <span>
                   <Radio value='Die Stack'>Die Stack</Radio>
                   <Radio value='Reticle Stack'>Reticle Stack</Radio>
