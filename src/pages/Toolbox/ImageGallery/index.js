@@ -5,8 +5,7 @@ import { Form, Select, Pagination, Checkbox, Button, message } from 'antd'
 import CommonDrawer from '@/components/CommonDrawer'
 import { injectReducer } from '@/utils/store'
 import { delay } from '@/utils/web'
-import { getWaferSelected } from '@/utils/store'
-import { changeSelected, changePrevWafers } from './action'
+import { changeImageSelected, changeImageWafers } from './action'
 import { LAYOUT_SIZE, VIEW_GROUPS, CATEGORY_TYPES, getLotId, getWaferNo, getDefectId, getEquipId } from './constant'
 import reducer from './reducer'
 import { getClassCodes, getViewFilters, getImages, updateDefectGroup } from './service'
@@ -17,8 +16,6 @@ class ImageGallery extends React.Component {
     super(props)
     this.drawer = null
     this.state = {
-      // store waferSelected
-      wafers: [],
       // 图片布局
       layout: {
         num1: 5,
@@ -37,26 +34,27 @@ class ImageGallery extends React.Component {
       pageNo: 1
     }
   }
-  // 从store取出当前tab的selected
+  
+  // 从store取出当前页的selected
   getImageSelected = () => {
     const { imageSelected, name } = this.props
     return imageSelected[name] || []
   }
+  // 从store取出当前页的wafers
+  getImageWafers = () => {
+    const { imageWafers, name } = this.props
+    return imageWafers[name] || []
+  }
+
   async componentDidMount() {
+    // 将wafers保存到store，跳转下一个页面使用
+    const { wafers, name } = this.props
+    this.props.changeImageWafers({ name, wafers })
     // 初始化selected
     this.onClassifiedReset()
-    const { wafers } = getWaferSelected()
-    // 将wafers保存到store，跳转下一个页面使用
-    const { prevWafers, name } = this.props
-    prevWafers[name] = wafers
-    this.props.changePrevWafers(prevWafers)
-    this.setState({ wafers })
     await this.loadClassCodes()
     await this.loadImages()
     this.loadViewFilters()
-  }
-  componentWillUnmount() {
-    console.log('image gallery componentWillUnmount')
   }
   // 通过接口获取 classCodes
   loadClassCodes = async () => {
@@ -65,8 +63,8 @@ class ImageGallery extends React.Component {
   }
   // 通过接口获取 filters
   loadViewFilters = async () => {
-    const { wafers } = this.state
-    let viewFilters = await getViewFilters({ imageInfo: wafers })
+    const imageInfo = this.getImageWafers()
+    let viewFilters = await getViewFilters({ imageInfo })
     viewFilters = viewFilters.map(item => `${item}`)
     this.setState({ viewFilters })
   }
@@ -74,13 +72,27 @@ class ImageGallery extends React.Component {
   loadImages = async () => {
     this.onClassifiedReset()
     await delay(1)
-    const { viewGroup, viewFilter, wafers } = this.state
-    if (wafers.length === 0) return
+    const { prevPage } = this.props
+    const isFromMapGallery = prevPage.type === 'Map Gallery'
+    const { viewGroup, viewFilter } = this.state
+    let imageInfo = this.getImageWafers()
+    if (imageInfo.length === 0) return
+    if (isFromMapGallery) {
+      // 需要使用 defectIdRedisKey
+      imageInfo.forEach(item => {
+        item.defectIdRedisKey = item.defectCache
+      })
+      // 过滤无redisKey
+      imageInfo = imageInfo.filter(item => item.defectIdRedisKey !== '')
+    } else {
+      // 过滤无defects
+      imageInfo = imageInfo.filter(item => item.defects.length > 0)
+    }
     const data = {
       imageGroupBy: viewGroup,
       mbFilter: viewFilter.map(item => parseInt(item)),
-      imageInfo: wafers,
-      singleGalleryFlag: 'galleryMap'
+      imageInfo: imageInfo,
+      singleGalleryFlag: isFromMapGallery ? 'galleryMap' : 'singleMap'
     }
     const res = await getImages(data)
     const images = []
@@ -116,14 +128,14 @@ class ImageGallery extends React.Component {
   }
   // 选择/反选图片
   onSelect = id => {
-    const { imageSelected, name } = this.props
-    let selected = imageSelected[name] || []
+    const { name } = this.props
+    let selected = this.getImageSelected()
     if (selected.includes(id)) {
-      selected = _.remove(selected, n => id === n)
+      selected = _.remove(selected, n => id !== n)
     } else {
       selected.push(id)
     }
-    this.props.changeSelected(_.cloneDeep(imageSelected))
+    this.props.changeImageSelected({ name, selected })
   }
   // 图片分类提交
   onClassifiedSubmit = async () => {
@@ -146,9 +158,8 @@ class ImageGallery extends React.Component {
   }
   // 图片取消选择
   onClassifiedReset = () => {
-    const { imageSelected, name } = this.props
-    imageSelected[name] = []
-    this.props.changeSelected(_.cloneDeep(imageSelected))
+    const { name } = this.props
+    this.props.changeImageSelected({ name, selected: [] })
   }
   // 侧边栏 筛选
   onFilterSubmit = () => {
@@ -165,7 +176,7 @@ class ImageGallery extends React.Component {
       <StyleImageGallery>
         <Form layout='vertical' labelCol={{ span: 2 }}>
           <Form.Item label='Layout:'>
-            <Select defaultValue={num1} style={{ width: 60 }} onChange={v => this.onLayoutChange('num1', v)}>
+            <Select size='small' defaultValue={num1} style={{ width: 60 }} onChange={v => this.onLayoutChange('num1', v)}>
               {LAYOUT_SIZE.map(s => (
                 <Select.Option value={s} key={s}>
                   {s}
@@ -173,19 +184,20 @@ class ImageGallery extends React.Component {
               ))}
             </Select>
             <span style={{ marginRight: 10 }}>X</span>
-            <Select defaultValue={num2} style={{ width: 60 }} onChange={v => this.onLayoutChange('num2', v)}>
+            <Select size='small' defaultValue={num2} style={{ width: 60 }} onChange={v => this.onLayoutChange('num2', v)}>
               {LAYOUT_SIZE.map(s => (
                 <Select.Option value={s} key={s}>
                   {s}
                 </Select.Option>
               ))}
             </Select>
-            <Checkbox onChange={e => this.setState({ showLabel: e.target.checked })} defaultChecked={showLabel}>
+            <Checkbox size='small' onChange={e => this.setState({ showLabel: e.target.checked })} defaultChecked={showLabel}>
               Show Label
             </Checkbox>
           </Form.Item>
           <Form.Item label='Classified:'>
             <Select
+              size='small'
               style={{ width: 120 }}
               defaultValue={categoryType}
               onChange={categoryType => this.setState({ categoryType })}
@@ -197,6 +209,7 @@ class ImageGallery extends React.Component {
               ))}
             </Select>
             <Select
+              size='small'
               style={{ width: 120 }}
               defaultValue={classCode}
               onChange={classCode => this.setState({ classCode })}
@@ -207,10 +220,10 @@ class ImageGallery extends React.Component {
                 </Select.Option>
               ))}
             </Select>
-            <Button onClick={this.onClassifiedSubmit} type='primary'>
+            <Button size='small' onClick={this.onClassifiedSubmit} type='primary'>
               Ok {selected.length > 0 ? `(${selected.length * 2})` : ''}
             </Button>
-            <Button onClick={this.onClassifiedReset} type='dashed'>
+            <Button size='small' onClick={this.onClassifiedReset} type='dashed'>
               Reset
             </Button>
           </Form.Item>
@@ -237,6 +250,7 @@ class ImageGallery extends React.Component {
         </StyleImages>
 
         <Pagination
+          size='small'
           hideOnSinglePage
           total={total}
           showTotal={t => `Total: ${t}`}
@@ -248,9 +262,10 @@ class ImageGallery extends React.Component {
         <CommonDrawer ref={r => (this.drawer = r)} width={550}>
           <section>
             <h3 style={{ width: 140 }}>Display Settings</h3>
-            <Form layout='vertical' labelCol={{ span: 5 }}>
+            <Form layout='vertical' labelCol={{ span: 5 }} wrapperCol={{ span: 19 }}>
               <Form.Item label='Group View:'>
                 <Select
+                  size='small'
                   style={{ width: 120 }}
                   defaultValue={viewGroup}
                   onChange={viewGroup => this.setState({ viewGroup })}
@@ -263,7 +278,7 @@ class ImageGallery extends React.Component {
                 </Select>
               </Form.Item>
               <Form.Item label='Filters:'>
-                <Checkbox.Group options={viewFilters} onChange={viewFilter => this.setState({ viewFilter })} />
+                <Checkbox.Group size='small' options={viewFilters} onChange={viewFilter => this.setState({ viewFilter })} />
               </Form.Item>
               <Form.Item label=' '>
                 <Button onClick={this.onFilterSubmit} style={{ float: 'right' }} type='primary'>
@@ -279,6 +294,9 @@ class ImageGallery extends React.Component {
 }
 
 injectReducer('ImageGallery', reducer)
-const mapStateToProps = state => ({ ...state.ImageGallery })
-const mapDispatchToProps = { changeSelected, changePrevWafers }
+const mapStateToProps = state => ({
+  ...state.Init,
+  ...state.ImageGallery
+})
+const mapDispatchToProps = { changeImageSelected, changeImageWafers }
 export default connect(mapStateToProps, mapDispatchToProps)(ImageGallery)

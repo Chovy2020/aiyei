@@ -9,6 +9,11 @@ export const changeBars = payload => ({
   payload
 })
 
+export const changePrevPage = payload => ({
+  type: 'CHANGE_PREV_PAGE',
+  payload
+})
+
 export const changeToolboxLoading = payload => ({
   type: 'CHANGE_TOOLBOX_LOADING',
   payload
