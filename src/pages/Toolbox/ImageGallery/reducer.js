@@ -1,21 +1,25 @@
+import _ from 'lodash'
 const initState = {
   imageSelected: {},
-  // image页面，不考虑bars
   imageWafers: {}
 }
 
 export default (state = initState, action) => {
   switch (action.type) {
-    case 'CHANGE_SELETED':
+    case 'CHANGE_IMAGE_SELETED': {
+      const { name, selected } = action.payload
+      const imageSelected = _.cloneDeep(state.imageSelected)
+      imageSelected[name] = selected
       return {
         ...state,
-        imageSelected: action.payload
+        imageSelected
       }
-    case 'CHANGE_PREV_WAFERS':
-      return {
-        ...state,
-        imageWafers: action.payload
-      }
+    }
+    case 'CHANGE_IMAGE_WAFERS': {
+      const { name, wafers } = action.payload
+      state.imageWafers[name] = wafers
+      return state
+    }
     default:
       return state
   }

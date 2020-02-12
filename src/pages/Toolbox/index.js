@@ -3,9 +3,8 @@ import _ from 'lodash'
 import { connect } from 'react-redux'
 import { Icon, Tabs, Spin, Tooltip } from 'antd'
 import { TOOLS } from '@/utils/const'
-import { changeWafers } from '@/utils/action'
+import { changeWafers, changePrevPage } from '@/utils/action'
 // import { delay } from '@/utils/web'
-// import { changePreviousPage, initPage } from './action'
 import { StyleToolbox, Tools, Content, StyleTabPane } from './style'
 import DataQuery from './DataQuery'
 import MapGallery from './MapGallery'
@@ -19,14 +18,11 @@ class Toolbox extends React.Component {
     this.state = {
       activeKey: '1',
       tabCount: 1,
-      // panes: [{ type: 'Single Map', name: '1' }]
       panes: [{ type: 'Data Query', name: '1' }]
     }
   }
 
-  componentDidMount() {
-    // this.props.initPage('1')
-  }
+  componentDidMount() {}
 
   generatePage = ({ type, name }) => {
     switch (type) {
@@ -53,20 +49,20 @@ class Toolbox extends React.Component {
    * 将【当前页】需要传递的数据（store） 保存后，再跳转新tab
    * @param {String} name 当前tab页的name
    */
-  beforeAddTab = async (name, target) => {
+  beforeAddTab = async (name, next) => {
     const { panes, tabCount } = this.state
-    target.name = `${tabCount + 1}`
+    next.name = `${tabCount + 1}`
     // 当前页 { type, name }
-    const current = _.find(panes, p => p.name === name)
-    console.log('beforeAddTab => current:', current, 'target:', target)
-    if (current.type === 'Image Gallery') {
-      console.log(`当前页: Image Gallery - ${name}`)
+    const prev = _.find(panes, p => p.name === name)
+    console.log('beforeAddTab => prev:', prev, 'next:', next)
+    let wafers = []
+    /* ------ Image Gallery ------ */
+    if (prev.type === 'Image Gallery') {
       const { imageSelected, imageWafers } = this.props
       const selected = imageSelected[name] || []
       // 有选择图片，即defects，
-      let wafers = []
       if (selected.length > 0) {
-        // 对defect便利，如果5个主键都相同，则存放到同一个wafer里
+        // 对defect图片遍历，如果5个主键都相同，则存放到同一个wafer里
         selected.forEach(imgKey => {
           const imgKeyArray = imgKey.split('|')
           const lotId = imgKeyArray[0]
@@ -86,7 +82,7 @@ class Toolbox extends React.Component {
               productId,
               scanTm,
               defects: [defect],
-              defectIdRedisKey: ''
+              defectCache: ''
             })
           }
         })
@@ -94,10 +90,21 @@ class Toolbox extends React.Component {
         // 如果没有选择图片，直接使用当前页拉取图片的wafers（前一个页面传递的，imageGallery初始化存储在store）
         wafers = imageWafers[name] || []
       }
-      console.log(`计算后的wafers(${selected.length > 0 ? '有' : '未'}选择图片)`, wafers)
-      // 存储到store.Init
-      this.props.changeWafers(wafers)
     }
+    /* ------ Map Gallery ------ */
+    if (prev.type === 'Map Gallery') {
+      const { mapSelected, mapWafers } = this.props
+      const selected = mapSelected[name] || []
+      if (selected.length > 0) {
+        wafers = selected
+      } else {
+        wafers = mapWafers[name] || []
+      }
+    }
+    this.props.changePrevPage(prev)
+    // 存储到store.Init
+    console.log(`传递到下个页面的wafers:`, wafers.length, wafers)
+    this.props.changeWafers(wafers)
   }
 
   addTab = async toolType => {
@@ -161,9 +168,11 @@ class Toolbox extends React.Component {
 
 const mapStateToProps = state => ({
   ...state.Init,
+  ...state.MapGallery,
   ...state.ImageGallery
 })
 const mapDispatchToProps = {
+  changePrevPage,
   changeWafers
 }
 export default connect(mapStateToProps, mapDispatchToProps)(Toolbox)

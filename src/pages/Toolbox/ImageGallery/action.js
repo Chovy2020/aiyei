@@ -1,9 +1,9 @@
-export const changeSelected = payload => ({
-  type: 'CHANGE_SELETED',
+export const changeImageSelected = payload => ({
+  type: 'CHANGE_IMAGE_SELETED',
   payload
 })
 
-export const changePrevWafers = payload => ({
-  type: 'CHANGE_PREV_WAFERS',
+export const changeImageWafers = payload => ({
+  type: 'CHANGE_IMAGE_WAFERS',
   payload
 })

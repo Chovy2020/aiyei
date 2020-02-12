@@ -14,7 +14,6 @@ import CommonDrawer from '@/components/CommonDrawer'
 import { SORT_LIST, SORT_ORDER_LIST, COMMANDS, TOOL_TIPS, MAP_TYPES, DEFECT_CLASS_LIST } from './constant'
 import { reclassifyParams, getImages, updateCorrect, deleteCorrect, getX, getX2nd, getY, getDp, getDSATableData } from './service'
 import { StyleSingleMap, StyleWafer, StylePareto, StyleChart, StyleDSA, StyleImages } from './style'
-import { getWaferSelected } from '@/utils/store'
 
 // eslint-disable-next-line
 let drawer = null
@@ -128,7 +127,7 @@ class SingleMap extends React.Component {
   async componentDidMount() {
     const { filters } = this.props
     if (filters) this.setState({ tags: filters })
-    let { wafers } = getWaferSelected()
+    const { wafers } = this.props
     if (wafers.length === 0) {
       wafers = [
         // {
