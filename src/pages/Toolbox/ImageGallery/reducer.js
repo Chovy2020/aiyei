@@ -1,7 +1,7 @@
 const initState = {
   imageSelected: {},
   // image页面，不考虑bars
-  prevWafers: {}
+  imageWafers: {}
 }
 
 export default (state = initState, action) => {
@@ -14,7 +14,7 @@ export default (state = initState, action) => {
     case 'CHANGE_PREV_WAFERS':
       return {
         ...state,
-        prevWafers: action.payload
+        imageWafers: action.payload
       }
     default:
       return state

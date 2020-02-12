@@ -8,7 +8,7 @@ import Heatmap from 'heatmap.js'
 import echarts from 'echarts'
 // eslint-disable-next-line
 import { delay, printTime, getColor, gradientColors } from '@/utils/web'
-import { changeWaferSelected } from '@/utils/action'
+import { changeWafers } from '@/utils/action'
 import { post, download } from '@/utils/api'
 import CommonDrawer from '@/components/CommonDrawer'
 import { SORT_LIST, SORT_ORDER_LIST, COMMANDS, TOOL_TIPS, MAP_TYPES, DEFECT_CLASS_LIST } from './constant'
@@ -698,8 +698,7 @@ class SingleMap extends React.Component {
       }
       wafers.push({ lotId, waferNo, productId, stepId, scanTm, defects: singleWaferDefects || [] })
     }
-    const { name } = this.props
-    this.props.changeWaferSelected({ name, wafers, bars: [] })
+    this.props.changeWafers(wafers)
   }
   // 处理单个点
   dealPoint = (coordinate, idList, pointColor, index) => {
@@ -1667,6 +1666,6 @@ const mapStateToProps = state => ({
   ...state.DataQuery
 })
 const mapDispatchToProps = {
-  changeWaferSelected
+  changeWafers
 }
 export default connect(mapStateToProps, mapDispatchToProps)(SingleMap)

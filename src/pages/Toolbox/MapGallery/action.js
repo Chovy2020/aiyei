@@ -1,9 +1,18 @@
-export const changeSelected = payload => ({
-  type: 'CHANGE_SELETED',
+
+/**
+ * @param {String} name
+ * @param {Array<Wafer>} selected
+ */
+export const changeMapSelected = payload => ({
+  type: 'CHANGE_MAP_SELETED',
   payload
 })
 
-export const changeWafers = payload => ({
-  type: 'CHANGE_WAFERS',
+/**
+ * @param {String} name
+ * @param {Array<Wafer>} wafers
+ */
+export const changeMapWafers = payload => ({
+  type: 'CHANGE_MAP_WAFERS',
   payload
 })

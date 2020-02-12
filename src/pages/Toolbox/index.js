@@ -3,9 +3,9 @@ import _ from 'lodash'
 import { connect } from 'react-redux'
 import { Icon, Tabs, Spin, Tooltip } from 'antd'
 import { TOOLS } from '@/utils/const'
-import { changeWaferSelected } from '@/utils/action'
+import { changeWafers } from '@/utils/action'
 // import { delay } from '@/utils/web'
-import { changePreviousPage, initPage } from './action'
+// import { changePreviousPage, initPage } from './action'
 import { StyleToolbox, Tools, Content, StyleTabPane } from './style'
 import DataQuery from './DataQuery'
 import MapGallery from './MapGallery'
@@ -25,7 +25,7 @@ class Toolbox extends React.Component {
   }
 
   componentDidMount() {
-    this.props.initPage('1')
+    // this.props.initPage('1')
   }
 
   generatePage = ({ type, name }) => {
@@ -53,11 +53,12 @@ class Toolbox extends React.Component {
    * 将【当前页】需要传递的数据（store） 保存后，再跳转新tab
    * @param {String} name 当前tab页的name
    */
-  beforeAddTab = async name => {
-    const { panes } = this.state
+  beforeAddTab = async (name, target) => {
+    const { panes, tabCount } = this.state
+    target.name = `${tabCount + 1}`
     // 当前页 { type, name }
     const current = _.find(panes, p => p.name === name)
-    console.log('beforeAddTab => current page:', current)
+    console.log('beforeAddTab => current:', current, 'target:', target)
     if (current.type === 'Image Gallery') {
       console.log(`当前页: Image Gallery - ${name}`)
       const { imageSelected, imageWafers } = this.props
@@ -95,26 +96,26 @@ class Toolbox extends React.Component {
       }
       console.log(`计算后的wafers(${selected.length > 0 ? '有' : '未'}选择图片)`, wafers)
       // 存储到store.Init
-      this.props.changeWaferSelected({ name, wafers, bars: [] })
+      this.props.changeWafers(wafers)
     }
   }
 
   addTab = async toolType => {
     const { panes } = this.state
     let { tabCount, activeKey } = this.state
-    await this.beforeAddTab(activeKey)
+    await this.beforeAddTab(activeKey, { type: toolType })
     // 先将当前页码存store
-    this.props.changePreviousPage(activeKey)
+    // this.props.changePreviousPage(activeKey)
     tabCount += 1
     activeKey = `${tabCount}`
     panes.push({ type: toolType, name: activeKey })
     this.setState({ activeKey, panes, tabCount })
-    this.props.initPage(activeKey)
+    // this.props.initPage(activeKey)
   }
 
   onEdit = (targetKey, action) => {
     if (action === 'remove') {
-      this.props.initPage(targetKey)
+      // this.props.initPage(targetKey)
       let { panes, activeKey } = this.state
       if (activeKey === targetKey) {
         for (const i in panes) {
@@ -163,8 +164,6 @@ const mapStateToProps = state => ({
   ...state.ImageGallery
 })
 const mapDispatchToProps = {
-  changeWaferSelected,
-  changePreviousPage,
-  initPage
+  changeWafers
 }
 export default connect(mapStateToProps, mapDispatchToProps)(Toolbox)

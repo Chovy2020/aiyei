@@ -1,19 +1,16 @@
 import React from 'react'
 import { connect } from 'react-redux'
 import { Form, Pagination, Radio, Checkbox, Switch, Button, Modal, Input, InputNumber, Upload, Icon, message } from 'antd'
-// import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import _ from 'lodash'
 import zrender from 'zrender'
 import Heatmap from 'heatmap.js'
-// import { injectReducer } from '@/utils/store'
+import { injectReducer } from '@/utils/store'
 import { delay } from '@/utils/web'
-// import { changeForm, changeItems } from './action'
+import { changeMapSelected, changeMapWafers } from './action'
 import { DEFECT_CLASS_LIST, GROUP_BY_LIST } from './constant'
-// import { DATA_QUERY_QUERY, DATA_QUERY_INIT } from './constant'
-// import reducer from './reducer'
+import reducer from './reducer'
 import { downloadCSV, getNewMap, getNewStack } from './service'
 import { StyleMapGallery, StyleWaferMapGroup, StyleWaferMap } from './style'
-import { changeWaferSelected } from '@/utils/action'
 import CommonDrawer from '@/components/CommonDrawer'
 
 let drawer = null
@@ -55,7 +52,7 @@ class MapGallery extends React.Component {
         by: []
       },
       selected: [],
-      selectedAndKey: {},
+      deleteIds: [],
       redisCache: [],
       // rotation
       degrees: 0, // 角度 输入框
@@ -67,14 +64,20 @@ class MapGallery extends React.Component {
   }
 
   componentDidMount() {
+    // 从store里取出 dataQuery查询的filterOption
     const { filterOption } = this.props
     this.setState({ filterOption })
+    // 将页面传递的wafers(or bars) 存储在当前页面，后续该页面addTab需要使用(当前页面无选择操作，追溯前一个页面的wafers)
+    const { wafers, name } = this.props
+    this.props.changeMapWafers({ name, wafers })
     this.loadMapOrStack()
   }
   // 组合查询条件：galleryType、pagination、filter、groupBy
   getFilter = isDelete => {
-    const { items, itemSelected } = this.props
+    const { items, itemSelected, name } = this.props
     const { filter, selected, pageNo, pageSize, group, defectSize } = this.state
+    let { deleteIds } = this.state
+    if (isDelete) deleteIds = [...deleteIds, ...selected]
     const data = {
       waferList: [],
       filter,
@@ -82,7 +85,7 @@ class MapGallery extends React.Component {
       pageSize,
       groupExcelRedisKey: group.fileId,
       groupList: group.by,
-      deleteIds: isDelete ? selected : [],
+      deleteIds,
       comboBoxes: items.map((item, index) => ({
         key: item,
         value: itemSelected[index] || []
@@ -93,6 +96,10 @@ class MapGallery extends React.Component {
     const num1 = parseFloat(defectSize[0])
     const num2 = parseFloat(defectSize[1])
     data.filter.defectSize = [`${Math.min(num1, num2)},${Math.max(num1, num2)}`]
+    if (isDelete) {
+      this.setState({ selected: [], deleteIds })
+      this.props.changeMapSelected({ name, selected: [] })
+    }
     return data
   }
   // Drawer
@@ -124,10 +131,10 @@ class MapGallery extends React.Component {
     filter[key] = value
     this.setState({ filter })
   }
-  // 侧边栏 筛选 或 排序
+  // 侧边栏 筛选 或 排序, 初始化页码 清空当前选中
   onFilterOrGroup = () => {
     if (drawer) drawer.onClose()
-    this.loadMapOrStack()
+    this.onSeletedReset()
   }
   // 切换显示类型
   onGalleryTypeChange = galleryType => {
@@ -168,13 +175,14 @@ class MapGallery extends React.Component {
   }
   // Die Stack 或 Reticle Stack
   loadStack = async (stackType, isDelete) => {
-    const waferListGroup = await getNewStack(this.getFilter(isDelete))
-    if (!waferListGroup) {
+    const res = await getNewStack(this.getFilter(isDelete))
+    if (!res || !res.stackMap || res.stackMap === {}) {
       message.warning('No data')
       return
     }
+    const waferListGroup = res.stackMap
     // 完成后渲染
-    this.setState({ waferListGroup })
+    this.setState({ waferListGroup, total: res.totalCount })
     const { name } = this.props
     for (const key in waferListGroup) {
       if (waferListGroup[key]) {
@@ -390,13 +398,12 @@ class MapGallery extends React.Component {
 
   // 点击选择
   onWaferSelect = wafer => {
-    const { waferSelected, name } = this.props
-    let { selected, selectedAndKey } = this.state
-    let wafers = waferSelected[name].wafers || []
+    const { mapSelected, name } = this.props
+    let { selected } = this.state
+    let wafers = mapSelected[name] || []
     if (selected.includes(wafer.id)) {
       selected = _.remove(selected, n => wafer.id !== n)
       wafers = _.remove(wafers, w => `${w.lotId}|${w.waferNo}|${w.productId}|${w.stepId}|${w.scanTm}` !== wafer.id)
-      selectedAndKey = _.omit(selectedAndKey, [wafer.id])
     } else {
       selected.push(wafer.id)
       const { lotId, stepId, waferNo, productId, scanTm, defectIdRedisKey } = wafer
@@ -407,17 +414,12 @@ class MapGallery extends React.Component {
         productId,
         scanTm,
         defects: [],
-        defectIdRedisKey
+        defectCache: defectIdRedisKey
       })
-      selectedAndKey[wafer.id] = defectIdRedisKey
     }
-    this.setState({ selected, selectedAndKey })
+    this.setState({ selected })
     // 同步缓存到store
-    this.props.changeWaferSelected({
-      name,
-      wafers,
-      bars: []
-    })
+    this.props.changeMapSelected({ name, selected: wafers })
   }
 
   onWaferRotate = () => {
@@ -434,8 +436,11 @@ class MapGallery extends React.Component {
   }
 
   onExportCSV = () => {
-    const { waferSelectedAndKey } = this.state
-    downloadCSV({ paretoExportId: waferSelectedAndKey })
+    const { mapSelected, name } = this.props
+    let waferList = mapSelected[name] || []
+    // 检查 defectCache 不能为空
+    waferList = waferList.filter(wafer => (wafer.defectCache && wafer.defectCache !== ''))
+    downloadCSV({ waferList })
   }
 
   onRotationClick = () => {
@@ -445,13 +450,14 @@ class MapGallery extends React.Component {
   }
 
   onSeletedReset = () => {
-    const { name } = this.props
-    this.setState({ selected: [] })
-    this.props.changeWaferSelected({
-      name,
-      wafers: [],
-      bars: []
+    this.setState({ 
+      pageNo: 1,
+      selected: [],
+      deleteIds: []
     })
+    const { name } = this.props
+    this.props.changeMapSelected({ name, selected: [] })
+    this.loadMapOrStack()
   }
 
   onSeletedRemove = async () => {
@@ -460,7 +466,7 @@ class MapGallery extends React.Component {
       message.warning('Please select wafer')
       return
     }
-    this.loadMapOrStack({ isDelete: true })
+    this.loadMapOrStack(true)
   }
 
   render() {
@@ -504,7 +510,7 @@ class MapGallery extends React.Component {
               Remove
             </Button>
             <Button size='small' type='dashed' onClick={this.onSeletedReset}>
-              Reset
+              Reset {selected.length > 0 ? `【${selected.length}】` : ''}
             </Button>
           </Form.Item>
         </Form>
@@ -539,7 +545,7 @@ class MapGallery extends React.Component {
           total={total}
           showTotal={t => `Total: ${t}`}
           pageSize={pageSize}
-          defaultCurrent={pageNo}
+          current={pageNo}
           onChange={this.onPageChange}
           style={{ width: 960 }}
         />
@@ -657,12 +663,14 @@ class MapGallery extends React.Component {
   }
 }
 
-// injectReducer('MapGallery', reducer)
+injectReducer('MapGallery', reducer)
 const mapStateToProps = state => ({
   ...state.Init,
-  ...state.DataQuery
+  ...state.DataQuery,
+  ...state.MapGallery
 })
 const mapDispatchToProps = {
-  changeWaferSelected
+  changeMapSelected,
+  changeMapWafers
 }
 export default connect(mapStateToProps, mapDispatchToProps)(MapGallery)

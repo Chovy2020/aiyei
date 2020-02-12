@@ -1,6 +1,11 @@
 // 修改waferSelected
-export const changeWaferSelected = payload => ({
-  type: 'CHANGE_WAFER_SELECTED',
+export const changeWafers = payload => ({
+  type: 'CHANGE_WAFERS',
+  payload
+})
+
+export const changeBars = payload => ({
+  type: 'CHANGE_BARS',
   payload
 })
 

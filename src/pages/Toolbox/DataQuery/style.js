@@ -25,7 +25,7 @@ export const LoaderDefect = styled.div`
 `
 
 export const DragContainer = styled.div`
-  width: calc((100vw - 80px - 40px - 20px * 2) * 22 / 24 - 1px);
+  width: calc((100vw - 80px - 40px - 20px * 2) * 22 / 24 - 20px);
   height: 250px;
   background-color: #f3f3f3;
   overflow-x: auto;
