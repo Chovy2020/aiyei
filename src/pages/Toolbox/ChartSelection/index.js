@@ -1,25 +1,16 @@
-/* eslint-disable */
 import React from 'react'
 import { connect } from 'react-redux'
 import { Form, Select, Tooltip, Checkbox, Button, Input, InputNumber, Modal, Icon, TreeSelect, message } from 'antd'
-// import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
-// import _ from 'lodash'
+import _ from 'lodash'
 //按需导入
 import echarts from 'echarts'
-// import { injectReducer } from '@/utils/store'
+import { injectReducer } from '@/utils/store'
 import { delay } from '@/utils/web'
-// import { changeForm, changeItems } from './action'
-// import { DATA_QUERY_QUERY, DATA_QUERY_INIT } from './constant'
+import { changeChartSelected, changeChartWafers } from './action'
+import { BUTTONS, CA_DATA_SOURCES, NORMALIZED, CA_METROLOGY_PRODUCTS } from './constant'
+import reducer from './reducer'
 import { getX, getX2n, getY, getChartData, getPcCmStep, getPcCm, getCaWatTreeData, searchCA } from './service'
-import {
-  StyleChartSelection,
-  StyleTooltip,
-  StyleChart,
-  StyleOperBtn,
-  StyleCrossModuleForm,
-  StyleCorrelationForm,
-  FormItemLabel
-} from './style'
+import {StyleChartSelection,StyleTooltip,StyleChart,StyleOperBtn,StyleCrossModuleForm,StyleCorrelationForm,FormItemLabel} from './style'
 import CrossModuleChart from './component/CrossModuleChart'
 import CorrelationChart from './component/CorrelationChart'
 
@@ -29,13 +20,6 @@ class ChartSelection extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      singleWaferKey: [],
-      btns: [
-        { content: 'Trend Chart', i: 'line-chart', func: 'trendChart' },
-        { content: 'Bar Chart', i: 'bar-chart', func: 'barChart' },
-        { content: 'Stack Bar Chart', i: 'database', func: 'stackBarChart' },
-        { content: 'Box Chart', i: 'box-plot', func: 'boxChart' }
-      ],
       selectedAction: 'line-chart',
       selectedBar: [],
       formInline: {
@@ -53,16 +37,6 @@ class ChartSelection extends React.Component {
       x: {},
       x2n: {},
       y: {},
-      Normalized: {
-        all: 'All Defect',
-        rb: 'Rough Bin',
-        ab: 'ADC Bin',
-        clu: 'Cluster',
-        sdi: 'Sub Die ID',
-        tid: 'Test ID',
-        steps: 'Steps',
-        zid: 'Zone ID'
-      },
       resData: null,
       newData: null,
       selectData: null,
@@ -94,9 +68,7 @@ class ChartSelection extends React.Component {
       /* LineCharts */
       LineCharts: [],
       /* Correlation Analysis */
-      caDataSources: ['Metrology', 'WAT', 'iEMS/FDC', 'CP'],
       caDataSource: [],
-      caMetrologyProducts: ['a', 'b', 'c'],
       caMetrologySteps: [],
       caMetrologyParameters: [],
       caMetrology: {
@@ -132,37 +104,29 @@ class ChartSelection extends React.Component {
     }
   }
 
+  // 从store取出当前页的selected
+  getSelected = () => {
+    const { chartSelected, name } = this.props
+    return chartSelected[name] || []
+  }
+  // 从store取出当前页的wafers
+  getWafers = () => {
+    const { chartWafers, name } = this.props
+    return chartWafers[name] || []
+  }
+
   componentDidMount() {
-    const { name } = this.props
+    // 将页面传递的wafers(or bars) 存储在当前页面，后续该页面addTab需要使用(当前页面无选择操作，追溯前一个页面的wafers)
+    const { wafers, name } = this.props
+    this.props.changeChartWafers({ name, wafers })
     const chartDom = document.getElementById(`chart-${name}`)
-    if (chartDom) {
-      chart = echarts.init(chartDom)
-      chart.on('click', params => this.onChartClick(params))
-      chart.on('dblclick', params => this.onChartDbclick(params))
-    } else {
-      console.log('chartDom not found')
+    if (!chartDom) {
+      message.error('chartDom not found')
+      return
     }
-    const singleWaferKey = [
-      {
-        lotId: 'B0001.000',
-        stepId: 'M5_CMP',
-        waferNo: '1',
-        productId: 'Device01',
-        scanTm: '2018-06-09 12:30:35',
-        defects: [],
-        defectIdRedisKey: '81fb0163-fa13-4f54-baec-4e8fceb32b6b'
-      },
-      {
-        lotId: 'B0002.000',
-        stepId: 'M1_CMP',
-        waferNo: '1',
-        productId: 'Device01',
-        scanTm: '2018-06-01 12:30:35',
-        defects: [],
-        defectIdRedisKey: 'a6775cb9-dbd3-4184-8da8-21992756a93f'
-      }
-    ]
-    this.setState({ singleWaferKey })
+    chart = echarts.init(chartDom)
+    chart.on('click', params => this.onChartClick(params))
+    chart.on('dblclick', params => this.onChartDbclick(params))
     this.onXInit()
     this.onX2nInit()
     this.onYInit()
@@ -186,8 +150,9 @@ class ChartSelection extends React.Component {
 
   onChartInit = async () => {
     await delay(1)
-    const { singleWaferKey, formInline } = this.state
+    const { formInline } = this.state
     const { xValue, x2ndValue, yValue, normalized } = formInline
+    const singleWaferKey = this.getWafers()
     const resData = await getChartData({
       singleWaferKey,
       canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
@@ -275,7 +240,6 @@ class ChartSelection extends React.Component {
     const y = await getY(xValue, x2ndValue)
     this.setState({ y })
   }
-
   onXchange = xValue => {
     const formInline = {
       xValue,
@@ -311,10 +275,8 @@ class ChartSelection extends React.Component {
     this.setState({ formInline })
     this.onChartInit()
   }
-
   onYAxisOperChange = (key, value) => {
     const { yAxisOper } = this.state
-    // console.log('onYAxisOperChange', value)
     yAxisOper[key] = parseInt(value)
     this.setState({ yAxisOper })
   }
@@ -380,7 +342,6 @@ class ChartSelection extends React.Component {
         selectedBar.push(data.name + '-' + data.seriesName)
       }
       this.setState({ selectedBar })
-      // this.syncWaferSelected({ page: this.name, wafers: this.singleWaferKey, selectedBar: bar })
     }
     if (selectedAction === 'line-chart') {
       const { selectData, selectNoData } = this.state
@@ -531,8 +492,8 @@ class ChartSelection extends React.Component {
   }
   onCMInit = async () => {
     await delay(1)
-    const { singleWaferKey } = this.state
-    let res = await getPcCmStep({ singleWaferKey })
+    const singleWaferKey = this.getWafers()
+    const res = await getPcCmStep({ singleWaferKey })
     if (res) {
       // res = _.uniq(res)
       const cmStepData = []
@@ -568,7 +529,8 @@ class ChartSelection extends React.Component {
     this.setState({ cmStepValue })
   }
   crossModuleAdd = async () => {
-    const { singleWaferKey, formInline, filter, cmStepValue } = this.state
+    const { formInline, filter, cmStepValue } = this.state
+    const singleWaferKey = this.getWafers()
     const filter1 = {}
     filter1[formInline.x2ndValue] = filter
     const res = await getPcCm({
@@ -606,7 +568,7 @@ class ChartSelection extends React.Component {
 
   /* Correlation Analysis */
   onCAInit = async () => {
-    const { singleWaferKey } = this.state
+    const singleWaferKey = this.getWafers()
     let res = await getCaWatTreeData({ singleWaferKey })
     if (res) {
       const caWatTreeData = []
@@ -663,7 +625,8 @@ class ChartSelection extends React.Component {
     this.setState({ caRegression })
   }
   onCASearch = async () => {
-    const { singleWaferKey, caWat, caRegression, formInline, AnalysisCondition } = this.state
+    const { caWat, caRegression, formInline } = this.state
+    const singleWaferKey = this.getWafers()
     const correlation = {
       wat: caWat.tree
     }
@@ -715,17 +678,15 @@ class ChartSelection extends React.Component {
 
   render() {
     const { name } = this.props
-    const { formInline, x, x2n, y, Normalized, normShow } = this.state
+    const { formInline, x, x2n, y, normShow } = this.state
     const { xValue, x2ndValue, yValue, normalized } = formInline
-    const { btns, selectedAction, addRemark, remark } = this.state
+    const { selectedAction, addRemark, remark } = this.state
     const { AnalysisCondition, showCrossModule, showCorrelation } = this.state
     const { cmStepData, cmStepValue, LineCharts } = this.state
     this.onGenerateChartOption()
 
     const {
-      caDataSources,
       caDataSource,
-      caMetrologyProducts,
       caMetrologySteps,
       caMetrologyParameters,
       caWatProducts,
@@ -775,8 +736,8 @@ class ChartSelection extends React.Component {
                   style={{ width: 60, marginRight: 10 }}
                   onChange={this.onNormalizedChange}
                 >
-                  {Object.keys(Normalized).map(key => (
-                    <Select.Option value={Normalized[key]} key={key}>
+                  {Object.keys(NORMALIZED).map(key => (
+                    <Select.Option value={NORMALIZED[key]} key={key}>
                       {key}
                     </Select.Option>
                   ))}
@@ -811,7 +772,7 @@ class ChartSelection extends React.Component {
         </Form>
 
         <StyleTooltip>
-          {btns.map(item => (
+          {BUTTONS.map(item => (
             <Tooltip key={item.func} className='item' placement='top' title={item.content}>
               <Icon
                 onClick={() => this.onDoAction(item.func)}
@@ -903,7 +864,7 @@ class ChartSelection extends React.Component {
             <h4>Correlation Analysis</h4>
             <Form layout='vertical' labelCol={{ span: 2 }}>
               <Form.Item label='Data Source:'>
-                <Checkbox.Group options={caDataSources} onChange={this.onCADataSourceChange} />
+                <Checkbox.Group options={CA_DATA_SOURCES} onChange={this.onCADataSourceChange} />
               </Form.Item>
               {caDataSource.includes('Metrology') ? (
                 <Form.Item label='Metrology:'>
@@ -914,7 +875,7 @@ class ChartSelection extends React.Component {
                     placeholder='Please select'
                     onChange={v => this.onCAMetrologyChange('product', v)}
                   >
-                    {caMetrologyProducts.map(item => (
+                    {CA_METROLOGY_PRODUCTS.map(item => (
                       <Select.Option key={item}>{item}</Select.Option>
                     ))}
                   </Select>
@@ -1055,9 +1016,13 @@ class ChartSelection extends React.Component {
   }
 }
 
-// injectReducer('ChartSelection', reducer)
+injectReducer('ChartSelection', reducer)
 const mapStateToProps = state => ({
-  ...state.Init
+  ...state.Init,
+  ...state.ChartSelection
 })
-const mapDispatchToProps = {}
+const mapDispatchToProps = {
+  changeChartSelected,
+  changeChartWafers
+}
 export default connect(mapStateToProps, mapDispatchToProps)(ChartSelection)

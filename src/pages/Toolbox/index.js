@@ -70,7 +70,7 @@ class Toolbox extends React.Component {
           const waferNo = imgKeyArray[3]
           const productId = imgKeyArray[1]
           const scanTm = imgKeyArray[4]
-          const defect = imgKeyArray[5]
+          const defect = parseInt(imgKeyArray[5])
           const exist = _.find(wafers, w => w.lotId === lotId && w.stepId === stepId && w.waferNo === waferNo && w.productId === productId && w.scanTm === scanTm)
           if (exist) {
             exist.defects = [...exist.defects, defect]
