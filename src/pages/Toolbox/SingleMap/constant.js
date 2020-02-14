@@ -23,8 +23,4 @@ export const TOOL_TIPS = [
 
 export const MAP_TYPES = { 'Map/Pareto': '', 'Die Stack': '/ds', 'Reticle Stack': '/rs', 'Heat Map': '' }
 
-export const DEFECT_CLASS_LIST = [
-  ['mb', 'mbs'],
-  ['adc', 'adc'],
-  ['rb', 'rbs']
-]
+export const DEFECT_CLASS_LIST = ['mb', 'adc', 'rb']

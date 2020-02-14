@@ -62,6 +62,16 @@ class MapGallery extends React.Component {
       pageNo: 1
     }
   }
+  // 从store取出当前页的selected
+  getSelected = () => {
+    const { mapSelected, name } = this.props
+    return mapSelected[name] || []
+  }
+  // 从store取出当前页的wafers
+  getWafers = () => {
+    const { mapWafers, name } = this.props
+    return mapWafers[name] || []
+  }
 
   componentDidMount() {
     // 从store里取出 dataQuery查询的filterOption
@@ -78,8 +88,19 @@ class MapGallery extends React.Component {
     const { filter, selected, pageNo, pageSize, group, defectSize } = this.state
     let { deleteIds } = this.state
     if (isDelete) deleteIds = [...deleteIds, ...selected]
+    const waferList = this.getWafers()
+    let existDefects = false
+    if (waferList.length > 0) {
+      waferList.forEach(wafer => {
+        wafer.defectList = wafer.defects
+      })
+      waferList.forEach(wafer => {
+        if (wafer.defects.length > 0) existDefects = true
+      })
+    }
     const data = {
-      waferList: [],
+      waferList,
+      selectAction: existDefects ? 'hold' : '',
       filter,
       pageNumber: pageNo,
       pageSize,
@@ -485,7 +506,6 @@ class MapGallery extends React.Component {
       defectSize,
       pageNo
     } = this.state
-    const { adder } = filter
 
     return (
       <StyleMapGallery>
@@ -588,7 +608,7 @@ class MapGallery extends React.Component {
               <Form.Item label='Adder:'>
                 <Switch
                   size='small'
-                  defaultChecked={adder[0] === 'YES'}
+                  defaultChecked={filter.adder[0] === 'YES'}
                   onChange={checked => this.onDefectFiltersChange('adder', checked ? ['YES'] : ['NO'])}
                 />
               </Form.Item>

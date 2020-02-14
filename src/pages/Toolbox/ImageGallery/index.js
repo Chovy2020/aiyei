@@ -36,12 +36,12 @@ class ImageGallery extends React.Component {
   }
   
   // 从store取出当前页的selected
-  getImageSelected = () => {
+  getSelected = () => {
     const { imageSelected, name } = this.props
     return imageSelected[name] || []
   }
   // 从store取出当前页的wafers
-  getImageWafers = () => {
+  getWafers = () => {
     const { imageWafers, name } = this.props
     return imageWafers[name] || []
   }
@@ -63,7 +63,7 @@ class ImageGallery extends React.Component {
   }
   // 通过接口获取 filters
   loadViewFilters = async () => {
-    const imageInfo = this.getImageWafers()
+    const imageInfo = this.getWafers()
     let viewFilters = await getViewFilters({ imageInfo })
     viewFilters = viewFilters.map(item => `${item}`)
     this.setState({ viewFilters })
@@ -75,7 +75,7 @@ class ImageGallery extends React.Component {
     const { prevPage } = this.props
     const isFromMapGallery = prevPage.type === 'Map Gallery'
     const { viewGroup, viewFilter } = this.state
-    let imageInfo = this.getImageWafers()
+    let imageInfo = this.getWafers()
     if (imageInfo.length === 0) return
     if (isFromMapGallery) {
       // 需要使用 defectIdRedisKey
@@ -129,7 +129,7 @@ class ImageGallery extends React.Component {
   // 选择/反选图片
   onSelect = id => {
     const { name } = this.props
-    let selected = this.getImageSelected()
+    let selected = this.getSelected()
     if (selected.includes(id)) {
       selected = _.remove(selected, n => id !== n)
     } else {
@@ -139,7 +139,7 @@ class ImageGallery extends React.Component {
   }
   // 图片分类提交
   onClassifiedSubmit = async () => {
-    const selected = this.getImageSelected()
+    const selected = this.getSelected()
     const { categoryType, classCode } = this.state
     if (selected.length === 0) {
       message.warning('Please select image')
@@ -168,7 +168,7 @@ class ImageGallery extends React.Component {
   }
 
   render() {
-    const selected = this.getImageSelected()
+    const selected = this.getSelected()
     const { layout, classCodes, categoryType, classCode, viewGroup, viewFilters, currentImages, total, pageNo, showLabel } = this.state
     const { num1, num2 } = layout
 
