@@ -109,7 +109,7 @@ class CrossModuleChart extends React.Component {
           }
         })
       })
-    } else if (type === 'cube') {
+    } else if (type === 'box-plot') {
       const kData = []
       data.series[0].data.forEach(() => {
         kData.push([])
@@ -123,9 +123,10 @@ class CrossModuleChart extends React.Component {
       const boxArr = []
       kData.forEach(item => {
         let sortItem = _.cloneDeep(item).sort()
+        console.log(sortItem)
         let len = sortItem.length
-        let min = sortItem[0]
-        let max = sortItem[len - 1]
+        let min = Math.min(...sortItem)
+        let max = Math.max(...sortItem)
         let math25 = sortItem[Math.floor(len / 4)]
         let math75 = len > 3 ? sortItem[Math.ceil((len * 3) / 4)] : max
         boxArr.push([math25, math75, min, max])
@@ -136,6 +137,7 @@ class CrossModuleChart extends React.Component {
           data: boxArr
         }
       ]
+      console.log(boxArr)
     }
     this.setState({ seriesData })
     this.generateCMChartOption()
@@ -173,7 +175,7 @@ class CrossModuleChart extends React.Component {
       },
       series: seriesData
     }
-    if (chart) chart.setOption(opt)
+    if (chart) chart.setOption(opt, true)
   }
 
   onCMshowPM = () => {
@@ -200,19 +202,19 @@ class CrossModuleChart extends React.Component {
   onDoAction = func => {
     if (func === 'lineChart') {
       this.setState({
-        selectedAction: 'line-chart'
+        selectedAction: 'lineChart'
       })
       this.init('line-chart')
     } else if (func === 'stackBarChart') {
       this.setState({
-        selectedAction: 'database'
+        selectedAction: 'stackBarChart'
       })
       this.init('database')
     } else if (func === 'boxChart') {
       this.setState({
-        selectedAction: 'cube'
+        selectedAction: 'boxChart'
       })
-      this.init('cube')
+      this.init('box-plot')
     }
   }
 
@@ -250,7 +252,7 @@ class CrossModuleChart extends React.Component {
     return (
       <StyleCrossModuleChart>
         <StyleOperBtn>
-          {selectedAction !== 'cube' ? (
+          {selectedAction !== 'boxChart' ? (
             <Button type='primary' onClick={this.onCMshowPM}>
               Show PM
             </Button>
@@ -271,7 +273,7 @@ class CrossModuleChart extends React.Component {
           ))}
         </StyleTooltip>
         <StyleChart id={`chart-${name}-${index}`} />
-        {selectedAction !== 'cube' ? <Table columns={cmTableColumns} dataSource={tableData} /> : null}
+        {selectedAction === 'boxChart' ? <Table columns={cmTableColumns} dataSource={tableData} /> : null}
       </StyleCrossModuleChart>
     )
   }

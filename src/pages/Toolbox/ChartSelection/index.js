@@ -14,17 +14,21 @@ import {StyleChartSelection,StyleTooltip,StyleChart,StyleOperBtn,StyleCrossModul
 import CrossModuleChart from './component/CrossModuleChart'
 import CorrelationChart from './component/CorrelationChart'
 
+console.log(StyleChart, 'StyleChart')
 let chart = null
-
+let chartOpt = {};
 class ChartSelection extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
+      chartSelecting: {},
+      singleWaferKey: [],
       selectedAction: 'line-chart',
+      allBar: [],
       selectedBar: [],
       formInline: {
         xValue: 'lwc',
-        x2ndValue: 'add',
+        x2ndValue: '',
         yValue: '100',
         normalized: ''
       },
@@ -42,21 +46,9 @@ class ChartSelection extends React.Component {
       selectData: null,
       newNoData: null,
       selectNoData: null,
-      series: [
-        {
-          type: 'line',
-          label: {
-            show: true,
-            position: 'top',
-            formatter: this.formatter
-          }
-        }
-      ],
       seriesType: 'line',
       ifStack: '',
       colorArr: [],
-      addRemark: false,
-      remark: '',
       tips: [],
       AnalysisCondition: [],
       normShow: false,
@@ -111,13 +103,16 @@ class ChartSelection extends React.Component {
   }
   // 从store取出当前页的wafers
   getWafers = () => {
-    const { chartWafers, name } = this.props
-    return chartWafers[name] || []
+    // const { chartWafers, name } = this.props
+    // return chartWafers[name] || []
+    const {wafers} = this.props
+    return wafers
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     // 将页面传递的wafers(or bars) 存储在当前页面，后续该页面addTab需要使用(当前页面无选择操作，追溯前一个页面的wafers)
     const { wafers, name } = this.props
+    console.log(wafers,name,'mount')
     this.props.changeChartWafers({ name, wafers })
     const chartDom = document.getElementById(`chart-${name}`)
     if (!chartDom) {
@@ -126,7 +121,7 @@ class ChartSelection extends React.Component {
     }
     chart = echarts.init(chartDom)
     chart.on('click', params => this.onChartClick(params))
-    chart.on('dblclick', params => this.onChartDbclick(params))
+    chart.on('legendselectchanged', params => this.onlegendselectchanged(params))
     this.onXInit()
     this.onX2nInit()
     this.onYInit()
@@ -178,8 +173,9 @@ class ChartSelection extends React.Component {
     const arr = []
     const arrNo = []
     const colorArr = []
-    const AnalysisCondition = []
+    let AnalysisCondition = []
     const kData = []
+    const allBar = []
     arr[0] = ['product']
     arrNo[0] = ['product']
     const { resData } = this.state
@@ -188,6 +184,9 @@ class ChartSelection extends React.Component {
         arr[index + 1] = [item]
         arrNo[index + 1] = [item]
         kData.push([])
+        resData.paretoValue.series.forEach(jtem => {
+          allBar.push(item+'-'+jtem.name)
+        }) 
       })
       resData.paretoValue.series.forEach(item => {
         arr[0].push(item.name)
@@ -215,6 +214,7 @@ class ChartSelection extends React.Component {
     this.setState({
       colorArr,
       AnalysisCondition,
+      allBar,
       newData: _.cloneDeep(arr),
       selectData: _.cloneDeep(arr),
       newNoData: _.cloneDeep(arrNo),
@@ -280,7 +280,7 @@ class ChartSelection extends React.Component {
     yAxisOper[key] = parseInt(value)
     this.setState({ yAxisOper })
   }
-
+  // 切换图表
   onDoAction = func => {
     if (func === 'trendChart') {
       const { selectedAction } = this.state
@@ -313,23 +313,14 @@ class ChartSelection extends React.Component {
         selectNoData: _.cloneDeep(newNoData)
       })
     } else if (func === 'boxChart') {
-      this.setState({
-        selectedAction: 'cube',
-        series: [
-          {
-            type: 'k',
-            data: [
-              [20, 30, 10, 35],
-              [40, 35, 30, 55],
-              [33, 38, 33, 40],
-              [40, 40, 32, 42]
-            ]
-          }
-        ]
-      })
+      this.setState({selectedAction: 'box-plot'})
+    } else if (func === 'star') {
+      this.setState({selectedAction: 'star'})
+    } else if (func === 'star-o') {
+      this.setState({selectedAction: 'star-o'})
     }
   }
-
+  // lineChart和barChart时, 点击列表显示或隐藏
   onChartClick = async data => {
     const { selectedAction, newData } = this.state
     if (['line-chart', 'bar-chart', 'database'].includes(selectedAction)) {
@@ -357,26 +348,22 @@ class ChartSelection extends React.Component {
       this.setState({ selectData, selectNoData })
     }
   }
-
-  onChartDbclick = data => {
-    const { tips } = this.state
-    const index = data.dataIndex
-    let remark = ''
-    if (tips[index]) {
-      remark = tips[index]
+  // 选择图例
+  onlegendselectchanged(data) {
+    let arr = []
+    for (let key in data.selected) {
+      if (data.selected[key]) {
+        arr.push(key)
+      }
     }
-    this.setState({
-      addRemark: true,
-      index,
-      remark
-    })
+    this.setState({AnalysisCondition: arr, chartSelecting: data.selected})
   }
 
   onGenerateChartOption = async () => {
-    const { resData, yAxisOper } = this.state
+    const { resData, yAxisOper,chartSelecting } = this.state
     if (!resData) return
     const opt = {
-      legend: { type: 'scroll' },
+      legend: { type: 'scroll', selected: chartSelecting },
       tooltip: { trigger: 'item' },
       dataset: { source: [] },
       xAxis: { type: 'category', data: [] },
@@ -399,7 +386,7 @@ class ChartSelection extends React.Component {
       this.showLine(opt, labelShow, selectData)
     } else if (selectedAction === 'star-o') {
       this.showLine(opt, labelShow, selectNoData)
-    } else if (selectedAction === 'cube') {
+    } else if (selectedAction === 'box-plot') {
       const { boxChartData } = this.state
       opt.series = [
         {
@@ -438,11 +425,15 @@ class ChartSelection extends React.Component {
       opt.dataset.source = _.cloneDeep(newData)
     }
     // console.log(opt)
-    if (chart) chart.setOption(opt)
+    chartOpt = opt
+    if (chart) chart.setOption(opt,true)
+    let unSelectedBar = this.state.allBar.filter(item => {
+      return !this.state.selectedBar.includes(item)
+    })
+    console.log(this.state.selectedBar, this.state.allBar, unSelectedBar)
   }
   // 折线图时，显示选中或非选中点
   showLine = (opt, labelShow, source) => {
-    // console.log('showLine', opt, labelShow, source)
     const seriesArr = []
     const { colorArr } = this.state
     colorArr.forEach(item => {
@@ -456,6 +447,7 @@ class ChartSelection extends React.Component {
         }
       })
     })
+    console.log(seriesArr, source,'123')
     // 填充值
     opt.series = seriesArr
     opt.dataset.source = source
@@ -469,16 +461,6 @@ class ChartSelection extends React.Component {
       hash ^= (hash << 5) + ch + (hash >> 2)
     }
     return (hash & 0x7fffff).toString(16)
-  }
-
-  onAddRemarkOk = () => {
-    const { tips, index, remark } = this.state
-    tips[index] = remark
-    this.setState({
-      addRemark: false,
-      tips,
-      remark: ''
-    })
   }
 
   /* crossModuleForm */
@@ -563,8 +545,6 @@ class ChartSelection extends React.Component {
     LineCharts.splice(index, 1)
     this.setState({ LineCharts })
   }
-
-  onBarClear = () => {}
 
   /* Correlation Analysis */
   onCAInit = async () => {
@@ -680,7 +660,7 @@ class ChartSelection extends React.Component {
     const { name } = this.props
     const { formInline, x, x2n, y, normShow } = this.state
     const { xValue, x2ndValue, yValue, normalized } = formInline
-    const { selectedAction, addRemark, remark } = this.state
+    const { selectedAction } = this.state
     const { AnalysisCondition, showCrossModule, showCorrelation } = this.state
     const { cmStepData, cmStepValue, LineCharts } = this.state
     this.onGenerateChartOption()
@@ -702,7 +682,7 @@ class ChartSelection extends React.Component {
 
     return (
       <StyleChartSelection>
-        <Form layout='vertical' labelCol={{ span: 2 }}>
+        <Form layout='vertical' labelCol={{ span: 3 }}>
           <Form.Item>
             <FormItemLabel>X轴:</FormItemLabel>
             <Select onChange={this.onXchange} value={xValue} style={{ width: 120, marginRight: 10 }}>
@@ -714,6 +694,7 @@ class ChartSelection extends React.Component {
             </Select>
             <FormItemLabel>2nd X:</FormItemLabel>
             <Select onChange={this.onX2nchange} value={x2ndValue} style={{ width: 120, marginRight: 10 }}>
+              <Select.Option value={''}>None</Select.Option>
               {Object.keys(x2n).map(key => (
                 <Select.Option value={key} key={key}>
                   {x2n[key]}
@@ -729,7 +710,7 @@ class ChartSelection extends React.Component {
               ))}
             </Select>
             {normShow ? (
-              <div>
+              <>
                 <FormItemLabel>Normalized by:</FormItemLabel>
                 <Select
                   defaultValue={normalized}
@@ -742,30 +723,26 @@ class ChartSelection extends React.Component {
                     </Select.Option>
                   ))}
                 </Select>
-              </div>
+              </>
             ) : null}
             <Checkbox.Group onChange={this.onShowLabelChange}>
               <Checkbox value='Show Value'>Show Value</Checkbox>
-              <Checkbox value='Show Common'>Show Common</Checkbox>
             </Checkbox.Group>
-            <Button onClick={this.onBarClear} type='danger'>
-              Clear
-            </Button>
           </Form.Item>
           <Form.Item>
             <FormItemLabel>Min:</FormItemLabel>
-            <Input
-              onChange={e => this.onYAxisOperChange('min', e.target.value)}
+            <InputNumber
+              onChange={value => this.onYAxisOperChange('min', value)}
               style={{ width: 120, marginRight: 10 }}
             />
             <FormItemLabel>Max:</FormItemLabel>
-            <Input
-              onChange={e => this.onYAxisOperChange('max', e.target.value)}
+            <InputNumber
+              onChange={value => this.onYAxisOperChange('max', value)}
               style={{ width: 120, marginRight: 10 }}
             />
             <FormItemLabel>Interval:</FormItemLabel>
-            <Input
-              onChange={e => this.onYAxisOperChange('interval', e.target.value)}
+            <InputNumber
+              onChange={value => this.onYAxisOperChange('interval', value)}
               style={{ width: 120, marginRight: 10 }}
             />
           </Form.Item>
@@ -782,7 +759,7 @@ class ChartSelection extends React.Component {
             </Tooltip>
           ))}
           {['star', 'star-o', 'line-chart'].includes(selectedAction) ? (
-            <>
+            <div>
               <Tooltip className='item' placement='top' title='显示选中'>
                 <Icon
                   onClick={() => this.onDoAction('star')}
@@ -797,22 +774,11 @@ class ChartSelection extends React.Component {
                   type='close-circle'
                 />
               </Tooltip>
-            </>
+            </div>
           ) : null}
         </StyleTooltip>
 
         <StyleChart id={`chart-${name}`} />
-
-        <Modal
-          title='添加备注'
-          visible={addRemark}
-          onOk={this.onAddRemarkOk}
-          onCancel={() => this.setState({ addRemark: false })}
-          okText='确认'
-          cancelText='取消'
-        >
-          <Input onChange={e => this.setState({ remark: e.target.value })} value={remark} />
-        </Modal>
 
         <StyleOperBtn>
           <Button type='primary' onClick={this.crossModuleAnalysis}>

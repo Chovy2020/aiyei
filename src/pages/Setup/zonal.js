@@ -12,8 +12,6 @@ const { Column, ColumnGroup } = Table
 
 let pieChart = null
 
-const formItemLayout = { labelCol: { span: 4 },
-  wrapperCol: { span: 20 } }
 class HorizontalLoginForm extends React.Component {
   constructor(props) {
     super(props)
@@ -75,12 +73,6 @@ class HorizontalLoginForm extends React.Component {
   changeSubStepId = e => {
     this.setState({ addSubdieStepId: e.target.value })
   }
-
-  // addTable = () => {
-  //   let seq = this.state.radiusArr[this.state.radiusArr.length - 1].seq
-  //   let newRow = { seq: seq + 1,value: '' }
-  //   this.setState({ radiusArr: [...this.state.radiusArr, newRow] })
-  // }
 
   addTable = (arr, objName) => {
     let seq = arr[arr.length - 1].seq
@@ -240,8 +232,7 @@ class HorizontalLoginForm extends React.Component {
   }
 
   render() {
-    const formItemLayout = { labelCol: { span: 8 },
-      wrapperCol: { span: 14 } }
+    const formItemLayout = { labelCol: { span: 8 },wrapperCol: { span: 14 } }
     return (
       <div>
         <Form layout='inline'>
