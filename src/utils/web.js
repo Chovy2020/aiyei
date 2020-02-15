@@ -1,4 +1,5 @@
 import moment from 'moment'
+import _ from 'lodash'
 
 // 延时
 export const delay = timeout => new Promise(reslove => setTimeout(reslove, timeout))
@@ -53,4 +54,33 @@ const parseColor = hexStr => {
     : [hexStr.substr(1, 2), hexStr.substr(3, 2), hexStr.substr(5, 2)].map(function (s) {
       return parseInt(s, 16)
     })
+}
+
+// 5个主键 + defectId 拼接的字符串 => 标准数据
+export const defectIdsToWafers = defectIds => {
+  const wafers = []
+  for (const id of defectIds) {
+    const key = id.split('|')
+    const lotId = key[0]
+    const waferNo = key[1]
+    const productId = key[2]
+    const stepId = key[3]
+    const scanTm = key[4]
+    const defect = parseInt(key[5])
+    const exist = _.find(wafers, w => w.lotId === lotId && w.stepId === stepId && w.waferNo === waferNo && w.productId === productId && w.scanTm === scanTm)
+    if (exist) {
+      exist.defects = [...exist.defects, defect]
+    } else {
+      wafers.push({
+        lotId,
+        stepId,
+        waferNo,
+        productId,
+        scanTm,
+        defects: [defect],
+        defectCache: ''
+      })
+    }
+  }
+  return wafers
 }

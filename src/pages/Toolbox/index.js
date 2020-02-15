@@ -2,7 +2,7 @@ import React from 'react'
 import _ from 'lodash'
 import { connect } from 'react-redux'
 import { Icon, Tabs, Spin, Tooltip } from 'antd'
-import { TOOLS } from '@/utils/const'
+import { TOOLS } from '@/utils/constant'
 import { changeWafers, changePrevPage } from '@/utils/action'
 // import { delay } from '@/utils/web'
 import { StyleToolbox, Tools, Content, StyleTabPane } from './style'
@@ -18,7 +18,8 @@ class Toolbox extends React.Component {
     this.state = {
       activeKey: '1',
       tabCount: 1,
-      panes: [{ type: 'Data Query', name: '1' }]
+      panes: [{ type: 'Single Map', name: '1' }]
+      // panes: [{ type: 'Data Query', name: '1' }]
     }
   }
 

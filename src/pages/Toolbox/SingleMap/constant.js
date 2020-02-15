@@ -24,3 +24,22 @@ export const TOOL_TIPS = [
 export const MAP_TYPES = { 'Map/Pareto': '', 'Die Stack': '/ds', 'Reticle Stack': '/rs', 'Heat Map': '' }
 
 export const DEFECT_CLASS_LIST = ['mb', 'adc', 'rb']
+
+export const DELETE_DEFECTS_OPTIONS = ['清除选中点', '清除选中点并导出', '删除选中点', '删除选中点并导出']
+
+export const OVER_LAP_TYPE_OPTIONS = ['Bin Map', 'Bit Map', 'WAT', 'Metrology']
+
+export const DSA_TABLE_COLUMNS = [
+  { title: 'dieIndex', dataIndex: 'dieIndex', key: 'dieIndex' },
+  { title: 'step', dataIndex: 'step', key: 'step' },
+  { title: 'defectId', dataIndex: 'defectId', key: 'defectId' },
+  { title: 'scanTime', dataIndex: 'scanTm', key: 'scanTm' },
+  { title: 'image', dataIndex: 'imgUrl', key: 'imgUrl' }
+]
+export const INFO_COLUMNS = [
+  { title: 'Lot ID', dataIndex: 'lotId' },
+  { title: 'Wafer No', dataIndex: 'waferNo' },
+  { title: 'Product ID', dataIndex: 'productId' },
+  { title: 'Step ID', dataIndex: 'stepId' },
+  { title: 'Scan Time', dataIndex: 'scanTm' }
+]

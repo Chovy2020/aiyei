@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-// import { Card, List } from 'antd'
+import { Table } from 'antd'
 
 export const StyleSingleMap = styled.div`
   .mapPareto {
@@ -144,5 +144,12 @@ export const StyleImages = styled.div`
         }
       }
     }
+  }
+`
+
+export const StyleTable = styled(Table)`
+  .ant-table-small > .ant-table-content > .ant-table-body > table > .ant-table-thead > tr > th,
+  .ant-table-small > .ant-table-content > .ant-table-body > table > .ant-table-tbody > tr > td {
+    padding: 2px 8px;
   }
 `

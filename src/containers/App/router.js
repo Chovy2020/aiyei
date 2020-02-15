@@ -4,7 +4,7 @@ import { BrowserRouter, Route, Switch, Redirect, Link } from 'react-router-dom'
 import { Icon } from 'antd'
 import { Header, Logo, Container, Menu, Main } from './style'
 import { changeMenu } from '@/utils/action'
-import { MENUS } from '@/utils/const'
+import { MENUS } from '@/utils/constant'
 
 // Router
 import HomePage from '@/pages/Home/Loadable'
