@@ -413,7 +413,7 @@ class MapGallery extends React.Component {
     if (info.file.status === 'done') {
       message.success(`${info.file.name} file uploaded successfully`)
     } else if (info.file.status === 'error') {
-      message.error(`${info.file.name} file upload failed.`)
+      message.error(`${info.file.name} file upload failed`)
     }
   }
 
@@ -467,7 +467,7 @@ class MapGallery extends React.Component {
   onRotationClick = () => {
     const { selected } = this.state
     if (selected.length > 0) this.setState({ rotationVisible: true })
-    else message.warning('Please select wafer')
+    else message.warning('Please select wafers first')
   }
 
   onSeletedReset = () => {
@@ -484,7 +484,7 @@ class MapGallery extends React.Component {
   onSeletedRemove = async () => {
     const { selected } = this.state
     if (selected.length === 0) {
-      message.warning('Please select wafer')
+      message.warning('Please select wafers first')
       return
     }
     this.loadMapOrStack(true)

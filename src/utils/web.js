@@ -3,10 +3,12 @@ import _ from 'lodash'
 
 // 延时
 export const delay = timeout => new Promise(reslove => setTimeout(reslove, timeout))
+
 // 打印当前时间(微秒)
 export const printTime = (sign = '') => {
   console.log(sign, `${moment(new Date()).second()}-${moment(new Date()).millisecond()}`)
 }
+
 // 随机生成颜色
 export const getColor = str => {
   let hash = 1315423911
@@ -54,6 +56,12 @@ const parseColor = hexStr => {
     : [hexStr.substr(1, 2), hexStr.substr(3, 2), hexStr.substr(5, 2)].map(function (s) {
       return parseInt(s, 16)
     })
+}
+
+// 拼接5个主键 全局保持顺序统一
+export const waferToId = wafer => {
+  if (!wafer || wafer === {}) return ''
+  return `${wafer.lotId}|${wafer.waferNo}|${wafer.productId}|${wafer.stepId}|${wafer.scanTm}`
 }
 
 // 5个主键 + defectId 拼接的字符串 => 标准数据

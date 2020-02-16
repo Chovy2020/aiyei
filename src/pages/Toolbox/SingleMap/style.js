@@ -67,6 +67,9 @@ export const StyleWafer = styled.div`
 
 export const StylePareto = styled.div`
   flex: 1;
+  .ant-select-selection-selected-value {
+    font-size: 12px;
+  }
 `
 export const StyleDSA = styled.div`
   flex: 1;

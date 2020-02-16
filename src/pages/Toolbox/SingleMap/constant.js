@@ -4,28 +4,34 @@ export const SORT_LIST = [
 ]
 
 export const SORT_ORDER_LIST = [
-  { label: '升序', value: '1' },
-  { label: '降序', value: '2' }
+  { label: 'ASC', value: '1' },
+  { label: 'DESC', value: '2' }
 ]
 
-export const COMMANDS = ['Rotation', 'Export to CSV', 'Export klarf', 'Send to review', 'Overlap']
+export const COMMANDS = [
+  'Rotation',
+  // 'Export to CSV',
+  'Export klarf',
+  // 'Send to review',
+  // 'Overlap'
+]
 
 export const TOOL_TIPS = [
-  { content: '截取', i: 'select', func: 'chooseArea' },
-  { content: '取消选中', i: 'undo', func: 'reply' },
-  { content: '标记', i: 'pushpin', func: 'podcast' },
-  { content: '显示选中点', i: 'check', func: 'star' },
-  { content: '显示非选中点', i: 'close', func: 'star0' },
-  { content: '选中点重新分类', i: 'apartment', func: 'reclassify' },
-  { content: '删除选中点', i: 'delete', func: 'trash' },
-  { content: '刷新', i: 'sync', func: 'refresh' }
+  { content: 'Interception', i: 'select', func: 'chooseArea' },
+  { content: 'Cancel', i: 'undo', func: 'reply' },
+  { content: 'Mark', i: 'pushpin', func: 'podcast' },
+  { content: 'Highlight', i: 'check', func: 'star' },
+  { content: 'Reverse', i: 'close', func: 'star0' },
+  { content: 'Reclassify', i: 'apartment', func: 'reclassify' },
+  { content: 'Delete', i: 'delete', func: 'trash' },
+  { content: 'Refresh', i: 'sync', func: 'refresh' }
 ]
 
 export const MAP_TYPES = { 'Map/Pareto': '', 'Die Stack': '/ds', 'Reticle Stack': '/rs', 'Heat Map': '' }
 
 export const DEFECT_CLASS_LIST = ['mb', 'adc', 'rb']
 
-export const DELETE_DEFECTS_OPTIONS = ['清除选中点', '清除选中点并导出', '删除选中点', '删除选中点并导出']
+export const DELETE_DEFECTS_OPTIONS = ['clear defects', 'clear defects & export', 'delete defects', 'delete defects & export']
 
 export const OVER_LAP_TYPE_OPTIONS = ['Bin Map', 'Bit Map', 'WAT', 'Metrology']
 

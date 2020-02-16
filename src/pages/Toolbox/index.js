@@ -102,8 +102,18 @@ class Toolbox extends React.Component {
         wafers = mapWafers[name] || []
       }
     }
-    this.props.changePrevPage(prev)
+    /* ------ Image Gallery ------ */
+    if (prev.type === 'Single Map') {
+      const { singleSelected, singleWafers } = this.props
+      const selected = singleSelected[name] || []
+      if (selected.length > 0) {
+        wafers = selected
+      } else {
+        wafers = singleWafers[name] || []
+      }
+    }
     // 存储到store.Init
+    this.props.changePrevPage(prev)
     console.log(`传递到下个页面的wafers:`, wafers.length, wafers)
     this.props.changeWafers(wafers)
   }
@@ -170,6 +180,7 @@ class Toolbox extends React.Component {
 const mapStateToProps = state => ({
   ...state.Init,
   ...state.MapGallery,
+  ...state.SingleMap,
   ...state.ImageGallery
 })
 const mapDispatchToProps = {

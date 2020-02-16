@@ -142,7 +142,7 @@ class ImageGallery extends React.Component {
     const selected = this.getSelected()
     const { categoryType, classCode } = this.state
     if (selected.length === 0) {
-      message.warning('Please select image')
+      message.warning('Please select images first')
       return
     }
     await updateDefectGroup({
@@ -150,7 +150,7 @@ class ImageGallery extends React.Component {
       type: categoryType,
       code: classCode
     })
-    message.success('Classification success')
+    message.success('Classification operation succeeded')
     this.onClassifiedReset()
     // 重新拉取图片列表
     await this.loadImages()

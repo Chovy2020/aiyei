@@ -144,7 +144,6 @@ class DataQuery extends React.Component {
   }
 
   loadItems = async () => {
-    // message.success('Load completed!')
     const { items, itemSelected, params } = this.props
     const data = {
       ...params,

@@ -8,7 +8,7 @@ import Heatmap from 'heatmap.js'
 import { injectReducer } from '@/utils/store'
 import echarts from 'echarts'
 // eslint-disable-next-line
-import { delay, printTime, getColor, gradientColors, defectIdsToWafers } from '@/utils/web'
+import { delay, printTime, getColor, gradientColors } from '@/utils/web'
 import { changeWafers } from '@/utils/action'
 import { post, download } from '@/utils/api'
 import CommonDrawer from '@/components/CommonDrawer'
@@ -33,7 +33,7 @@ let mouseDownStartInner = false
 let paretoChart = null
 let dsaChart = null
 let zoomTimes = 1
-let firstPointId = 0
+let globalSelectedBar = []
 
 class SingleMap extends React.Component {
   constructor(props) {
@@ -75,7 +75,7 @@ class SingleMap extends React.Component {
       reclassifyForm: {},
       heatmapInstance: null,
       deleteDefectsDialog: false,
-      deleteDefectsType: '',
+      deleteDefectsType: '清除选中点',
       /* Pareto */
       xValue: 'mb',
       x2ndValue: '',
@@ -145,15 +145,20 @@ class SingleMap extends React.Component {
     const { dataSource, coordinate, selectedBar, selectedAction } = this.state
     const existBar = selectedBar.length > 0
     const existArea = coordinate.length > 0
+    const obColors = {}
+    const obList = []
     // - - - - - - renderMap - - - - - - 
     if (dataSource.length === 0) return
-    await delay(1)
     this.clearPoints()
-    const fill = '#' + getColor('')
     for (const wafer of dataSource) {
       for (const mb in wafer.defectInfos) {
         for (const ob in wafer.defectInfos[mb]) {
           if (existBar && selectedBar.includes(`${mb}-${ob}`)) continue
+          // 2nd X => colors
+          if (!obColors[ob]) {
+            obList.push(ob)
+            obColors[ob] = '#' + getColor(ob)
+          }
           for (const coo in wafer.defectInfos[mb][ob]) {
             let [x, y] = coo.split(',')
             // 同一个坐标下 只绘制一次点
@@ -163,16 +168,16 @@ class SingleMap extends React.Component {
               // 选中区域内
               // podcast & star 绘制成星星
               if (selectedAction === 'podcast' || selectedAction === 'star') {
-                Point = new zrender.Star({ shape: { cx: +x, cy: +y, n: 4, r: 5 }, style: { fill } })
+                Point = new zrender.Star({ shape: { cx: +x, cy: +y, n: 4, r: 5 }, style: { fill: obColors[ob] } })
               } else if (selectedAction !== 'star0') {
                 // 除了star0，其他都正常绘制
-                Point = new zrender.Circle({ shape: { cx: +x, cy: +y, r: 2 }, style: { fill } })
+                Point = new zrender.Circle({ shape: { cx: +x, cy: +y, r: 2 }, style: { fill: obColors[ob] } })
               }
             } else {
               // 选中区域外
               // 除了star，其他都正常绘制
               if (selectedAction !== 'star') {
-                Point = new zrender.Circle({ shape: { cx: +x, cy: +y, r: 2 }, style: { fill } })
+                Point = new zrender.Circle({ shape: { cx: +x, cy: +y, r: 2 }, style: { fill: obColors[ob] } })
               }
             }
             if (Point) {
@@ -183,15 +188,14 @@ class SingleMap extends React.Component {
         }
       }
     }
+    this.setState({ obList })
     // - - - - - - renderPareto - - - - - - 
     const paretoAll = []
     const paretoStar = []
     const paretoStar0 = []
-    let obList = []
     for (const wafer of dataSource) {
       for (const mb in wafer.defectInfos) {
         for (const ob in wafer.defectInfos[mb]) {
-          obList.push(ob)
           const key = `${mb}-${ob}`
           paretoAll[key] = 0
           paretoStar[key] = 0
@@ -226,9 +230,36 @@ class SingleMap extends React.Component {
       }
       this.setState({ paretoData: paretoAll })
     }
-    obList = _.uniq(obList)
-    this.setState({ obList })
     this.renderPareto()
+    // - - - - - - singleSelected - - - - - - 
+    // 点击标记的时候计算：如果区域内存在defect，统计选中的defects，存到store，后续分类、删除或页面跳转
+    if (selectedAction === 'podcast') {
+      const { name } = this.props
+      const selected = []
+      for (const wafer of dataSource) {
+        const w = {
+          lotId: wafer.lotId,
+          waferNo: wafer.waferNo,
+          productId: wafer.productId,
+          stepId: wafer.stepId,
+          scanTm: wafer.scanTm,
+          defects: []
+        }
+        for (const mb in wafer.defectInfos) {
+          for (const ob in wafer.defectInfos[mb]) {
+            if (existBar && selectedBar.includes(`${mb}-${ob}`)) continue
+            for (const coo in wafer.defectInfos[mb][ob]) {
+              if (existArea && coordinate.includes(coo)) {
+                // 选中区域内同一个坐标下 所有点都符合
+                w.defects = [...w.defects, ...wafer.defectInfos[mb][ob][coo]]
+              }
+            }
+          }
+        }
+        selected.push(w)
+      }
+      this.props.changeSingleSelected({ name, selected })
+    }
   }
   async componentDidMount() {
     // 从store里取出 dataQuery查询的filterOption
@@ -247,15 +278,15 @@ class SingleMap extends React.Component {
           defects: [],
           defectCache: "5255f356-0558-414c-ba28-6a4a88774f0e"
         },
-        {
-          lotId: "B0001.000",
-          stepId: "M1_CMP",
-          waferNo: "1",
-          productId: "Device01",
-          scanTm: "2018-05-31 12:30:35",
-          defects: [],
-          defectCache: "f87bae15-d431-474b-8f4e-e6f6b9babab6"
-        }
+        // {
+        //   lotId: "B0001.000",
+        //   stepId: "M1_CMP",
+        //   waferNo: "1",
+        //   productId: "Device01",
+        //   scanTm: "2018-05-31 12:30:35",
+        //   defects: [],
+        //   defectCache: "f87bae15-d431-474b-8f4e-e6f6b9babab6"
+        // }
       ]
     }
     this.props.changeSingleWafers({ name, wafers })
@@ -359,7 +390,7 @@ class SingleMap extends React.Component {
           singleGalleryFlag: 'singleMap'
         })
         if (_.isEmpty(res)) {
-          message.warning('no photo')
+          message.warning('No photos yet')
           return
         }
         imgDom.style.top = e.offsetY + 'px'
@@ -540,34 +571,34 @@ class SingleMap extends React.Component {
       })
       chosedArea = []
     } else if (func === 'podcast') {
-      // if (noSelectedPoints) {
-      //   message.info('没有被标记的点！')
-      //   return
-      // }
+      if (chosedArea.length === 0) {
+        message.info('Please select area first')
+        return
+      }
       this.setState({ angel: 0 })
       this.onDoActionPodcast()
     } else if (func === 'star' || func === 'star0') {
       if (noSelectedPoints) {
-        message.info('没有被标记的点！')
+        message.info('No defects selected')
         return
       }
       this.setState({ angel: 0 })
       this.onDoActionPodcast()
     } else if (func === 'reclassify') {
       if (noSelectedPoints) {
-        message.info('没有被标记的点！')
+        message.info('No defects selected')
         return
       }
-      this.setState({
-        reclassifyDialog: true,
-        angel: 0
-      })
       const singleWaferKey = this.getSelected()
       const correct = await reclassifyParams({ singleWaferKey })
-      this.setState({ correct })
+      this.setState({
+        correct,
+        angel: 0,
+        reclassifyDialog: true
+      })
     } else if (func === 'trash') {
       if (noSelectedPoints) {
-        message.info('没有被标记的点！')
+        message.info('No defects selected')
         return
       }
       this.setState({
@@ -610,10 +641,17 @@ class SingleMap extends React.Component {
   /* - - - - - - - - - - - - Wafer - - - - - - - - - - - -  */
   // Wafer 初始化
   onWaferInit = async options => {
+    // 重新初始化，需要清空store当前选中的defects
+    const { name } = this.props
+    this.props.changeSingleSelected({ name, selected: [] })
     group.removeAll()
     const res = await this.getMapData(options)
-    this.setState({ dataSource: res })
-    // this.onPretreatment()
+    this.setState({
+      selectedAction: '',
+      selectedBar: [],
+      coordinate: [],
+      dataSource: res
+    })
     // 同时更新缩放倍数
     if (res.length > 0) zoomTimes = res[0].magnification
     const { mapType } = this.state
@@ -859,13 +897,11 @@ class SingleMap extends React.Component {
     this.renderPoints()
     if (zoomTimes === 1) this.drawIsogon()
   }
-
   onReclassifyFormChange = (key, value) => {
     const { reclassifyForm } = this.state
     reclassifyForm[key] = value
     this.setState({ reclassifyForm })
   }
-
   // 选中下载点及基本信息
   downloadPoints() {
     const singleMapArr = []
@@ -902,28 +938,41 @@ class SingleMap extends React.Component {
     const singleWaferKey = this.getSelected()
     download('export', { singleWaferKey })
   }
-
   // 删除选中点
   onDefectsDelete = async () => {
     this.setState({ deleteDefectsDialog: false })
     const singleWaferKey = this.getSelected()
     const { deleteDefectsType } = this.state
     if (deleteDefectsType === '清除选中点' || deleteDefectsType === '清除选中点并导出') {
-      // this.setState({
-      //   selectedDefects: this.deliveryPoints(),
-      //   selectAction: 'clean'
-      // })
-      this.watchSelectAction()
+      // 从 dataSource 中删除
+      const { dataSource, coordinate } = this.state
+      const existArea = coordinate.length > 0
+      for (const wafer of dataSource) {
+        for (const mb in wafer.defectInfos) {
+          for (const ob in wafer.defectInfos[mb]) {
+            for (const coo in wafer.defectInfos[mb][ob]) {
+              if (existArea && coordinate.includes(coo)) {
+                delete wafer.defectInfos[mb][ob][coo]
+              }
+            }
+          }
+        }
+      }
+      this.setState({
+        dataSource,
+        coordinate: []
+      })
+      this.renderMapAndPareto()
     }
     if (deleteDefectsType === '清除选中点并导出') download('export', { singleWaferKey })
     if (deleteDefectsType === '删除选中点' || deleteDefectsType === '删除选中点并导出') {
       await deleteCorrect({ singleWaferKey })
       chosedPoints = {}
+      this.setState({ coordinate: [] })
       this.onWaferInit()
     }
-    await delay(1)
     if (deleteDefectsType === '删除选中点并导出') download('export', { singleWaferKey })
-    this.setState({ deleteDefectsType: '' })
+    this.setState({ deleteDefectsType: '清除选中点' })
   }
 
   /* - - - - - - - - - - - - Pareto - - - - - - - - - - - -  */
@@ -932,12 +981,13 @@ class SingleMap extends React.Component {
     const { xValue, x2ndValue } = this.state
     const x = await getX()
     const x2n = await getX2nd(xValue)
+    x2n[''] = 'None'
     const y = await getY(xValue, x2ndValue)
     this.setState({ x, x2n, y })
   }
+  // 新 渲染图表
   renderPareto = async () => {
     await delay(1)
-    paretoChart.clear()
     const wafers = this.getWafers()
     const len = wafers.length
     const { paretoData, x, y, xValue, stxaxis, ifAvg, obList, selectedBar } = this.state
@@ -982,6 +1032,7 @@ class SingleMap extends React.Component {
       })
       colorArr.push('#' + getColor(item))
     })
+    globalSelectedBar = selectedBar
     colorArr.forEach(item => {
       seriesArr.push({
         type: 'bar',
@@ -991,8 +1042,8 @@ class SingleMap extends React.Component {
         itemStyle: {
           color: param => {
             param.seriesName = param.seriesName.substring(0, 6) === 'series' ? '' : param.seriesName
-            const idx = selectedBar.indexOf(param.name + '-' + param.seriesName)
-            return ~idx ? '#ccc' : item
+            if (param.name === '1') console.log('globalSelectedBar', globalSelectedBar, param.seriesName)
+            return globalSelectedBar.includes(param.name + '-' + param.seriesName) ? '#ccc' : item
           }
         },
         label: {
@@ -1069,7 +1120,6 @@ class SingleMap extends React.Component {
         colorArr.forEach(item => {
           seriesArr.push({
             type: 'bar',
-            // barWidth: 20,
             markPoint: {
               data: holdArr
             },
@@ -1102,6 +1152,7 @@ class SingleMap extends React.Component {
       yValue: ''
     })
     const x2n = await getX2nd(xValue)
+    x2n[''] = ''
     const y = await getY(xValue, '')
     this.setState({ x2n, y })
   }
@@ -1124,24 +1175,13 @@ class SingleMap extends React.Component {
       '2ndXCode': x2ndValue,
       yCode: yValue
     }
-    this.setState({
-      // 点击搜索 恢复初始
-      selectedAction: '',
-      stxaxis: paretoObj,
-      selectedBar: []
-    })
+    this.setState({ stxaxis: paretoObj })
     this.onWaferInit()
   }
-  onParetoClear = () => {
+  onParetoClear = async () => {
     const { paretoData } = this.state
-    if (paretoData.length === 0) {
-      message.warning('no data')
-      return
-    }
-    this.setState({
-      selectedBar: Object.keys(paretoData)
-    })
-    this.onWaferInit()
+    this.setState({ selectedBar: Object.keys(paretoData) })
+    this.renderMapAndPareto()
   }
   onAvgChange = ifAvg => {
     this.setState({ ifAvg })
@@ -1168,9 +1208,10 @@ class SingleMap extends React.Component {
     const { dsa } = this.state
     const singleWaferKey = this.getWafers()
     if (singleWaferKey.length < 2) {
-      message.error('至少选择2片wafer，才能比较')
+      message.warning('At least 2 wafers required')
       return
     }
+    paretoChart.clear()
     this.setState({ dsa: !dsa, colorsObj: {}, selectedBar: [], dsaInfo: dsa ? {} : { dsaOrder: '1', sortName: '1' } })
     if (dsa) this.watchDSAInfo()
     else this.onWaferInit()
@@ -1404,10 +1445,6 @@ class SingleMap extends React.Component {
   }
   /* - - - - - - - - - - - - Filters End - - - - - - - - - - - -  */
 
-  paretoChartClear = () => {
-    paretoChart.clear()
-  }
-
   render() {
     const { name } = this.props
     const singleWaferKey = this.getWafers()
@@ -1423,7 +1460,7 @@ class SingleMap extends React.Component {
       heatMax,
       rotationDialog
     } = this.state
-    const { overlapDialog } = this.state
+    const { overlapDialog, deleteDefectsType } = this.state
     const { reclassifyDialog, correct } = this.state
     const { deleteDefectsDialog } = this.state
     const { x, x2n, y, xValue, x2ndValue, yValue, ifAvg } = this.state
@@ -1470,9 +1507,9 @@ class SingleMap extends React.Component {
                     <Button size='small' onClick={this.onDropDownReset} type='dashed'>
                       Reset
                     </Button>
-                    <Button size='small' onClick={this.paretoChartClear} type='dashed'>
+                    {/* <Button size='small' onClick={this.onDropDownReset} type='dashed'>
                       Test
-                    </Button>
+                    </Button> */}
                   </Form.Item>
                 </Form>
               ) : null}
@@ -1533,15 +1570,15 @@ class SingleMap extends React.Component {
             </div>
 
             <Modal
-              title='旋转角度'
+              title='Rotation'
               visible={rotationDialog}
               onOk={this.onWaferRotate}
               onCancel={() => this.setState({ rotationDialog: false })}
-              okText='确认'
-              cancelText='取消'
+              okText='Ok'
+              cancelText='Cancel'
             >
               <Form layout='vertical' labelCol={{ span: 4 }} wrapperCol={{ span: 20 }}>
-                <Form.Item label='预设角度'>
+                <Form.Item label='Default'>
                   <Button type='primary' size='small' onClick={() => this.setState({ rotationDegree: 90 })}>
                     90°
                   </Button>
@@ -1552,7 +1589,7 @@ class SingleMap extends React.Component {
                     270°
                   </Button>
                 </Form.Item>
-                <Form.Item label='自定义角度'>
+                <Form.Item label='Angle'>
                   <InputNumber
                     min={0}
                     max={360}
@@ -1570,8 +1607,8 @@ class SingleMap extends React.Component {
               visible={overlapDialog}
               onOk={this.onOverlapOk}
               onCancel={() => this.setState({ overlapDialog: false })}
-              okText='确认'
-              cancelText='取消'
+              okText='Ok'
+              cancelText='Cancel'
             >
               <Radio.Group onChange={e => this.setState({ overlapType: e.target.value })}>
                 {OVER_LAP_TYPE_OPTIONS.map(item => (
@@ -1583,7 +1620,7 @@ class SingleMap extends React.Component {
             </Modal>
 
             <Modal
-              title='重新分类'
+              title='Reclassify'
               visible={reclassifyDialog}
               onOk={this.onReclassifyOk}
               onCancel={() => this.setState({ reclassifyDialog: false })}
@@ -1593,10 +1630,10 @@ class SingleMap extends React.Component {
                     Cancel
                   </Button>
                   <Button type='primary' onClick={this.onReclassify}>
-                    重新分类
+                    Reclassify
                   </Button>
                   <Button type='primary' onClick={this.onReclassifyDownload}>
-                    重新分类并下载Klarf
+                    Reclassify & Download Klarf
                   </Button>
                 </div>
               }
@@ -1611,14 +1648,14 @@ class SingleMap extends React.Component {
             </Modal>
 
             <Modal
-              title='删除选中点'
+              title='Delete Points'
               visible={deleteDefectsDialog}
               onOk={this.onDefectsDelete}
               onCancel={() => this.setState({ deleteDefectsDialog: false })}
-              okText='确认'
-              cancelText='取消'
+              okText='Ok'
+              cancelText='Cancel'
             >
-              <Radio.Group onChange={e => this.setState({ deleteDefectsType: e.target.value })}>
+              <Radio.Group defaultValue={deleteDefectsType} onChange={e => this.setState({ deleteDefectsType: e.target.value })}>
                 {DELETE_DEFECTS_OPTIONS.map(item => (
                   <Radio key={item} value={item}>
                     {item}
@@ -1631,9 +1668,9 @@ class SingleMap extends React.Component {
           {/* Pareto */}
           <StylePareto style={{ display: `${dsa ? 'none' : 'block'}` }}>
             {!dsa ? (
-              <Form layout='inline' style={{ height: 57, marginTop: -7 }}>
-                <Form.Item label='X轴' style={{ width: 150 }}>
-                  <Select size='small' onChange={this.onChangeX} value={xValue} style={{ width: 110 }}>
+              <Form layout='inline' style={{ height: 59, marginTop: -9 }}>
+                <Form.Item label='X' style={{ width: 160 }}>
+                  <Select size='small' onChange={this.onChangeX} value={xValue} style={{ width: 130 }}>
                     {Object.keys(x).map(key => (
                       <Select.Option key={key} value={key}>
                         {x[key]}
@@ -1641,8 +1678,8 @@ class SingleMap extends React.Component {
                     ))}
                   </Select>
                 </Form.Item>
-                <Form.Item label='2nd X' style={{ width: 170 }}>
-                  <Select size='small' onChange={this.onChangeX2nd} value={x2ndValue} style={{ width: 110 }}>
+                <Form.Item label='2nd X' style={{ width: 180 }}>
+                  <Select size='small' onChange={this.onChangeX2nd} value={x2ndValue} style={{ width: 120 }}>
                     {Object.keys(x2n).map(key => (
                       <Select.Option key={key} value={key}>
                         {x2n[key]}
@@ -1650,10 +1687,10 @@ class SingleMap extends React.Component {
                     ))}
                   </Select>
                 </Form.Item>
-                <Form.Item size='small' label='Y轴' style={{ width: 190 }}>
-                  <Select size='small' onChange={this.onChangeY} value={yValue} style={{ width: 150 }}>
+                <Form.Item size='small' label='Y' style={{ width: 200 }}>
+                  <Select size='small' onChange={this.onChangeY} value={yValue} style={{ width: 170 }}>
                     {Object.keys(y).map(key => (
-                      <Select.Option key={key} value={key}>
+                      <Select.Option style={{ fontSize: 12 }} key={key} value={key}>
                         {y[key]}
                       </Select.Option>
                     ))}
@@ -1683,8 +1720,8 @@ class SingleMap extends React.Component {
           {/* DSA */}
           <StyleDSA style={{ display: `${dsa ? 'block' : 'none'}` }}>
             {dsa ? (
-              <Form layout='inline' style={{ height: 50 }}>
-                <Form.Item label='排序' style={{ width: 200 }}>
+              <Form layout='inline' style={{ height: 59, marginTop: -9 }}>
+                <Form.Item label='Sort' style={{ width: 200 }}>
                   <Select size='small' onChange={v => this.onDSASortChange(0, v)} value={sortName} style={{ width: 110 }}>
                     {SORT_LIST.map(item => (
                       <Select.Option key={item.label} value={item.value}>
@@ -1693,7 +1730,7 @@ class SingleMap extends React.Component {
                     ))}
                   </Select>
                 </Form.Item>
-                <Form.Item label='排序' style={{ width: 200 }}>
+                <Form.Item label='Sort' style={{ width: 200 }}>
                   <Select size='small' onChange={v => this.onDSASortChange(1, v)} value={dsaOrder} style={{ width: 110 }}>
                     {SORT_ORDER_LIST.map(item => (
                       <Select.Option key={item.label} value={item.value}>

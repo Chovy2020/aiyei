@@ -22,7 +22,6 @@ axios.defaults.baseURL = '/api'
 axios.defaults.withCredentials = true
 axios.defaults.timeout = 30 * 60 * 1000
 
-
 const LOADING_DELAY = 200
 let timer = null
 
