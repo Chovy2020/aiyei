@@ -1,7 +1,11 @@
 import styled from 'styled-components'
 // import { Card, List } from 'antd'
 
-export const StyleChartSelection = styled.div``
+export const StyleChartSelection = styled.div`
+  .ant-select-selection-selected-value {
+    font-size: 12px;
+  }
+`
 
 export const StyleTooltip = styled.div`
   margin: 0 5px;
@@ -36,4 +40,5 @@ export const FormItemLabel = styled.span`
   display: inline-block;
   width: 60px;
   text-align: right;
+  padding-right: 5px;
 `

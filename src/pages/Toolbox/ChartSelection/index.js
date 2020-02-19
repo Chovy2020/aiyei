@@ -3,28 +3,27 @@ import React from 'react'
 import { connect } from 'react-redux'
 import { Form, Select, Tooltip, Checkbox, Button, Input, InputNumber, Modal, Icon, TreeSelect, message } from 'antd'
 import _ from 'lodash'
-//按需导入
 import echarts from 'echarts'
 import { injectReducer } from '@/utils/store'
 import { delay } from '@/utils/web'
-import { changeChartSelected, changeChartWafers } from './action'
+import { changeChartSelected, changeChartWafers, changeChartParams } from './action'
 import { BUTTONS, CA_DATA_SOURCES, NORMALIZED, CA_METROLOGY_PRODUCTS } from './constant'
 import reducer from './reducer'
 import { getX, getX2n, getY, getChartData, getPcCmStep, getPcCm, getCaWatTreeData, searchCA } from './service'
-import {StyleChartSelection,StyleTooltip,StyleChart,StyleOperBtn,StyleCrossModuleForm,StyleCorrelationForm,FormItemLabel} from './style'
+import { StyleChartSelection, StyleTooltip, StyleChart, StyleOperBtn, StyleCrossModuleForm, StyleCorrelationForm, FormItemLabel } from './style'
 import CrossModuleChart from './component/CrossModuleChart'
 import CorrelationChart from './component/CorrelationChart'
 
-console.log(StyleChart, 'StyleChart')
 let chart = null
-let chartOpt = {};
+let chartOpt = {}
+
 class ChartSelection extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
       chartSelecting: {},
       singleWaferKey: [],
-      selectedAction: 'line-chart',
+      selectedAction: 'bar-chart',
       allBar: [],
       selectedBar: [],
       formInline: {
@@ -33,7 +32,7 @@ class ChartSelection extends React.Component {
         yValue: '100',
         normalized: ''
       },
-      showLabel: [],
+      showLabel: true,
       yAxisOper: {
         min: 0,
         max: null,
@@ -47,7 +46,7 @@ class ChartSelection extends React.Component {
       selectData: null,
       newNoData: null,
       selectNoData: null,
-      seriesType: 'line',
+      seriesType: 'bar',
       ifStack: '',
       colorArr: [],
       tips: [],
@@ -97,6 +96,14 @@ class ChartSelection extends React.Component {
     }
   }
 
+  // /api/swp/defects
+  changeChartParamsBar = bars => {
+    const { chartParams, name } = this.props
+    const params = chartParams[name] || {}
+    params.bars = bars || []
+    this.props.changeChartParams({ name, params})
+  }
+
   // 从store取出当前页的selected
   getSelected = () => {
     const { chartSelected, name } = this.props
@@ -104,16 +111,35 @@ class ChartSelection extends React.Component {
   }
   // 从store取出当前页的wafers
   getWafers = () => {
-    // const { chartWafers, name } = this.props
-    // return chartWafers[name] || []
-    const {wafers} = this.props
-    return wafers
+    const { chartWafers, name } = this.props
+    return chartWafers[name] || []
   }
 
   async componentDidMount() {
     // 将页面传递的wafers(or bars) 存储在当前页面，后续该页面addTab需要使用(当前页面无选择操作，追溯前一个页面的wafers)
-    const { wafers, name } = this.props
-    console.log(wafers,name,'mount')
+    let { wafers, name } = this.props
+    if (wafers.length === 0) {
+      wafers = [
+        {
+          lotId: "B0001.000",
+          stepId: "M4_CMP",
+          waferNo: "1",
+          productId: "Device01",
+          scanTm: "2018-06-07 12:30:35",
+          defects: [],
+          defectCache: "5255f356-0558-414c-ba28-6a4a88774f0e"
+        },
+        // {
+        //   lotId: "B0001.000",
+        //   stepId: "M1_CMP",
+        //   waferNo: "1",
+        //   productId: "Device01",
+        //   scanTm: "2018-05-31 12:30:35",
+        //   defects: [],
+        //   defectCache: "f87bae15-d431-474b-8f4e-e6f6b9babab6"
+        // }
+      ]
+    }
     this.props.changeChartWafers({ name, wafers })
     const chartDom = document.getElementById(`chart-${name}`)
     if (!chartDom) {
@@ -140,21 +166,22 @@ class ChartSelection extends React.Component {
     this.setState({ formInline })
   }
 
-  onShowLabelChange = showLabel => {
-    this.setState({ showLabel })
-  }
-
   onChartInit = async () => {
     await delay(1)
     const { formInline } = this.state
     const { xValue, x2ndValue, yValue, normalized } = formInline
+    // 每次请求接口前，将x,2x,y存储到Store，页面若跳转到singleMap，+selectedBar，可还原柱状图
+    const { chartParams, name } = this.props
+    const params = chartParams[name] || {}
+    params.x = xValue
+    params.x2n = x2ndValue
+    params.y = yValue
+    if (!params.bars) params.bars = []
+    this.props.changeChartParams({ name, params })
     const singleWaferKey = this.getWafers()
     const resData = await getChartData({
       singleWaferKey,
       canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
-      canvasSize: 400,
-      magnification: 1,
-      centralLocation: '200,200',
       filter: {},
       pareto: {
         '1stXCode': xValue,
@@ -186,8 +213,8 @@ class ChartSelection extends React.Component {
         arrNo[index + 1] = [item]
         kData.push([])
         resData.paretoValue.series.forEach(jtem => {
-          allBar.push(item+'-'+jtem.name)
-        }) 
+          allBar.push(item + '-' + jtem.name)
+        })
       })
       resData.paretoValue.series.forEach(item => {
         arr[0].push(item.name)
@@ -287,6 +314,7 @@ class ChartSelection extends React.Component {
       const { selectedAction } = this.state
       if (selectedAction !== 'star' && selectedAction !== 'star-o') {
         this.setState({ selectedBar: [] })
+        this.changeChartParamsBar([])
       }
       this.setState({
         selectedAction: 'line-chart',
@@ -303,6 +331,7 @@ class ChartSelection extends React.Component {
         selectData: _.cloneDeep(newData),
         selectNoData: _.cloneDeep(newNoData)
       })
+      this.changeChartParamsBar([])
     } else if (func === 'stackBarChart') {
       const { newData, newNoData } = this.state
       this.setState({
@@ -313,12 +342,13 @@ class ChartSelection extends React.Component {
         selectData: _.cloneDeep(newData),
         selectNoData: _.cloneDeep(newNoData)
       })
+      this.changeChartParamsBar([])
     } else if (func === 'boxChart') {
-      this.setState({selectedAction: 'box-plot'})
+      this.setState({ selectedAction: 'box-plot' })
     } else if (func === 'star') {
-      this.setState({selectedAction: 'star'})
+      this.setState({ selectedAction: 'star' })
     } else if (func === 'star-o') {
-      this.setState({selectedAction: 'star-o'})
+      this.setState({ selectedAction: 'star-o' })
     }
   }
   // lineChart和barChart时, 点击列表显示或隐藏
@@ -334,6 +364,7 @@ class ChartSelection extends React.Component {
         selectedBar.push(data.name + '-' + data.seriesName)
       }
       this.setState({ selectedBar })
+      this.changeChartParamsBar(selectedBar)
     }
     if (selectedAction === 'line-chart') {
       const { selectData, selectNoData } = this.state
@@ -357,11 +388,11 @@ class ChartSelection extends React.Component {
         arr.push(key)
       }
     }
-    this.setState({AnalysisCondition: arr, chartSelecting: data.selected})
+    this.setState({ AnalysisCondition: arr, chartSelecting: data.selected })
   }
 
   onGenerateChartOption = async () => {
-    const { resData, yAxisOper,chartSelecting } = this.state
+    const { resData, yAxisOper, chartSelecting } = this.state
     if (!resData) return
     const opt = {
       legend: { type: 'scroll', selected: chartSelecting },
@@ -377,16 +408,12 @@ class ChartSelection extends React.Component {
       dataZoom: [{ show: true }]
     }
     opt.xAxis.data = resData.paretoValue.xAxisData
-    let labelShow = false
     const { showLabel, selectedAction, selectData, selectNoData } = this.state
-    if (showLabel.length > 0) {
-      labelShow = true
-    }
     // 处理数据
     if (selectedAction === 'star') {
-      this.showLine(opt, labelShow, selectData)
+      this.showLine(opt, showLabel, selectData)
     } else if (selectedAction === 'star-o') {
-      this.showLine(opt, labelShow, selectNoData)
+      this.showLine(opt, showLabel, selectNoData)
     } else if (selectedAction === 'box-plot') {
       const { boxChartData } = this.state
       opt.series = [
@@ -414,7 +441,7 @@ class ChartSelection extends React.Component {
             lineStyle: { color: item },
             label: {
               normal: {
-                show: labelShow,
+                show: showLabel,
                 position: 'top'
               }
             }
@@ -427,14 +454,14 @@ class ChartSelection extends React.Component {
     }
     // console.log(opt)
     chartOpt = opt
-    if (chart) chart.setOption(opt,true)
-    let unSelectedBar = this.state.allBar.filter(item => {
-      return !this.state.selectedBar.includes(item)
-    })
-    console.log(this.state.selectedBar, this.state.allBar, unSelectedBar)
+    if (chart) chart.setOption(opt, true)
+    // let unSelectedBar = this.state.allBar.filter(item => {
+    //   return !this.state.selectedBar.includes(item)
+    // })
+    // console.log(this.state.selectedBar, this.state.allBar, unSelectedBar)
   }
   // 折线图时，显示选中或非选中点
-  showLine = (opt, labelShow, source) => {
+  showLine = (opt, showLabel, source) => {
     const seriesArr = []
     const { colorArr } = this.state
     colorArr.forEach(item => {
@@ -444,11 +471,11 @@ class ChartSelection extends React.Component {
         itemStyle: { color: item },
         lineStyle: { color: item },
         label: {
-          normal: { show: labelShow, position: 'top' }
+          normal: { show: showLabel, position: 'top' }
         }
       })
     })
-    console.log(seriesArr, source,'123')
+    // console.log(seriesArr, source, '123')
     // 填充值
     opt.series = seriesArr
     opt.dataset.source = source
@@ -659,7 +686,7 @@ class ChartSelection extends React.Component {
 
   render() {
     const { name } = this.props
-    const { formInline, x, x2n, y, normShow } = this.state
+    const { formInline, x, x2n, y, normShow, showLabel } = this.state
     const { xValue, x2ndValue, yValue, normalized } = formInline
     const { selectedAction } = this.state
     const { AnalysisCondition, showCrossModule, showCorrelation } = this.state
@@ -685,8 +712,8 @@ class ChartSelection extends React.Component {
       <StyleChartSelection>
         <Form layout='vertical' labelCol={{ span: 3 }}>
           <Form.Item>
-            <FormItemLabel>X轴:</FormItemLabel>
-            <Select onChange={this.onXchange} value={xValue} style={{ width: 120, marginRight: 10 }}>
+            <FormItemLabel>X:</FormItemLabel>
+            <Select size='small' onChange={this.onXchange} value={xValue} style={{ width: 120, marginRight: 10 }}>
               {Object.keys(x).map(key => (
                 <Select.Option value={key} key={key}>
                   {x[key]}
@@ -694,7 +721,7 @@ class ChartSelection extends React.Component {
               ))}
             </Select>
             <FormItemLabel>2nd X:</FormItemLabel>
-            <Select onChange={this.onX2nchange} value={x2ndValue} style={{ width: 120, marginRight: 10 }}>
+            <Select size='small' onChange={this.onX2nchange} value={x2ndValue} style={{ width: 120, marginRight: 10 }}>
               <Select.Option value={''}>None</Select.Option>
               {Object.keys(x2n).map(key => (
                 <Select.Option value={key} key={key}>
@@ -702,8 +729,8 @@ class ChartSelection extends React.Component {
                 </Select.Option>
               ))}
             </Select>
-            <FormItemLabel>Y轴:</FormItemLabel>
-            <Select onChange={this.onYchange} value={yValue} style={{ width: 120, marginRight: 10 }}>
+            <FormItemLabel>Y:</FormItemLabel>
+            <Select size='small' onChange={this.onYchange} value={yValue} style={{ width: 225, marginRight: 10 }}>
               {Object.keys(y).map(key => (
                 <Select.Option value={key} key={key}>
                   {y[key]}
@@ -714,6 +741,7 @@ class ChartSelection extends React.Component {
               <>
                 <FormItemLabel>Normalized by:</FormItemLabel>
                 <Select
+                  size='small'
                   defaultValue={normalized}
                   style={{ width: 60, marginRight: 10 }}
                   onChange={this.onNormalizedChange}
@@ -726,26 +754,27 @@ class ChartSelection extends React.Component {
                 </Select>
               </>
             ) : null}
-            <Checkbox.Group onChange={this.onShowLabelChange}>
-              <Checkbox value='Show Value'>Show Value</Checkbox>
-            </Checkbox.Group>
           </Form.Item>
           <Form.Item>
             <FormItemLabel>Min:</FormItemLabel>
             <InputNumber
+              size='small'
               onChange={value => this.onYAxisOperChange('min', value)}
               style={{ width: 120, marginRight: 10 }}
             />
             <FormItemLabel>Max:</FormItemLabel>
             <InputNumber
+              size='small'
               onChange={value => this.onYAxisOperChange('max', value)}
               style={{ width: 120, marginRight: 10 }}
             />
             <FormItemLabel>Interval:</FormItemLabel>
             <InputNumber
+              size='small'
               onChange={value => this.onYAxisOperChange('interval', value)}
               style={{ width: 120, marginRight: 10 }}
             />
+            <Checkbox checked={showLabel} onChange={e => this.setState({ showLabel: e.target.checked })}>Show Value</Checkbox>
           </Form.Item>
         </Form>
 
@@ -990,6 +1019,7 @@ const mapStateToProps = state => ({
 })
 const mapDispatchToProps = {
   changeChartSelected,
-  changeChartWafers
+  changeChartWafers,
+  changeChartParams
 }
 export default connect(mapStateToProps, mapDispatchToProps)(ChartSelection)

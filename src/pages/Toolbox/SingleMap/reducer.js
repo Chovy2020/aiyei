@@ -1,6 +1,11 @@
 const initState = {
     singleSelected: {},
-    singleWafers: {}
+    singleWafers: {},
+    /**
+     * singleParams: { name: params }
+     * params: { x, x2n, y, bars: [] }
+     */
+    singleParams: {},
   }
   
   export default (state = initState, action) => {
@@ -13,6 +18,11 @@ const initState = {
       case 'CHANGE_SINGLE_WAFERS': {
         const { name, wafers } = action.payload
         state.singleWafers[name] = wafers
+        return state
+      }
+      case 'CHANGE_SINGLE_PARAMS':{
+        const { name, params } = action.payload
+        state.singleParams[name] = params
         return state
       }
       default:

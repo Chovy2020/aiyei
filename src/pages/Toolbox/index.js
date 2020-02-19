@@ -3,7 +3,7 @@ import _ from 'lodash'
 import { connect } from 'react-redux'
 import { Icon, Tabs, Spin, Tooltip } from 'antd'
 import { TOOLS } from '@/utils/constant'
-import { changeWafers, changePrevPage } from '@/utils/action'
+import { changeWafers, changePrevPage, changeMenu, changeParams } from '@/utils/action'
 // import { delay } from '@/utils/web'
 import { StyleToolbox, Tools, Content, StyleTabPane } from './style'
 import DataQuery from './DataQuery'
@@ -18,12 +18,15 @@ class Toolbox extends React.Component {
     this.state = {
       activeKey: '1',
       tabCount: 1,
+      // panes: [{ type: 'Chart Selection', name: '1' }]
       panes: [{ type: 'Single Map', name: '1' }]
       // panes: [{ type: 'Data Query', name: '1' }]
     }
   }
 
-  componentDidMount() {}
+  componentDidMount() {
+    this.props.changeMenu('toolbox')
+  }
 
   generatePage = ({ type, name }) => {
     switch (type) {
@@ -102,7 +105,7 @@ class Toolbox extends React.Component {
         wafers = mapWafers[name] || []
       }
     }
-    /* ------ Image Gallery ------ */
+    /* ------ Single Map ------ */
     if (prev.type === 'Single Map') {
       const { singleSelected, singleWafers } = this.props
       const selected = singleSelected[name] || []
@@ -110,6 +113,17 @@ class Toolbox extends React.Component {
         wafers = selected
       } else {
         wafers = singleWafers[name] || []
+      }
+    }
+    /* ------ Chart Selection ------ */
+    if (prev.type === 'Chart Selection') {
+      const { chartWafers } = this.props
+      wafers = chartWafers[name] || []
+      // 如果跳转到Single Map，图表保持一致，需要x, x2n, y, selectedBar四个参数
+      if (next.type === 'Single Map') {
+        const { chartParams } = this.props
+        const params = chartParams[name]
+        this.props.changeParams(params)
       }
     }
     // 存储到store.Init
@@ -181,10 +195,13 @@ const mapStateToProps = state => ({
   ...state.Init,
   ...state.MapGallery,
   ...state.SingleMap,
+  ...state.ChartSelection,
   ...state.ImageGallery
 })
 const mapDispatchToProps = {
   changePrevPage,
-  changeWafers
+  changeWafers,
+  changeParams,
+  changeMenu
 }
 export default connect(mapStateToProps, mapDispatchToProps)(Toolbox)

@@ -4,8 +4,8 @@ export const changeWafers = payload => ({
   payload
 })
 
-export const changeBars = payload => ({
-  type: 'CHANGE_BARS',
+export const changeParams = payload => ({
+  type: 'CHANGE_PARAMS',
   payload
 })
 

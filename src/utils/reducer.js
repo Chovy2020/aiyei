@@ -20,7 +20,12 @@ const initialState = {
    * bars: 包括wafer与bar的集合(同一个bar可能包含多片wafer的defect的集合)
    * @param {Array<Number>} bars selectedBarList
    */
-  bars: []
+  params: {
+    x: 'mb',
+    x2n: '',
+    y: '100',
+    bars: []
+  }
 }
 
 const initReducer = (state = initialState, action) => {
@@ -45,10 +50,10 @@ const initReducer = (state = initialState, action) => {
         ...state,
         wafers: action.payload
       }
-    case 'CHANGE_BARS':
+    case 'CHANGE_PARAMS':
       return {
         ...state,
-        bars: action.payload
+        params: action.payload
       }
     default:
       return state

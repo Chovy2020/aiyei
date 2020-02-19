@@ -1,6 +1,6 @@
 export const BUTTONS = [
-    { content: 'Trend Chart', i: 'line-chart', func: 'trendChart' },
     { content: 'Bar Chart', i: 'bar-chart', func: 'barChart' },
+    { content: 'Trend Chart', i: 'line-chart', func: 'trendChart' },
     { content: 'Stack Bar Chart', i: 'database', func: 'stackBarChart' },
     { content: 'Box Chart', i: 'box-plot', func: 'boxChart' }
 ]

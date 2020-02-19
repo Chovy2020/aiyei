@@ -24,7 +24,7 @@ const generateRoute = (route, key) => <Route key={key} exact={route === '/'} pat
 class App extends React.Component {
   componentDidMount() {
     const path = window.location.pathname || ''
-    let activeMenu = ''
+    let activeMenu = 'toolbox'
     for (const menu of MENUS) {
       if (path.indexOf(menu.link) >= 0) {
         activeMenu = menu.link
