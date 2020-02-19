@@ -145,8 +145,14 @@ class DataQuery extends React.Component {
 
   loadItems = async () => {
     const { items, itemSelected, params } = this.props
+    const { existsImg, mbHave, secondScan, seeLastScan, startTm, endTm } = params
     const data = {
-      ...params,
+      existsImg: existsImg ? 'Y' : 'N',
+      mbHave: mbHave ? 'Y' : 'N',
+      secondScan: secondScan ? 'Y' : 'N',
+      seeLastScan: seeLastScan ? 'Y' : 'N',
+      startTm: startTm !== '' || '1970-01-01',
+      endTm: endTm !== '' || '2020-12-31',
       comboBoxes: items.map((item, index) => ({
         key: item,
         value: itemSelected[index]
@@ -155,15 +161,15 @@ class DataQuery extends React.Component {
     const res = await getTags(data)
     if (res && res !== {}) {
       this.props.changeFilterOption({
-        mb: res.mbs,
-        adc: res.adc,
-        rb: res.rbs,
-        testId: res.tests,
-        cluster: res.clusterIds,
-        adder: res.adderFlags[0] === 'Y' ? ['YES'] : ['NO'],
-        repeater: res.repeaterIds,
-        zoneId: res.zoneIds,
-        subDie: res.subDieIds
+        mb: res.mbs || [],
+        adc: res.adc || [],
+        rb: res.rbs || [],
+        testId: res.tests || [],
+        cluster: res.clusterIds || [],
+        adder: (res.adderFlags && res.adderFlags[0] === 'Y') ? ['YES'] : ['NO'],
+        repeater: res.repeaterIds || [],
+        zoneId: res.zoneIds || [],
+        subDie: res.subDieIds || []
       })
     }
     this.props.addTab('Map Gallery')
