@@ -38,7 +38,7 @@ export const StyleCorrelationForm = styled.div`
 
 export const FormItemLabel = styled.span`
   display: inline-block;
-  width: 60px;
+  width: 110px;
   text-align: right;
   padding-right: 5px;
 `
