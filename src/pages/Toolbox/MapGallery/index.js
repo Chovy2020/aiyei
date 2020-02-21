@@ -427,7 +427,7 @@ class MapGallery extends React.Component {
       wafers = _.remove(wafers, w => `${w.lotId}|${w.waferNo}|${w.productId}|${w.stepId}|${w.scanTm}` !== wafer.id)
     } else {
       selected.push(wafer.id)
-      const { lotId, stepId, waferNo, productId, scanTm, defectIdRedisKey } = wafer
+      const { lotId, stepId, waferNo, productId, scanTm, defectCache } = wafer
       wafers.push({
         lotId,
         stepId,
@@ -435,7 +435,7 @@ class MapGallery extends React.Component {
         productId,
         scanTm,
         defects: [],
-        defectCache: defectIdRedisKey
+        defectCache
       })
     }
     this.setState({ selected })

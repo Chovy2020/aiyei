@@ -10,7 +10,15 @@ import { changeChartSelected, changeChartWafers, changeChartParams } from './act
 import { BUTTONS, CA_DATA_SOURCES, NORMALIZED, CA_METROLOGY_PRODUCTS } from './constant'
 import reducer from './reducer'
 import { getX, getX2n, getY, getChartData, getPcCmStep, getPcCm, getCaWatTreeData, searchCA } from './service'
-import { StyleChartSelection, StyleTooltip, StyleChart, StyleOperBtn, StyleCrossModuleForm, StyleCorrelationForm, FormItemLabel } from './style'
+import {
+  StyleChartSelection,
+  StyleTooltip,
+  StyleChart,
+  StyleOperBtn,
+  StyleCrossModuleForm,
+  StyleCorrelationForm,
+  FormItemLabel
+} from './style'
 import CrossModuleChart from './component/CrossModuleChart'
 import CorrelationChart from './component/CorrelationChart'
 
@@ -101,7 +109,7 @@ class ChartSelection extends React.Component {
     const { chartParams, name } = this.props
     const params = chartParams[name] || {}
     params.bars = bars || []
-    this.props.changeChartParams({ name, params})
+    this.props.changeChartParams({ name, params })
   }
 
   // 从store取出当前页的selected
@@ -116,19 +124,51 @@ class ChartSelection extends React.Component {
   }
 
   async componentDidMount() {
+    // 如果前一个页面是chartSelection，获取params
+    const { name, prevPage } = this.props
+    if (prevPage && prevPage.type === 'Single Map') {
+      const { params } = this.props
+      const formInline = {
+        xValue: params.x,
+        x2ndValue: params.x2n,
+        yValue: params.y,
+        normalized: ''
+      }
+      this.setState({ formInline, selectedBar: params.bars })
+      this.props.changeChartParams({
+        name,
+        params: {
+          x: formInline['1stXCode'],
+          x2n: formInline['2ndXCode'],
+          y: formInline['yCode'],
+          bars: formInline.bars
+        }
+      })
+    } else {
+      const { formInline } = this.state
+      this.props.changeChartParams({
+        name,
+        params: {
+          x: formInline.xValue,
+          x2n: formInline.x2ndValue,
+          y: formInline.yValue,
+          bars: []
+        }
+      })
+    }
     // 将页面传递的wafers(or bars) 存储在当前页面，后续该页面addTab需要使用(当前页面无选择操作，追溯前一个页面的wafers)
-    let { wafers, name } = this.props
+    let { wafers } = this.props
     if (wafers.length === 0) {
       wafers = [
         {
-          lotId: "B0001.000",
-          stepId: "M4_CMP",
-          waferNo: "1",
-          productId: "Device01",
-          scanTm: "2018-06-07 12:30:35",
+          lotId: 'B0001.000',
+          stepId: 'M4_CMP',
+          waferNo: '1',
+          productId: 'Device01',
+          scanTm: '2018-06-07 12:30:35',
           defects: [],
-          defectCache: "5255f356-0558-414c-ba28-6a4a88774f0e"
-        },
+          defectCache: '5255f356-0558-414c-ba28-6a4a88774f0e'
+        }
         // {
         //   lotId: "B0001.000",
         //   stepId: "M1_CMP",
@@ -778,7 +818,9 @@ class ChartSelection extends React.Component {
               onChange={value => this.onYAxisOperChange('interval', value)}
               style={{ width: 120, marginRight: 10 }}
             />
-            <Checkbox checked={showLabel} onChange={e => this.setState({ showLabel: e.target.checked })}>Show Value</Checkbox>
+            <Checkbox checked={showLabel} onChange={e => this.setState({ showLabel: e.target.checked })}>
+              Show Value
+            </Checkbox>
           </Form.Item>
         </Form>
 

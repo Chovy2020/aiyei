@@ -73,7 +73,9 @@ class SingleMap extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      // 前端联动的数据
+      singleMapColors: {
+        '': '#67c6a7'
+      },
       existDefects: false,
       mapData: [],
       coordinate: [],
@@ -265,9 +267,9 @@ class SingleMap extends React.Component {
   showOtherMapInit = wafers => {
     if (wafers.length > 1) {
       const firstWaferProductId = wafers[0].productId
-      wafers.forEach(wafer => {
+      for(const wafer of wafers) {
         if (wafer.productId !== firstWaferProductId) return false
-      })
+      }
     }
     return true
   }
@@ -667,10 +669,9 @@ class SingleMap extends React.Component {
   // rednerPoint & renderPareto
   renderMap = async () => {
     await delay(1)
-    const { mapData, coordinate, selectedBar, selectedAction } = this.state
+    const { mapData, coordinate, selectedBar, selectedAction, singleMapColors } = this.state
     const existBar = selectedBar.length > 0
     const existArea = coordinate.length > 0
-    const obColors = {}
     const obList = []
     // - - - - - - renderMap - - - - - -
     if (mapData.length === 0) return
@@ -679,11 +680,6 @@ class SingleMap extends React.Component {
       for (const mb in wafer.defectInfos) {
         for (const ob in wafer.defectInfos[mb]) {
           if (existBar && selectedBar.includes(`${mb}-${ob}`)) continue
-          // 2nd X => colors
-          if (!obColors[ob]) {
-            obList.push(ob)
-            obColors[ob] = '#' + getColor(ob)
-          }
           for (const coo in wafer.defectInfos[mb][ob]) {
             let [x, y] = coo.split(',')
             // 同一个坐标下 只绘制一次点
@@ -693,16 +689,16 @@ class SingleMap extends React.Component {
               // 选中区域内
               // podcast & star 绘制成星星
               if (selectedAction === 'podcast' || selectedAction === 'star') {
-                Point = new zrender.Star({ shape: { cx: +x, cy: +y, n: 4, r: 5 }, style: { fill: obColors[ob] } })
+                Point = new zrender.Star({ shape: { cx: +x, cy: +y, n: 4, r: 5 }, style: { fill: singleMapColors[ob] } })
               } else if (selectedAction !== 'star0') {
                 // 除了star0，其他都正常绘制
-                Point = new zrender.Circle({ shape: { cx: +x, cy: +y, r: 2 }, style: { fill: obColors[ob] } })
+                Point = new zrender.Circle({ shape: { cx: +x, cy: +y, r: 2 }, style: { fill: singleMapColors[ob] } })
               }
             } else {
               // 选中区域外
               // 除了star，其他都正常绘制
               if (selectedAction !== 'star') {
-                Point = new zrender.Circle({ shape: { cx: +x, cy: +y, r: 2 }, style: { fill: obColors[ob] } })
+                Point = new zrender.Circle({ shape: { cx: +x, cy: +y, r: 2 }, style: { fill: singleMapColors[ob] } })
               }
             }
             if (Point) {
@@ -818,7 +814,14 @@ class SingleMap extends React.Component {
       this.dealDsaData()
     } else {
       const paretoData = await post('swp', formData)
-      this.setState({ paretoData })
+      // 计算颜色
+      const { singleMapColors } = this.state
+      if (paretoData && paretoData.paretoValue && paretoData.paretoValue.series.length > 0) {
+        paretoData.paretoValue.series.forEach(({name}) => {
+          if (!singleMapColors[name]) singleMapColors[name] = '#' + getColor(name)
+        })
+      }
+      this.setState({ paretoData, singleMapColors })
       this.renderPareto()
     }
   }
