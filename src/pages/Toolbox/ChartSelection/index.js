@@ -274,7 +274,7 @@ class ChartSelection extends React.Component {
       x2ndValue: '',
       yValue: '100'
     }
-    this.setState({ formInline })
+    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', })
     this.onX2nInit()
     this.onYInit()
     this.onChartInit()
@@ -283,7 +283,7 @@ class ChartSelection extends React.Component {
     const { formInline } = this.state
     formInline.x2ndValue = x2ndValue
     formInline.yValue = '100'
-    this.setState({ formInline })
+    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', })
     this.onYInit()
     this.onChartInit()
   }
@@ -293,14 +293,15 @@ class ChartSelection extends React.Component {
     formInline.normalized = 'All Defect'
     this.setState({
       normShow: y[yValue] && y[yValue].includes('NORM') ? true : false,
-      formInline
+      formInline,
+      selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '',
     })
     this.onChartInit()
   }
   onNormalizedChange = v => {
     const { formInline } = this.state
     formInline.normalized = v
-    this.setState({ formInline })
+    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', })
     this.onChartInit()
   }
   onYAxisOperChange = (key, value) => {
@@ -333,11 +334,13 @@ class ChartSelection extends React.Component {
       })
       this.changeChartParamsBar([])
     } else if (func === 'stackBarChart') {
-      const { newData, newNoData } = this.state
+      const { newData, newNoData, resData } = this.state
+      console.log(resData.paretoValue.series)
+      let stackContent = resData.paretoValue.series.length === 1 ? '': 'one'
       this.setState({
         selectedAction: 'database',
         seriesType: 'bar',
-        ifStack: 'one',
+        ifStack: stackContent,
         selectedBar: [],
         selectData: _.cloneDeep(newData),
         selectNoData: _.cloneDeep(newNoData)
@@ -397,14 +400,15 @@ class ChartSelection extends React.Component {
     const opt = {
       legend: { type: 'scroll', selected: chartSelecting },
       tooltip: { trigger: 'item' },
+      color: this.state.colorArr,
       dataset: { source: [] },
-      xAxis: { type: 'category', data: [] },
+      xAxis: { type: 'category',data: [] },
       yAxis: {
         max: yAxisOper.max || null,
         min: yAxisOper.min || 0,
         interval: yAxisOper.interval || null
       },
-      series: [],
+      // series: [],
       dataZoom: [{ show: true }]
     }
     opt.xAxis.data = resData.paretoValue.xAxisData
@@ -710,7 +714,7 @@ class ChartSelection extends React.Component {
 
     return (
       <StyleChartSelection>
-        <Form layout='vertical' labelCol={{ span: 3 }}>
+        <Form layout='vertical' labelCol={{ span: 6, offset: 14}}>
           <Form.Item>
             <FormItemLabel>X:</FormItemLabel>
             <Select size='small' onChange={this.onXchange} value={xValue} style={{ width: 120, marginRight: 10 }}>
@@ -743,7 +747,7 @@ class ChartSelection extends React.Component {
                 <Select
                   size='small'
                   defaultValue={normalized}
-                  style={{ width: 60, marginRight: 10 }}
+                  style={{ width: 120, marginRight: 10 }}
                   onChange={this.onNormalizedChange}
                 >
                   {Object.keys(NORMALIZED).map(key => (
