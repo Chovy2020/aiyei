@@ -856,6 +856,7 @@ class SingleMap extends React.Component {
     const seriesArr = []
     const xAxisData = paretoData.paretoValue.xAxisData
     const series = paretoData.paretoValue.series
+    let legendArr = []
     if (xAxisData.length > 0 && series.length > 0) {
       xAxisData.forEach((item, index) => {
         arr[index] = [item]
@@ -864,10 +865,11 @@ class SingleMap extends React.Component {
         item.data.forEach((item, index) => {
           arr[index].push(ifAvg === 'avg' ? Math.round(item / len) : item)
         })
+        legendArr.push(item.name)
         hold.push(item.holdValue)
         colorArr.push('#' + getColor(item.name))
       })
-      arr.unshift(['product', series[0].name])
+      arr.unshift(['product', ...legendArr])
       hold.forEach((item, i) => {
         holdArr.push({
           value: item,
@@ -895,9 +897,11 @@ class SingleMap extends React.Component {
           }
         })
       })
+      console.log(colorArr)
       // 填充值
       opt.dataset.source = arr
       opt.series = seriesArr
+      opt.color = colorArr
     }
     paretoChart.setOption(opt)
   }
@@ -1142,7 +1146,7 @@ class SingleMap extends React.Component {
         })
       })
     }
-    dsaChart.setOption(opt)
+    dsaChart.setOption(opt,true)
   }
   // DSA 柱状图点击
   onDSAChartClick = params => {
