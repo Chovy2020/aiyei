@@ -828,7 +828,7 @@ class SingleMap extends React.Component {
   // 渲染图表
   renderPareto = async () => {
     await delay(1)
-    const { paretoData, x, y, paretoParams, ifAvg, selectedBar, singleMapColors } = this.state
+    const { paretoData, x, y, paretoParams, ifAvg, selectedBar } = this.state
     if (_.isEmpty(paretoData)) return
     const wafers = this.getWafers()
     const len = wafers.length
@@ -852,38 +852,60 @@ class SingleMap extends React.Component {
       series: []
     }
     // 处理数据
-    const datasetSource = []
+    const arr = []
+    const hold = []
+    const holdArr = []
+    const colorArr = []
     const seriesArr = []
     const xAxisData = paretoData.paretoValue.xAxisData
     const series = paretoData.paretoValue.series
+    let legendArr = []
     if (xAxisData.length > 0 && series.length > 0) {
-      xAxisData.forEach((mb, i) => {
-        series.forEach(ob => {
-          ob.data.forEach((defects, j) => {
-            if (i === j) datasetSource.push([`${mb}-${ob.name}`, ifAvg === 'avg' ? Math.round(defects / len) : defects, mb, ob.name])
-          })
+      xAxisData.forEach((item, index) => {
+        arr[index] = [item]
+      })
+      series.forEach(item => {
+        item.data.forEach((item, index) => {
+          arr[index].push(ifAvg === 'avg' ? Math.round(item / len) : item)
+        })
+        legendArr.push(item.name)
+        hold.push(item.holdValue)
+        colorArr.push('#' + getColor(item.name))
+      })
+      arr.unshift(['product', ...legendArr])
+      hold.forEach((item, i) => {
+        holdArr.push({
+          value: item,
+          xAxis: i,
+          yAxis: item
         })
       })
-      seriesArr.push({
-        type: 'bar',
-        itemStyle: {
-          color: param => {
-            const [name,,, ob] = param.data
-            return selectedBar.includes(name) ? '#ccc' : singleMapColors[ob]
+      colorArr.forEach(item => {
+        seriesArr.push({
+          type: 'bar',
+          markPoint: {
+            data: holdArr
+          },
+          itemStyle: {
+            color: param => {
+              param.seriesName = param.seriesName.substring(0, 6) === 'series' ? '' : param.seriesName
+              return selectedBar.includes(param.name + '-' + param.seriesName) ? '#ccc' : item
+            }
+          },
+          label: {
+            normal: {
+              show: true,
+              position: 'top'
+            }
           }
-        },
-        label: {
-          normal: {
-            show: true,
-            position: 'top'
-          }
-        }
+        })
       })
+      console.log(colorArr)
       // 填充值
-      opt.dataset.source = datasetSource
+      opt.dataset.source = arr
       opt.series = seriesArr
+      opt.color = colorArr
     }
-    console.log('opt', opt);
     paretoChart.setOption(opt)
   }
   onChangeX = async x => {
@@ -1127,7 +1149,7 @@ class SingleMap extends React.Component {
         })
       })
     }
-    dsaChart.setOption(opt)
+    dsaChart.setOption(opt,true)
   }
   // DSA 柱状图点击
   onDSAChartClick = params => {

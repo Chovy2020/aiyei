@@ -788,7 +788,7 @@ class ChartSelection extends React.Component {
                 >
                   {Object.keys(NORMALIZED).map(key => (
                     <Select.Option value={NORMALIZED[key]} key={key}>
-                      {key}
+                      {NORMALIZED[key]}
                     </Select.Option>
                   ))}
                 </Select>
