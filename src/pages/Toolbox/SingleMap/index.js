@@ -73,7 +73,9 @@ class SingleMap extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      // 前端联动的数据
+      singleMapColors: {
+        '': '#67c6a7'
+      },
       existDefects: false,
       mapData: [],
       coordinate: [],
@@ -265,9 +267,9 @@ class SingleMap extends React.Component {
   showOtherMapInit = wafers => {
     if (wafers.length > 1) {
       const firstWaferProductId = wafers[0].productId
-      wafers.forEach(wafer => {
+      for(const wafer of wafers) {
         if (wafer.productId !== firstWaferProductId) return false
-      })
+      }
     }
     return true
   }
@@ -667,10 +669,9 @@ class SingleMap extends React.Component {
   // rednerPoint & renderPareto
   renderMap = async () => {
     await delay(1)
-    const { mapData, coordinate, selectedBar, selectedAction } = this.state
+    const { mapData, coordinate, selectedBar, selectedAction, singleMapColors } = this.state
     const existBar = selectedBar.length > 0
     const existArea = coordinate.length > 0
-    const obColors = {}
     const obList = []
     // - - - - - - renderMap - - - - - -
     if (mapData.length === 0) return
@@ -679,11 +680,6 @@ class SingleMap extends React.Component {
       for (const mb in wafer.defectInfos) {
         for (const ob in wafer.defectInfos[mb]) {
           if (existBar && selectedBar.includes(`${mb}-${ob}`)) continue
-          // 2nd X => colors
-          if (!obColors[ob]) {
-            obList.push(ob)
-            obColors[ob] = '#' + getColor(ob)
-          }
           for (const coo in wafer.defectInfos[mb][ob]) {
             let [x, y] = coo.split(',')
             // 同一个坐标下 只绘制一次点
@@ -693,16 +689,16 @@ class SingleMap extends React.Component {
               // 选中区域内
               // podcast & star 绘制成星星
               if (selectedAction === 'podcast' || selectedAction === 'star') {
-                Point = new zrender.Star({ shape: { cx: +x, cy: +y, n: 4, r: 5 }, style: { fill: obColors[ob] } })
+                Point = new zrender.Star({ shape: { cx: +x, cy: +y, n: 4, r: 5 }, style: { fill: singleMapColors[ob] } })
               } else if (selectedAction !== 'star0') {
                 // 除了star0，其他都正常绘制
-                Point = new zrender.Circle({ shape: { cx: +x, cy: +y, r: 2 }, style: { fill: obColors[ob] } })
+                Point = new zrender.Circle({ shape: { cx: +x, cy: +y, r: 2 }, style: { fill: singleMapColors[ob] } })
               }
             } else {
               // 选中区域外
               // 除了star，其他都正常绘制
               if (selectedAction !== 'star') {
-                Point = new zrender.Circle({ shape: { cx: +x, cy: +y, r: 2 }, style: { fill: obColors[ob] } })
+                Point = new zrender.Circle({ shape: { cx: +x, cy: +y, r: 2 }, style: { fill: singleMapColors[ob] } })
               }
             }
             if (Point) {
@@ -818,14 +814,21 @@ class SingleMap extends React.Component {
       this.dealDsaData()
     } else {
       const paretoData = await post('swp', formData)
-      this.setState({ paretoData })
+      // 计算颜色
+      const { singleMapColors } = this.state
+      if (paretoData && paretoData.paretoValue && paretoData.paretoValue.series.length > 0) {
+        paretoData.paretoValue.series.forEach(({name}) => {
+          if (!singleMapColors[name]) singleMapColors[name] = '#' + getColor(name)
+        })
+      }
+      this.setState({ paretoData, singleMapColors })
       this.renderPareto()
     }
   }
   // 渲染图表
   renderPareto = async () => {
     await delay(1)
-    const { paretoData, x, y, paretoParams, ifAvg, selectedBar } = this.state
+    const { paretoData, x, y, paretoParams, ifAvg, selectedBar, singleMapColors } = this.state
     if (_.isEmpty(paretoData)) return
     const wafers = this.getWafers()
     const len = wafers.length
@@ -849,56 +852,38 @@ class SingleMap extends React.Component {
       series: []
     }
     // 处理数据
-    const arr = []
-    const hold = []
-    const holdArr = []
-    const colorArr = []
+    const datasetSource = []
     const seriesArr = []
     const xAxisData = paretoData.paretoValue.xAxisData
     const series = paretoData.paretoValue.series
     if (xAxisData.length > 0 && series.length > 0) {
-      xAxisData.forEach((item, index) => {
-        arr[index] = [item]
-      })
-      series.forEach(item => {
-        item.data.forEach((item, index) => {
-          arr[index].push(ifAvg === 'avg' ? Math.round(item / len) : item)
-        })
-        hold.push(item.holdValue)
-        colorArr.push('#' + getColor(item.name))
-      })
-      arr.unshift(['product', series[0].name])
-      hold.forEach((item, i) => {
-        holdArr.push({
-          value: item,
-          xAxis: i,
-          yAxis: item
+      xAxisData.forEach((mb, i) => {
+        series.forEach(ob => {
+          ob.data.forEach((defects, j) => {
+            if (i === j) datasetSource.push([`${mb}-${ob.name}`, ifAvg === 'avg' ? Math.round(defects / len) : defects, mb, ob.name])
+          })
         })
       })
-      colorArr.forEach(item => {
-        seriesArr.push({
-          type: 'bar',
-          markPoint: {
-            data: holdArr
-          },
-          itemStyle: {
-            color: param => {
-              param.seriesName = param.seriesName.substring(0, 6) === 'series' ? '' : param.seriesName
-              return selectedBar.includes(param.name + '-' + param.seriesName) ? '#ccc' : item
-            }
-          },
-          label: {
-            normal: {
-              show: true,
-              position: 'top'
-            }
+      seriesArr.push({
+        type: 'bar',
+        itemStyle: {
+          color: param => {
+            const [name,,, ob] = param.data
+            return selectedBar.includes(name) ? '#ccc' : singleMapColors[ob]
           }
-        })
+        },
+        label: {
+          normal: {
+            show: true,
+            position: 'top'
+          }
+        }
       })
       // 填充值
-      opt.dataset.source = arr
+      opt.dataset.source = datasetSource
       opt.series = seriesArr
     }
+    console.log('opt', opt);
     paretoChart.setOption(opt)
   }
   onChangeX = async x => {

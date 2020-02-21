@@ -5,6 +5,7 @@ import { Icon, Tabs, Spin, Tooltip } from 'antd'
 import { TOOLS } from '@/utils/constant'
 import { changeWafers, changePrevPage, changeMenu, changeParams } from '@/utils/action'
 // import { delay } from '@/utils/web'
+import { post } from '@/utils/api'
 import { StyleToolbox, Tools, Content, StyleTabPane } from './style'
 import DataQuery from './DataQuery'
 import MapGallery from './MapGallery'
@@ -19,8 +20,8 @@ class Toolbox extends React.Component {
       activeKey: '1',
       tabCount: 1,
       // panes: [{ type: 'Chart Selection', name: '1' }]
-      panes: [{ type: 'Single Map', name: '1' }]
-      // panes: [{ type: 'Data Query', name: '1' }]
+      // panes: [{ type: 'Single Map', name: '1' }]
+      panes: [{ type: 'Data Query', name: '1' }]
     }
   }
 
@@ -75,7 +76,15 @@ class Toolbox extends React.Component {
           const productId = imgKeyArray[1]
           const scanTm = imgKeyArray[4]
           const defect = parseInt(imgKeyArray[5])
-          const exist = _.find(wafers, w => w.lotId === lotId && w.stepId === stepId && w.waferNo === waferNo && w.productId === productId && w.scanTm === scanTm)
+          const exist = _.find(
+            wafers,
+            w =>
+              w.lotId === lotId &&
+              w.stepId === stepId &&
+              w.waferNo === waferNo &&
+              w.productId === productId &&
+              w.scanTm === scanTm
+          )
           if (exist) {
             exist.defects = [...exist.defects, defect]
           } else {
@@ -104,6 +113,21 @@ class Toolbox extends React.Component {
       } else {
         wafers = mapWafers[name] || []
       }
+      // defectCache => defects
+      if (next.type === 'Single Map' || next.type === 'Chart Selection') {
+        const res = await post('gallery_map/download_defects', { waferList: wafers })
+        wafers = res.map(w => {
+          const { lotId, waferNo, productId, stepId, scanTm, defectList } = w
+          return {
+            lotId,
+            waferNo,
+            productId,
+            stepId,
+            scanTm,
+            defects: defectList
+          }
+        })
+      }
     }
     /* ------ Single Map ------ */
     if (prev.type === 'Single Map') {
@@ -113,6 +137,11 @@ class Toolbox extends React.Component {
         wafers = selected
       } else {
         wafers = singleWafers[name] || []
+      }
+      if (next.type === 'Chart Selection') {
+        const { singleParams } = this.props
+        const params = singleParams[name]
+        this.props.changeParams(params)
       }
     }
     /* ------ Chart Selection ------ */

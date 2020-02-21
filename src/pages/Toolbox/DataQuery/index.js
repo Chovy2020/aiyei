@@ -145,11 +145,11 @@ class DataQuery extends React.Component {
 
   loadItems = async () => {
     const { items, itemSelected, params } = this.props
-    const { existsImg, mbHave, secondScan, seeLastScan, startTm, endTm } = params
+    const { existsImg, mbHave, scanedFlag, seeLastScan, startTm, endTm } = params
     const data = {
       existsImg: existsImg ? 'Y' : 'N',
       mbHave: mbHave ? 'Y' : 'N',
-      secondScan: secondScan ? 'Y' : 'N',
+      scanedFlag: scanedFlag ? 'Y' : 'N',
       seeLastScan: seeLastScan ? 'Y' : 'N',
       startTm: startTm !== '' || '1970-01-01',
       endTm: endTm !== '' || '2020-12-31',
@@ -199,11 +199,11 @@ class DataQuery extends React.Component {
       }
     }
     // 实时更新，store的params仅点击load 才更新，用于其他非dataQuery页面的查询
-    const { existsImg, mbHave, secondScan, seeLastScan, startTm, endTm } = this.props.params
+    const { existsImg, mbHave, scanedFlag, seeLastScan, startTm, endTm } = this.props.params
     const data = {
       existsImg: existsImg ? 'Y' : 'N',
       mbHave: mbHave ? 'Y' : 'N',
-      secondScan: secondScan ? 'Y' : 'N',
+      scanedFlag: scanedFlag ? 'Y' : 'N',
       seeLastScan: seeLastScan ? 'Y' : 'N',
       startTm: startTm !== '' || '1970-01-01',
       endTm: endTm !== '' || '2020-12-31',
@@ -216,7 +216,7 @@ class DataQuery extends React.Component {
   render() {
     const { dataLoaderList, dataLoader, itemData } = this.state
     const { items, params, itemSelected } = this.props
-    const { existsImg, mbHave, secondScan, seeLastScan } = params
+    const { existsImg, mbHave, scanedFlag, seeLastScan } = params
 
     return (
       <StyleDataQuery>
@@ -239,8 +239,8 @@ class DataQuery extends React.Component {
                 Manual Classified
               </Checkbox>
               <Checkbox
-                onChange={e => this.onCheckboxChange('secondScan', e.target.checked)}
-                defaultChecked={secondScan}
+                onChange={e => this.onCheckboxChange('scanedFlag', e.target.checked)}
+                defaultChecked={scanedFlag}
               >
                 有前层scan结果
               </Checkbox>
