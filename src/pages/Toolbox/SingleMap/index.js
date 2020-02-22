@@ -860,7 +860,7 @@ class SingleMap extends React.Component {
     const xAxisData = paretoData.paretoValue.xAxisData
     const series = paretoData.paretoValue.series
     let legendArr = []
-    const isPercent = paretoParams['yCode'] === '300'
+    const yCode = parseInt(paretoParams['yCode'])
     if (xAxisData.length > 0 && series.length > 0) {
       xAxisData.forEach((item, index) => {
         arr[index] = [item]
@@ -874,7 +874,6 @@ class SingleMap extends React.Component {
         colorArr.push('#' + getColor(item.name))
       })
       arr.unshift(['product', ...legendArr])
-      console.log(arr)
       hold.forEach((item, i) => {
         holdArr.push({
           value: item,
@@ -899,14 +898,14 @@ class SingleMap extends React.Component {
               show: true,
               position: 'top',
               formatter: params => {
-                if (isPercent) return toPercent(params.data[1])
+                if (yCode >= 300) return toPercent(params.data[1])
+                if (yCode >= 200) return params.data[1].toFixed(2)
                 return params.data[1]
               }
             }
           }
         })
       })
-      console.log(colorArr)
       // 填充值
       opt.dataset.source = arr
       opt.series = seriesArr
