@@ -32,12 +32,11 @@ const StyleChart = styled.div`
   height: 400px;
 `
 
-let chart = null
-
 class CrossModuleChart extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
+      chartObj: null,
       legendData: [],
       seriesData: [],
       btns: [
@@ -52,9 +51,11 @@ class CrossModuleChart extends React.Component {
 
   componentDidMount() {
     const { data, name, index } = this.props
+    console.log('index', index);
     const chartDom = document.getElementById(`chart-${name}-${index}`)
+    // const chartDom = this.refs.chart
     if (chartDom) {
-      chart = echarts.init(chartDom)
+      this.state.chartObj = echarts.init(chartDom)
       // chart.on('click', params => this.onChartClick(params))
       // chart.on('dblclick', params => this.onChartDbclick(params))
     } else {
@@ -175,7 +176,8 @@ class CrossModuleChart extends React.Component {
       },
       series: seriesData
     }
-    if (chart) chart.setOption(opt, true)
+    if (this.state.chartObj) this.state.chartObj.setOption(opt, true)
+    // if (chart) chart.setOption(opt, true)
   }
 
   onCMshowPM = () => {
@@ -201,19 +203,13 @@ class CrossModuleChart extends React.Component {
 
   onDoAction = func => {
     if (func === 'lineChart') {
-      this.setState({
-        selectedAction: 'lineChart'
-      })
+      this.setState({selectedAction: 'lineChart'})
       this.init('line-chart')
     } else if (func === 'stackBarChart') {
-      this.setState({
-        selectedAction: 'stackBarChart'
-      })
+      this.setState({selectedAction: 'stackBarChart'})
       this.init('database')
     } else if (func === 'boxChart') {
-      this.setState({
-        selectedAction: 'boxChart'
-      })
+      this.setState({selectedAction: 'boxChart'})
       this.init('box-plot')
     }
   }
@@ -273,6 +269,7 @@ class CrossModuleChart extends React.Component {
           ))}
         </StyleTooltip>
         <StyleChart id={`chart-${name}-${index}`} />
+        {/* <StyleChart ref="chart" /> */}
         {selectedAction === 'boxChart' ? <Table columns={cmTableColumns} dataSource={tableData} /> : null}
       </StyleCrossModuleChart>
     )

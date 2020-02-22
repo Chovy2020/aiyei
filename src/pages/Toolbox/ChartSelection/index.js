@@ -193,6 +193,11 @@ class ChartSelection extends React.Component {
     this.onX2nInit()
     this.onYInit()
     this.onChartInit()
+    let watProductArr = []
+    wafers.forEach(item => {
+      watProductArr.push(item.productId)
+    })
+    this.setState({caWatProducts:[...new Set(watProductArr)]})
   }
 
   formatter = params => {
@@ -314,7 +319,7 @@ class ChartSelection extends React.Component {
       x2ndValue: '',
       yValue: '100'
     }
-    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', })
+    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', LineCharts: [],cmStepValue: []})
     this.onX2nInit()
     this.onYInit()
     this.onChartInit()
@@ -323,7 +328,7 @@ class ChartSelection extends React.Component {
     const { formInline } = this.state
     formInline.x2ndValue = x2ndValue
     formInline.yValue = '100'
-    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', })
+    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', LineCharts: [],cmStepValue: []})
     this.onYInit()
     this.onChartInit()
   }
@@ -334,14 +339,14 @@ class ChartSelection extends React.Component {
     this.setState({
       normShow: y[yValue] && y[yValue].includes('NORM') ? true : false,
       formInline,
-      selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '',
+      selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', LineCharts: [],cmStepValue: []
     })
     this.onChartInit()
   }
   onNormalizedChange = v => {
     const { formInline } = this.state
     formInline.normalized = v
-    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', })
+    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', LineCharts: [],cmStepValue: []})
     this.onChartInit()
   }
   onYAxisOperChange = (key, value) => {
@@ -441,8 +446,19 @@ class ChartSelection extends React.Component {
       legend: { type: 'scroll', selected: chartSelecting },
       tooltip: { trigger: 'item' },
       color: this.state.colorArr,
+      grid: {
+        top: '80',
+        left: '3%',
+        right: '4%',
+        bottom: '10%',
+        containLabel: true
+      },
       dataset: { source: [] },
-      xAxis: { type: 'category',data: [] },
+      xAxis: { type: 'category',data: [] ,
+      axisLabel: {
+        interval: 0,
+        rotate: 90
+      },},
       yAxis: {
         max: yAxisOper.max || null,
         min: yAxisOper.min || 0,
@@ -610,6 +626,7 @@ class ChartSelection extends React.Component {
         yAxis: null
       })
       this.setState({ LineCharts })
+      console.log(this.state.LineCharts,'lineChart')
     }
   }
   onCMremove = index => {
@@ -802,19 +819,19 @@ class ChartSelection extends React.Component {
           <Form.Item>
             <FormItemLabel>Min:</FormItemLabel>
             <InputNumber
-              size='small'
+              size='small' step={1} min={0} precision={0}
               onChange={value => this.onYAxisOperChange('min', value)}
               style={{ width: 120, marginRight: 10 }}
             />
             <FormItemLabel>Max:</FormItemLabel>
             <InputNumber
-              size='small'
+              size='small' step={1} min={0} precision={0}
               onChange={value => this.onYAxisOperChange('max', value)}
               style={{ width: 120, marginRight: 10 }}
             />
             <FormItemLabel>Interval:</FormItemLabel>
             <InputNumber
-              size='small'
+              size='small' step={1} min={0} precision={0}
               onChange={value => this.onYAxisOperChange('interval', value)}
               style={{ width: 120, marginRight: 10 }}
             />
