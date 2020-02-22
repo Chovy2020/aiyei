@@ -6,7 +6,7 @@ import CommonDrawer from '@/components/CommonDrawer'
 import { injectReducer } from '@/utils/store'
 import { delay } from '@/utils/web'
 import { changeImageSelected, changeImageWafers } from './action'
-import { LAYOUT_SIZE, VIEW_GROUPS, CATEGORY_TYPES, getLotId, getWaferNo, getDefectId, getEquipId } from './constant'
+import { LAYOUT_SIZE, VIEW_GROUPS, CATEGORY_TYPES, FONT_SIZE, getLotId, getWaferNo, getDefectId, getStepId } from './constant'
 import reducer from './reducer'
 import { getClassCodes, getViewFilters, getImages, updateDefectGroup } from './service'
 import { StyleImageGallery, StyleImages } from './style'
@@ -22,6 +22,7 @@ class ImageGallery extends React.Component {
         num2: 3
       },
       showLabel: true,
+      labelSize: '12',
       categoryType: 'mb',
       classCodes: [], // ！通过接口获取
       classCode: '',
@@ -64,6 +65,7 @@ class ImageGallery extends React.Component {
   // 通过接口获取 filters
   loadViewFilters = async () => {
     const imageInfo = this.getWafers()
+    if (imageInfo.length === 0) return
     let viewFilters = await getViewFilters({ imageInfo })
     viewFilters = viewFilters.map(item => `${item}`)
     this.setState({ viewFilters })
@@ -165,7 +167,7 @@ class ImageGallery extends React.Component {
 
   render() {
     const selected = this.getSelected()
-    const { layout, classCodes, categoryType, classCode, viewGroup, viewFilters, currentImages, total, pageNo, showLabel } = this.state
+    const { layout, classCodes, categoryType, classCode, viewGroup, viewFilters, currentImages, total, pageNo, showLabel, labelSize } = this.state
     const { num1, num2 } = layout
 
     return (
@@ -190,6 +192,18 @@ class ImageGallery extends React.Component {
             <Checkbox size='small' onChange={e => this.setState({ showLabel: e.target.checked })} defaultChecked={showLabel}>
               Show Label
             </Checkbox>
+            {showLabel ? (
+              <>
+                <span>Label Size:</span>
+                <Select size='small' style={{ width: 50, marginLeft: 5 }} value={labelSize} onChange={labelSize => this.setState({ labelSize })}>
+                  {FONT_SIZE.map(t => (
+                    <Select.Option value={t} key={t}>
+                      {t}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </>
+            ) : null}
           </Form.Item>
           <Form.Item label='Classified:'>
             <Select
@@ -234,11 +248,11 @@ class ImageGallery extends React.Component {
             >
               <img src={`http://161.189.50.41${img.url}`} alt='' />
               {showLabel ? (
-                <div className='wafer-info'>
+                <div className={`wafer-info font-size-${labelSize}`}>
                   <p>Lot ID: {getLotId(img.id)}</p>
                   <p>Wafer No: {getWaferNo(img.id)}</p>
                   <p>Defect ID: {getDefectId(img.id)}</p>
-                  <p>Equip ID: {getEquipId(img.id)}</p>
+                  <p>Step: {getStepId(img.id)}</p>
                 </div>
               ) : null}
             </li>

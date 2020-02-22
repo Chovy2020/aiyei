@@ -1,7 +1,7 @@
 /* eslint-disable react/jsx-props-no-spreading */
 import React from 'react'
 import { connect } from 'react-redux'
-import { Form, DatePicker, Checkbox, Button, Input, message } from 'antd'
+import { Form, DatePicker, Checkbox, Button, Input } from 'antd'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import _ from 'lodash'
 import { injectReducer } from '@/utils/store'
@@ -151,8 +151,8 @@ class DataQuery extends React.Component {
       mbHave: mbHave ? 'Y' : 'N',
       scanedFlag: scanedFlag ? 'Y' : 'N',
       seeLastScan: seeLastScan ? 'Y' : 'N',
-      startTm: startTm !== '' || '1970-01-01',
-      endTm: endTm !== '' || '2020-12-31',
+      startTm: startTm !== '' ? startTm : '1970-01-01',
+      endTm: endTm !== '' ? endTm : '2020-12-31',
       comboBoxes: items.map((item, index) => ({
         key: item,
         value: itemSelected[index]
@@ -205,8 +205,8 @@ class DataQuery extends React.Component {
       mbHave: mbHave ? 'Y' : 'N',
       scanedFlag: scanedFlag ? 'Y' : 'N',
       seeLastScan: seeLastScan ? 'Y' : 'N',
-      startTm: startTm !== '' || '1970-01-01',
-      endTm: endTm !== '' || '2020-12-31',
+      startTm: startTm !== '' ? startTm : '1970-01-01',
+      endTm: endTm !== '' ? endTm : '2020-12-31',
       comboBoxes
     }
     const res = await dataQuerySearch(data)

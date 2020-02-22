@@ -1,11 +1,11 @@
 import React from 'react'
 import { connect } from 'react-redux'
-import { Form, Pagination, Radio, Checkbox, Switch, Button, Modal, Input, InputNumber, Upload, Icon, message } from 'antd'
+import { Form, Pagination, Radio, Checkbox, Button, Modal, Input, InputNumber, Upload, Icon, message } from 'antd'
 import _ from 'lodash'
 import zrender from 'zrender'
 import Heatmap from 'heatmap.js'
 import { injectReducer } from '@/utils/store'
-import { delay } from '@/utils/web'
+import { delay, waferToId } from '@/utils/web'
 import { changeMapSelected, changeMapWafers } from './action'
 import { DEFECT_CLASS_LIST, GROUP_BY_LIST, YES_NO } from './constant'
 import reducer from './reducer'
@@ -424,7 +424,7 @@ class MapGallery extends React.Component {
     let wafers = mapSelected[name] || []
     if (selected.includes(wafer.id)) {
       selected = _.remove(selected, n => wafer.id !== n)
-      wafers = _.remove(wafers, w => `${w.lotId}|${w.waferNo}|${w.productId}|${w.stepId}|${w.scanTm}` !== wafer.id)
+      wafers = _.remove(wafers, w => waferToId(w) !== wafer.id)
     } else {
       selected.push(wafer.id)
       const { lotId, stepId, waferNo, productId, scanTm, defectCache } = wafer
@@ -578,7 +578,7 @@ class MapGallery extends React.Component {
               </Form.Item>
               {defectClass ? (
                 <Form.Item label=' '>
-                  <Checkbox.Group options={filterOption[defectClass]} onChange={this.onDefectClassDetailChange} />
+                  <Checkbox.Group value={filter[defectClass]} options={filterOption[defectClass]} onChange={this.onDefectClassDetailChange} />
                 </Form.Item>
               ) : null}
               <Form.Item label='Defect size:'>

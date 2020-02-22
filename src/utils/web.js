@@ -9,6 +9,13 @@ export const printTime = (sign = '') => {
   console.log(sign, `${moment(new Date()).second()}-${moment(new Date()).millisecond()}`)
 }
 
+// 转换成百分数 保留2位小数
+export const toPercent = point => {
+  let str = Number(point * 100).toFixed(2)
+  str += '%'
+  return str
+}
+
 // 随机生成颜色
 export const getColor = str => {
   let hash = 1315423911
@@ -48,14 +55,14 @@ const pad = s => {
 const parseColor = hexStr => {
   return hexStr.length === 4
     ? hexStr
-      .substr(1)
-      .split('')
-      .map(function (s) {
-        return 0x11 * parseInt(s, 16)
+        .substr(1)
+        .split('')
+        .map(function(s) {
+          return 0x11 * parseInt(s, 16)
+        })
+    : [hexStr.substr(1, 2), hexStr.substr(3, 2), hexStr.substr(5, 2)].map(function(s) {
+        return parseInt(s, 16)
       })
-    : [hexStr.substr(1, 2), hexStr.substr(3, 2), hexStr.substr(5, 2)].map(function (s) {
-      return parseInt(s, 16)
-    })
 }
 
 // 拼接5个主键 全局保持顺序统一
@@ -75,7 +82,15 @@ export const defectIdsToWafers = defectIds => {
     const stepId = key[3]
     const scanTm = key[4]
     const defect = parseInt(key[5])
-    const exist = _.find(wafers, w => w.lotId === lotId && w.stepId === stepId && w.waferNo === waferNo && w.productId === productId && w.scanTm === scanTm)
+    const exist = _.find(
+      wafers,
+      w =>
+        w.lotId === lotId &&
+        w.stepId === stepId &&
+        w.waferNo === waferNo &&
+        w.productId === productId &&
+        w.scanTm === scanTm
+    )
     if (exist) {
       exist.defects = [...exist.defects, defect]
     } else {
