@@ -706,6 +706,7 @@ class ChartSelection extends React.Component {
   }
   onCASearch = async () => {
     const { caWat, caRegression, formInline } = this.state
+    console.log(caRegression,'ca')
     const singleWaferKey = this.getWafers()
     const correlation = {
       wat: caWat.tree
@@ -1062,7 +1063,7 @@ class ChartSelection extends React.Component {
                 </Form.Item>
               ) : null}
               <Form.Item label='Regression:'>
-                <Checkbox onChange={e => this.onCARegressionChange('checked', e.target.value)}>
+                <Checkbox onChange={e => this.onCARegressionChange('checked', e.target.checked)}>
                   Filter in R-Squared >=
                 </Checkbox>
                 <InputNumber min={0} max={1} step={0.01} onChange={v => this.onCARegressionChange('value', v)} />
