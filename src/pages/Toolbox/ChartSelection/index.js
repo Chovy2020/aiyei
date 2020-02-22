@@ -276,7 +276,8 @@ class ChartSelection extends React.Component {
     // 计算box图数据
     const boxArr = []
     kData.forEach(item => {
-      const sortItem = _.cloneDeep(item).sort()
+      let deleteNull = item.filter(i => i !== null)
+      const sortItem = _.cloneDeep(deleteNull).sort()
       const len = sortItem.length
       const min = sortItem[0]
       const max = sortItem[len - 1]
@@ -493,9 +494,12 @@ class ChartSelection extends React.Component {
             stack: ifStack,
             itemStyle: {
               color: param => {
+                console.log(param,'param')
+                let cc = param.color
                 param.seriesName = param.seriesName.substring(0, 6) === 'series' ? '' : param.seriesName
                 const idx = selectedBar.indexOf(param.name + '-' + param.seriesName)
-                return ~idx ? '#ccc' : item
+                // return ~idx ? '#ccc' : item
+                return ~idx ? '#ccc' : cc
               }
             },
             lineStyle: { color: item },
@@ -563,7 +567,8 @@ class ChartSelection extends React.Component {
   onCMInit = async () => {
     await delay(1)
     const singleWaferKey = this.getWafers()
-    const res = await getPcCmStep({ singleWaferKey })
+    // const res = await getPcCmStep({ singleWaferKey })
+    const res = {"FLOW1":{"M1":["M1NBK","M1TEOS","M1PH","M1ET","M1ECP","M1CMP"]}}
     if (res) {
       // res = _.uniq(res)
       const cmStepData = []
