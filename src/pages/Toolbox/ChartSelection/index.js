@@ -5,7 +5,7 @@ import { Form, Select, Tooltip, Checkbox, Button, Input, InputNumber, Modal, Ico
 import _ from 'lodash'
 import echarts from 'echarts'
 import { injectReducer } from '@/utils/store'
-import { delay } from '@/utils/web'
+import { delay, toPercent} from '@/utils/web'
 import { changeChartSelected, changeChartWafers, changeChartParams } from './action'
 import { BUTTONS, CA_DATA_SOURCES, NORMALIZED, CA_METROLOGY_PRODUCTS } from './constant'
 import reducer from './reducer'
@@ -486,7 +486,8 @@ class ChartSelection extends React.Component {
       opt.dataset.source = []
     } else {
       const seriesArr = []
-      const { colorArr, selectedBar, seriesType, ifStack, newData } = this.state
+      const { colorArr, selectedBar, seriesType, ifStack, newData, formInline } = this.state
+      const yCode = parseInt(formInline['yValue'])
       if (resData.paretoValue.xAxisData.length && resData.paretoValue.series.length) {
         colorArr.forEach(item => {
           seriesArr.push({
@@ -506,7 +507,12 @@ class ChartSelection extends React.Component {
             label: {
               normal: {
                 show: showLabel,
-                position: 'top'
+                position: 'top',
+                formatter: params => {
+                  if (yCode >= 300) return toPercent(params.data[1])
+                  if (yCode >= 200) return params.data[1].toFixed(2)
+                  return params.data[1]
+                }
               }
             }
           })
