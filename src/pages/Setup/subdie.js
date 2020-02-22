@@ -107,16 +107,20 @@ class HorizontalLoginForm extends React.Component {
   }
 
   addTableCell = () => {
-    let endId = this.state.tableData[this.state.tableData.length-1].subDieId
-    let newCell = {
-      subDieId: endId+1,
-      subDieName: '',
-      startX: '',
-      endX: '',
-      startY: '',
-      endY: ''
+    if(this.state.tableData.length === 0) {
+      message.warning('请先选择Product - Step ID');
+    }else {
+      let endId = this.state.tableData[this.state.tableData.length-1].subDieId
+      let newCell = {
+        subDieId: endId+1,
+        subDieName: '',
+        startX: '',
+        endX: '',
+        startY: '',
+        endY: ''
+      }
+      this.setState({tableData: [...this.state.tableData,newCell]})
     }
-    this.setState({tableData: [...this.state.tableData,newCell]})
   }
 
   saveTable = () => {
@@ -164,10 +168,10 @@ class HorizontalLoginForm extends React.Component {
             <Table dataSource={this.state.diePitchTable} rowKey={record => record.id} bordered size="small">
               <ColumnGroup title="Die Pitch" align="center">
                 <Column title="X" dataIndex="x" align="center" render={(text, record) => (
-                  <InputNumber value={text} onChange={(value) => this.changeDiePatch(value,record.id, 'x')} />
+                  <InputNumber style={{width:"150px"}} value={text} onChange={(value) => this.changeDiePatch(value,record.id, 'x')} />
                 )}/>
                 <Column title="Y" dataIndex="y" align="center" render={(text, record) => (
-                  <InputNumber value={text} onChange={(value) => this.changeDiePatch(value,record.id, 'y')} />
+                  <InputNumber style={{width:"150px"}} value={text} onChange={(value) => this.changeDiePatch(value,record.id, 'y')} />
                 )}/>
               </ColumnGroup>
             </Table>
