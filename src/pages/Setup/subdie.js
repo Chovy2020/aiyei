@@ -24,7 +24,7 @@ class HorizontalLoginForm extends React.Component {
       visible: false,
       addSubdieProduct:'',
       addSubdieStepId: '',
-      diePitchTable: [{x: '40000',y:'30000'}],
+      diePitchTable: [{id:1, x: '40000',y:'30000'}],
       ratio: 1,
       tableData: [],
       boxArr: [],
@@ -100,14 +100,10 @@ class HorizontalLoginForm extends React.Component {
     this.setState({addSubdieStepId:e.target.value})
   }
 
-  changeDiePatchX = (value) => {
-    let y = this.state.diePitchTable[0].y
-    this.setState({diePitchTable: [{x: value, y }]})
-  }
-
-  changeDiePatchY = (value) => {
-    let x = this.state.diePitchTable[0].x
-    this.setState({diePitchTable: [{x, y:value }]})
+  changeDiePatch = (value,id, cellName) => {
+    let newTableData = _.cloneDeep(this.state.diePitchTable)
+    newTableData[id-1][cellName] = value
+    this.setState({diePitchTable: newTableData})
   }
 
   addTableCell = () => {
@@ -165,13 +161,13 @@ class HorizontalLoginForm extends React.Component {
         </Modal>
         <LayoutInline>
           <LayoutVertical>
-            <Table dataSource={this.state.diePitchTable} rowKey={record => record.x} bordered size="small">
+            <Table dataSource={this.state.diePitchTable} rowKey={record => record.id} bordered size="small">
               <ColumnGroup title="Die Pitch" align="center">
-                <Column title="X" dataIndex="x" align="center" render={(text) => (
-                  <Input value={text} onChange={(e) => this.changeDiePatchX(e.target.value)} />
+                <Column title="X" dataIndex="x" align="center" render={(text, record) => (
+                  <InputNumber value={text} onChange={(value) => this.changeDiePatch(value,record.id, 'x')} />
                 )}/>
-                <Column title="Y" dataIndex="y" align="center" render={(text) => (
-                  <Input value={text} onChange={(e) => this.changeDiePatchY(e.target.value)} />
+                <Column title="Y" dataIndex="y" align="center" render={(text, record) => (
+                  <InputNumber value={text} onChange={(value) => this.changeDiePatch(value,record.id, 'y')} />
                 )}/>
               </ColumnGroup>
             </Table>
