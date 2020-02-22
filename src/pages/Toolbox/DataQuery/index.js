@@ -1,7 +1,7 @@
 /* eslint-disable react/jsx-props-no-spreading */
 import React from 'react'
 import { connect } from 'react-redux'
-import { Form, DatePicker, Checkbox, Button, Input } from 'antd'
+import { Form, DatePicker, Checkbox, Button, Input, message } from 'antd'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import _ from 'lodash'
 import { injectReducer } from '@/utils/store'
@@ -165,9 +165,9 @@ class DataQuery extends React.Component {
         adc: res.adc || [],
         rb: res.rbs || [],
         testId: res.tests || [],
-        cluster: res.clusterIds || [],
-        adder: (res.adderFlags && res.adderFlags[0] === 'Y') ? ['YES'] : ['NO'],
-        repeater: res.repeaterIds || [],
+        cluster: ['NO'],
+        adder: ['NO'],
+        repeater: ['NO'],
         zoneId: res.zoneIds || [],
         subDie: res.subDieIds || []
       })
@@ -185,7 +185,7 @@ class DataQuery extends React.Component {
       if (i < index) {
         comboBoxes.push({
           key: items[i],
-          value: itemSelected[i] || []
+          value: (itemSelected[i] && itemSelected[i].length > 0) ? itemSelected[i] : ['']
         })
       }
       // 是当前列，带上关键词  当前列的选中数据会被覆盖

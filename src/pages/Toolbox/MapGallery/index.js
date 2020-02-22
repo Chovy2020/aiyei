@@ -7,7 +7,7 @@ import Heatmap from 'heatmap.js'
 import { injectReducer } from '@/utils/store'
 import { delay } from '@/utils/web'
 import { changeMapSelected, changeMapWafers } from './action'
-import { DEFECT_CLASS_LIST, GROUP_BY_LIST } from './constant'
+import { DEFECT_CLASS_LIST, GROUP_BY_LIST, YES_NO } from './constant'
 import reducer from './reducer'
 import { downloadCSV, getNewMap, getNewStack } from './service'
 import { StyleMapGallery, StyleWaferMapGroup, StyleWaferMap } from './style'
@@ -38,8 +38,8 @@ class MapGallery extends React.Component {
         mb: [],
         adc: [],
         rb: [],
-        adder: ['NO'],
         testId: [],
+        adder: [],
         cluster: [],
         repeater: [],
         zoneId: [],
@@ -600,23 +600,13 @@ class MapGallery extends React.Component {
                 <Checkbox.Group options={filterOption.testId} onChange={v => this.onDefectFiltersChange('testId', v)} />
               </Form.Item>
               <Form.Item label='Cluster:'>
-                <Checkbox.Group
-                  options={filterOption.cluster}
-                  onChange={v => this.onDefectFiltersChange('cluster', v)}
-                />
+                <Checkbox.Group options={YES_NO} onChange={v => this.onDefectFiltersChange('cluster', v)} />
               </Form.Item>
               <Form.Item label='Adder:'>
-                <Switch
-                  size='small'
-                  defaultChecked={filter.adder[0] === 'YES'}
-                  onChange={checked => this.onDefectFiltersChange('adder', checked ? ['YES'] : ['NO'])}
-                />
+                <Checkbox.Group options={YES_NO} onChange={v => this.onDefectFiltersChange('adder', v)} />
               </Form.Item>
               <Form.Item label='Repeater:'>
-                <Checkbox.Group
-                  options={filterOption.repeater}
-                  onChange={v => this.onDefectFiltersChange('repeater', v)}
-                />
+                <Checkbox.Group options={YES_NO} onChange={v => this.onDefectFiltersChange('repeater', v)} />
               </Form.Item>
               <Form.Item label='Zone:'>
                 <Checkbox.Group options={filterOption.zoneId} onChange={v => this.onDefectFiltersChange('zoneId', v)} />

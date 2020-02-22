@@ -6,3 +6,8 @@ export const GROUP_BY_LIST = [
   ['Inspector', 'eqp_id'],
   ['Scan Time', 'scan_tm']
 ]
+
+export const YES_NO = [
+  'YES',
+  'NO'
+]

@@ -78,10 +78,6 @@ class ImageGallery extends React.Component {
     let imageInfo = this.getWafers()
     if (imageInfo.length === 0) return
     if (isFromMapGallery) {
-      // 需要使用 defectIdRedisKey
-      imageInfo.forEach(item => {
-        item.defectIdRedisKey = item.defectCache
-      })
       // 过滤无redisKey
       imageInfo = imageInfo.filter(item => item.defectIdRedisKey !== '')
     } else {
