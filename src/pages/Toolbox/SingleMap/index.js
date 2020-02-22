@@ -8,7 +8,6 @@ import {
   Modal,
   Select,
   Pagination,
-  Switch,
   Radio,
   Checkbox,
   Button,
@@ -24,7 +23,7 @@ import Heatmap from 'heatmap.js'
 import { injectReducer } from '@/utils/store'
 import echarts from 'echarts'
 // eslint-disable-next-line
-import { delay, printTime, getColor, gradientColors } from '@/utils/web'
+import { delay, printTime, getColor, gradientColors, toPercent } from '@/utils/web'
 import { changeWafers } from '@/utils/action'
 import { post, download } from '@/utils/api'
 import CommonDrawer from '@/components/CommonDrawer'
@@ -39,7 +38,8 @@ import {
   DELETE_DEFECTS_OPTIONS,
   OVER_LAP_TYPE_OPTIONS,
   DSA_TABLE_COLUMNS,
-  INFO_COLUMNS
+  INFO_COLUMNS,
+  YES_NO
 } from './constant'
 import reducer from './reducer'
 import {
@@ -149,8 +149,8 @@ class SingleMap extends React.Component {
         mb: [],
         adc: [],
         rb: [],
-        adder: ['NO'],
         testId: [],
+        adder: [],
         cluster: [],
         repeater: [],
         zoneId: [],
@@ -860,6 +860,7 @@ class SingleMap extends React.Component {
     const xAxisData = paretoData.paretoValue.xAxisData
     const series = paretoData.paretoValue.series
     let legendArr = []
+    const yCode = parseInt(paretoParams['yCode'])
     if (xAxisData.length > 0 && series.length > 0) {
       xAxisData.forEach((item, index) => {
         arr[index] = [item]
@@ -895,12 +896,16 @@ class SingleMap extends React.Component {
           label: {
             normal: {
               show: true,
-              position: 'top'
+              position: 'top',
+              formatter: params => {
+                if (yCode >= 300) return toPercent(params.data[1])
+                if (yCode >= 200) return params.data[1].toFixed(2)
+                return params.data[1]
+              }
             }
           }
         })
       })
-      console.log(colorArr)
       // 填充值
       opt.dataset.source = arr
       opt.series = seriesArr
@@ -1037,7 +1042,7 @@ class SingleMap extends React.Component {
   onDsaToggle = () => {
     const { dsa } = this.state
     const singleWaferKey = this.getWafers()
-    if (singleWaferKey.length < 2) {
+    if (!dsa && singleWaferKey.length < 2) {
       message.warning('At least 2 wafers required')
       return
     }
@@ -1236,8 +1241,9 @@ class SingleMap extends React.Component {
   // 搜索过滤Filter
   onFilterSubmit = () => {
     drawer.onClose()
+    const { dsa } = this.state
     const singleWaferKey = this.getWafers()
-    if (singleWaferKey.length < 2) {
+    if (dsa && singleWaferKey.length < 2) {
       message.warning('At least 2 wafers required')
       return
     }
@@ -1247,7 +1253,6 @@ class SingleMap extends React.Component {
     this.setState({ colorsObj: {}, selectedBar: [] })
     this.saveSelectedBar([])
     this.onMapAndParetoInit()
-    const { dsa } = this.state
     if (dsa) this.onDSATableInit()
   }
   onDefectClassChange = e => {
@@ -1715,7 +1720,7 @@ class SingleMap extends React.Component {
               </Form.Item>
               {defectClass ? (
                 <Form.Item label=' '>
-                  <Checkbox.Group options={filterOption[defectClass]} onChange={this.onDefectClassDetailChange} />
+                  <Checkbox.Group value={filter[defectClass]} options={filterOption[defectClass]} onChange={this.onDefectClassDetailChange} />
                 </Form.Item>
               ) : null}
               <Form.Item label='Defect size:'>
@@ -1724,37 +1729,27 @@ class SingleMap extends React.Component {
                 <Input style={{ width: 60 }} onChange={e => this.onDefectSizeChange(1, e.target.value)} size='small' />
               </Form.Item>
               <Form.Item label='Test:'>
-                <Checkbox.Group options={filterOption.testId} onChange={v => this.onDefectFiltersChange('tests', v)} />
+                <Checkbox.Group options={filterOption.testId} onChange={v => this.onDefectFiltersChange('testId', v)} />
               </Form.Item>
               <Form.Item label='Cluster:'>
-                <Checkbox.Group
-                  options={filterOption.cluster}
-                  onChange={v => this.onDefectFiltersChange('clusterIds', v)}
-                />
+                <Checkbox.Group options={YES_NO} onChange={v => this.onDefectFiltersChange('cluster', v)} />
               </Form.Item>
               <Form.Item label='Adder:'>
-                <Switch
-                  size='small'
-                  defaultChecked={filter.adder[0] === 'YES'}
-                  onChange={checked => this.onDefectFiltersChange('adder', checked ? ['YES'] : ['NO'])}
-                />
+                <Checkbox.Group options={YES_NO} onChange={v => this.onDefectFiltersChange('adder', v)} />
               </Form.Item>
               <Form.Item label='Repeater:'>
-                <Checkbox.Group
-                  options={filterOption.repeater}
-                  onChange={v => this.onDefectFiltersChange('repeaterIds', v)}
-                />
+                <Checkbox.Group options={YES_NO} onChange={v => this.onDefectFiltersChange('repeater', v)} />
               </Form.Item>
               <Form.Item label='Zone:'>
                 <Checkbox.Group
                   options={filterOption.zoneId}
-                  onChange={v => this.onDefectFiltersChange('zoneIds', v)}
+                  onChange={v => this.onDefectFiltersChange('zoneId', v)}
                 />
               </Form.Item>
               <Form.Item label='Sub Die:'>
                 <Checkbox.Group
                   options={filterOption.subDieId}
-                  onChange={v => this.onDefectFiltersChange('subDieIds', v)}
+                  onChange={v => this.onDefectFiltersChange('subDie', v)}
                 />
               </Form.Item>
               <Form.Item label=' ' style={{ textAlign: 'right' }}>

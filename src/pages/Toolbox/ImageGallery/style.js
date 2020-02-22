@@ -39,6 +39,22 @@ export const StyleImages = styled.ul`
       bottom: 10px;
       color: #0f0;
       font-size: 12px;
+      p {
+        margin: 0;
+        line-height: 1.5;
+      }
+      &.font-size-12 p{
+        font-size: 12px;
+      }
+      &.font-size-14 p{
+        font-size: 14px;
+      }
+      &.font-size-16 p{
+        font-size: 16px;
+      }
+      &.font-size-18 p{
+        font-size: 18px;
+      }
     }
   }
   &.col3 li {

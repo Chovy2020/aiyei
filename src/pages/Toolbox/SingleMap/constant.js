@@ -49,3 +49,8 @@ export const INFO_COLUMNS = [
   { title: 'Step ID', dataIndex: 'stepId' },
   { title: 'Scan Time', dataIndex: 'scanTm' }
 ]
+
+export const YES_NO = [
+  'YES',
+  'NO'
+]
