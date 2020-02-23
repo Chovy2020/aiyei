@@ -81,7 +81,7 @@ class ImageGallery extends React.Component {
     if (imageInfo.length === 0) return
     if (isFromMapGallery) {
       // 过滤无redisKey
-      imageInfo = imageInfo.filter(item => item.defectIdRedisKey !== '')
+      imageInfo = imageInfo.filter(item => item.defectCache !== '')
     } else {
       // 过滤无defects
       imageInfo = imageInfo.filter(item => item.defects.length > 0)
