@@ -5,7 +5,7 @@ import { Form, Select, Tooltip, Checkbox, Button, Input, InputNumber, Modal, Ico
 import _ from 'lodash'
 import echarts from 'echarts'
 import { injectReducer } from '@/utils/store'
-import { delay } from '@/utils/web'
+import { delay, toPercent} from '@/utils/web'
 import { changeChartSelected, changeChartWafers, changeChartParams } from './action'
 import { BUTTONS, CA_DATA_SOURCES, NORMALIZED, CA_METROLOGY_PRODUCTS } from './constant'
 import reducer from './reducer'
@@ -193,6 +193,11 @@ class ChartSelection extends React.Component {
     this.onX2nInit()
     this.onYInit()
     this.onChartInit()
+    let watProductArr = []
+    wafers.forEach(item => {
+      watProductArr.push(item.productId)
+    })
+    this.setState({caWatProducts:[...new Set(watProductArr)]})
   }
 
   formatter = params => {
@@ -271,7 +276,8 @@ class ChartSelection extends React.Component {
     // 计算box图数据
     const boxArr = []
     kData.forEach(item => {
-      const sortItem = _.cloneDeep(item).sort()
+      let deleteNull = item.filter(i => i !== null)
+      const sortItem = _.cloneDeep(deleteNull).sort()
       const len = sortItem.length
       const min = sortItem[0]
       const max = sortItem[len - 1]
@@ -314,7 +320,7 @@ class ChartSelection extends React.Component {
       x2ndValue: '',
       yValue: '100'
     }
-    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', })
+    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', LineCharts: [],cmStepValue: []})
     this.onX2nInit()
     this.onYInit()
     this.onChartInit()
@@ -323,7 +329,7 @@ class ChartSelection extends React.Component {
     const { formInline } = this.state
     formInline.x2ndValue = x2ndValue
     formInline.yValue = '100'
-    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', })
+    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', LineCharts: [],cmStepValue: []})
     this.onYInit()
     this.onChartInit()
   }
@@ -334,14 +340,14 @@ class ChartSelection extends React.Component {
     this.setState({
       normShow: y[yValue] && y[yValue].includes('NORM') ? true : false,
       formInline,
-      selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '',
+      selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', LineCharts: [],cmStepValue: []
     })
     this.onChartInit()
   }
   onNormalizedChange = v => {
     const { formInline } = this.state
     formInline.normalized = v
-    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', })
+    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', LineCharts: [],cmStepValue: []})
     this.onChartInit()
   }
   onYAxisOperChange = (key, value) => {
@@ -441,8 +447,19 @@ class ChartSelection extends React.Component {
       legend: { type: 'scroll', selected: chartSelecting },
       tooltip: { trigger: 'item' },
       color: this.state.colorArr,
+      grid: {
+        top: '80',
+        left: '3%',
+        right: '4%',
+        bottom: '10%',
+        containLabel: true
+      },
       dataset: { source: [] },
-      xAxis: { type: 'category',data: [] },
+      xAxis: { type: 'category',data: [] ,
+      axisLabel: {
+        interval: 0,
+        rotate: 90
+      },},
       yAxis: {
         max: yAxisOper.max || null,
         min: yAxisOper.min || 0,
@@ -469,7 +486,8 @@ class ChartSelection extends React.Component {
       opt.dataset.source = []
     } else {
       const seriesArr = []
-      const { colorArr, selectedBar, seriesType, ifStack, newData } = this.state
+      const { colorArr, selectedBar, seriesType, ifStack, newData, formInline } = this.state
+      const yCode = parseInt(formInline['yValue'])
       if (resData.paretoValue.xAxisData.length && resData.paretoValue.series.length) {
         colorArr.forEach(item => {
           seriesArr.push({
@@ -477,16 +495,24 @@ class ChartSelection extends React.Component {
             stack: ifStack,
             itemStyle: {
               color: param => {
+                console.log(param,'param')
+                let cc = param.color
                 param.seriesName = param.seriesName.substring(0, 6) === 'series' ? '' : param.seriesName
                 const idx = selectedBar.indexOf(param.name + '-' + param.seriesName)
-                return ~idx ? '#ccc' : item
+                // return ~idx ? '#ccc' : item
+                return ~idx ? '#ccc' : cc
               }
             },
             lineStyle: { color: item },
             label: {
               normal: {
                 show: showLabel,
-                position: 'top'
+                position: 'top',
+                formatter: params => {
+                  if (yCode >= 300) return toPercent(params.data[1])
+                  if (yCode >= 200) return params.data[1].toFixed(2)
+                  return params.data[1]
+                }
               }
             }
           })
@@ -547,7 +573,8 @@ class ChartSelection extends React.Component {
   onCMInit = async () => {
     await delay(1)
     const singleWaferKey = this.getWafers()
-    const res = await getPcCmStep({ singleWaferKey })
+    // const res = await getPcCmStep({ singleWaferKey })
+    const res = {"FLOW1":{"M1":["M1NBK","M1TEOS","M1PH","M1ET","M1ECP","M1CMP"]}}
     if (res) {
       // res = _.uniq(res)
       const cmStepData = []
@@ -610,6 +637,7 @@ class ChartSelection extends React.Component {
         yAxis: null
       })
       this.setState({ LineCharts })
+      console.log(this.state.LineCharts,'lineChart')
     }
   }
   onCMremove = index => {
@@ -678,6 +706,7 @@ class ChartSelection extends React.Component {
   }
   onCASearch = async () => {
     const { caWat, caRegression, formInline } = this.state
+    console.log(caRegression,'ca')
     const singleWaferKey = this.getWafers()
     const correlation = {
       wat: caWat.tree
@@ -802,19 +831,19 @@ class ChartSelection extends React.Component {
           <Form.Item>
             <FormItemLabel>Min:</FormItemLabel>
             <InputNumber
-              size='small'
+              size='small' step={1} min={0} precision={0}
               onChange={value => this.onYAxisOperChange('min', value)}
               style={{ width: 120, marginRight: 10 }}
             />
             <FormItemLabel>Max:</FormItemLabel>
             <InputNumber
-              size='small'
+              size='small' step={1} min={0} precision={0}
               onChange={value => this.onYAxisOperChange('max', value)}
               style={{ width: 120, marginRight: 10 }}
             />
             <FormItemLabel>Interval:</FormItemLabel>
             <InputNumber
-              size='small'
+              size='small' step={1} min={0} precision={0}
               onChange={value => this.onYAxisOperChange('interval', value)}
               style={{ width: 120, marginRight: 10 }}
             />
@@ -1034,7 +1063,7 @@ class ChartSelection extends React.Component {
                 </Form.Item>
               ) : null}
               <Form.Item label='Regression:'>
-                <Checkbox onChange={e => this.onCARegressionChange('checked', e.target.value)}>
+                <Checkbox onChange={e => this.onCARegressionChange('checked', e.target.checked)}>
                   Filter in R-Squared >=
                 </Checkbox>
                 <InputNumber min={0} max={1} step={0.01} onChange={v => this.onCARegressionChange('value', v)} />
