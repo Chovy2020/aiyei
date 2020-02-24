@@ -30,7 +30,7 @@ axios.interceptors.request.use(
   config => {
     clearTimeout(timer)
     timer = setTimeout(() => {
-      store.dispatch({type: 'CHANGE_TOOLBOX_LOADING', payload: true})
+      store.dispatch({ type: 'CHANGE_TOOLBOX_LOADING', payload: true })
     }, LOADING_DELAY)
     // 需要权限的接口的token验证
     // const { token } = localStorage
@@ -49,7 +49,7 @@ axios.interceptors.request.use(
 axios.interceptors.response.use(
   res => {
     clearTimeout(timer)
-    store.dispatch({type: 'CHANGE_TOOLBOX_LOADING', payload: false})
+    store.dispatch({ type: 'CHANGE_TOOLBOX_LOADING', payload: false })
     if (res && res.data) {
       if (res.data.code === 200) return res.data.data
       // todo: 针对post下载文件需要做处理
@@ -72,7 +72,7 @@ axios.interceptors.response.use(
   },
   err => {
     clearTimeout(timer)
-    store.dispatch({type: 'CHANGE_TOOLBOX_LOADING', payload: false})
+    store.dispatch({ type: 'CHANGE_TOOLBOX_LOADING', payload: false })
     // console.log((err && err.response && ERROR_CODE[err.response.status]) || '连接服务器失败!')
     message.error((err && err.response && ERROR_CODE[err.response.status]) || '连接服务器失败!')
     return Promise.reject(err)
