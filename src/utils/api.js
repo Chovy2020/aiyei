@@ -53,7 +53,7 @@ axios.interceptors.response.use(
     if (res && res.data) {
       if (res.data.code === 200) return res.data.data
       // todo: 针对post下载文件需要做处理
-      if (res.headers['content-type'] === 'application/octet-stream') {
+      if (['application/octet-stream', 'application/vnd.ms-excel'].includes(res.headers['content-type'])) {
         const blob = new Blob([res.data], { type: 'charset=utf-8' })
         const downloadElement = document.createElement('a')
         const href = window.URL.createObjectURL(blob) // 创建下载的链接
