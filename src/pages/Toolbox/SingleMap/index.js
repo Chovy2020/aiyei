@@ -79,7 +79,6 @@ class SingleMap extends React.Component {
       existDefects: false,
       mapData: [],
       coordinate: [],
-      obList: [],
       paretoData: {},
       /* index */
       mapType: 'Map/Pareto',
@@ -452,8 +451,9 @@ class SingleMap extends React.Component {
         return
       }
       this.setState({ angel: 0 })
-      this.renderMap()
-      this.onParetoInit({ zoom: zoomRecords })
+      // this.renderMap()
+      // this.onParetoInit({ zoom: zoomRecords })
+      this.onMapAndParetoInit()
     } else if (func === 'reclassify') {
       if (noSelectedPoints) {
         message.info('No defects selected')
@@ -652,7 +652,7 @@ class SingleMap extends React.Component {
   // Wafer 初始化
   onMapInit = async option => {
     await delay(1)
-    this.setState({ selectedAction: '' })
+    // this.setState({ selectedAction: '' })
     group.removeAll()
     const { dsa, mapType } = this.state
     const formData = this.getFormData(option)
@@ -672,7 +672,6 @@ class SingleMap extends React.Component {
     const { mapData, coordinate, selectedBar, selectedAction, singleMapColors } = this.state
     const existBar = selectedBar.length > 0
     const existArea = coordinate.length > 0
-    const obList = []
     // - - - - - - renderMap - - - - - -
     if (mapData.length === 0) return
     this.clearPoints()
@@ -681,26 +680,16 @@ class SingleMap extends React.Component {
         for (const ob in wafer.defectInfos[mb]) {
           if (existBar && selectedBar.includes(`${mb}-${ob}`)) continue
           for (const coo in wafer.defectInfos[mb][ob]) {
+            // console.log('coo', coo)
             let [x, y] = coo.split(',')
             // 同一个坐标下 只绘制一次点
             // 选中的区域点绘制成 星星
             let Point = null
-            if (existArea && coordinate.includes(coo)) {
-              // 选中区域内
-              // podcast & star 绘制成星星
-              if (selectedAction === 'podcast' || selectedAction === 'star') {
-                Point = new zrender.Star({ shape: { cx: +x, cy: +y, n: 4, r: 5 }, style: { fill: singleMapColors[ob] } })
-              } else if (selectedAction !== 'star0') {
-                // 除了star0，其他都正常绘制
-                Point = new zrender.Circle({ shape: { cx: +x, cy: +y, r: 2 }, style: { fill: singleMapColors[ob] } })
-              }
-            } else {
-              // 选中区域外
-              // 除了star，其他都正常绘制
-              if (selectedAction !== 'star') {
-                Point = new zrender.Circle({ shape: { cx: +x, cy: +y, r: 2 }, style: { fill: singleMapColors[ob] } })
-              }
-            }
+            if (selectedAction === 'podcast' && existArea && coordinate.includes(coo)) {
+              Point = new zrender.Star({ shape: { cx: +x, cy: +y, n: 4, r: 5 }, style: { fill: singleMapColors[ob] } })
+            } else if (selectedAction === 'star') {
+              Point = new zrender.Star({ shape: { cx: +x, cy: +y, n: 4, r: 5 }, style: { fill: singleMapColors[ob] } })
+            } else Point = new zrender.Circle({ shape: { cx: +x, cy: +y, r: 2 }, style: { fill: singleMapColors[ob] } })
             if (Point) {
               group.add(Point)
               pointRecords.push(Point)
@@ -709,7 +698,7 @@ class SingleMap extends React.Component {
         }
       }
     }
-    this.setState({ obList })
+    // console.log('pointRecords', pointRecords)
   }
   // 记录本次放大数据
   recordZoom = () => {
