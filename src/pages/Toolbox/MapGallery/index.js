@@ -634,7 +634,7 @@ class MapGallery extends React.Component {
                 </Checkbox.Group>
               </Form.Item>
               <Form.Item label='Upload file:'>
-                <Upload name='file' action='export_excel/gallery_map_group' onChange={this.onFileUpload}>
+                <Upload name='file' action='api/export_excel/gallery_map_group' onChange={this.onFileUpload}>
                   <Button>
                     <Icon type='upload' /> Click to Upload
                   </Button>

@@ -21,6 +21,6 @@ export const CATEGORY_TYPES = [
 export const FONT_SIZE = ['12', '14', '16', '18']
 
 export const getLotId = waferId => waferId.split('|')[0]
-export const getWaferNo = waferId => waferId.split('|')[3]
+export const getWaferNo = waferId => waferId.split('|')[1]
 export const getDefectId = waferId => waferId.split('|')[5]
-export const getStepId = waferId => waferId.split('|')[6]
+export const getStepId = waferId => waferId.split('|')[3]
