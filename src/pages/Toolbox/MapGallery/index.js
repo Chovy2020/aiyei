@@ -571,17 +571,21 @@ class MapGallery extends React.Component {
         />
         <CommonDrawer ref={r => (drawer = r)} width={500}>
           <section>
-            <h3>Filter</h3>
+            <h3>Filtes</h3>
             <Form layout='vertical' labelCol={{ span: 5 }} wrapperCol={{ span: 19 }}>
-              <Form.Item label='Defect class:'>
-                <Radio.Group options={DEFECT_CLASS_LIST} onChange={this.onDefectClassChange} />
+              <Form.Item label='Defect Class:'>
+                <Radio.Group onChange={this.onDefectClassChange}>
+                  {DEFECT_CLASS_LIST.map(o => (
+                    <Radio value={o[0]}>{o[1]}</Radio>
+                  ))}
+                </Radio.Group>
               </Form.Item>
               {defectClass ? (
                 <Form.Item label=' '>
                   <Checkbox.Group value={filter[defectClass]} options={filterOption[defectClass]} onChange={this.onDefectClassDetailChange} />
                 </Form.Item>
               ) : null}
-              <Form.Item label='Defect size:'>
+              <Form.Item label='Defect Size:'>
                 <Input
                   style={{ width: 60 }}
                   defaultValue={defectSize[0]}
@@ -624,7 +628,7 @@ class MapGallery extends React.Component {
           <section>
             <h3 style={{ width: 110 }}>Group View</h3>
             <Form layout='vertical' labelCol={{ span: 5 }} wrapperCol={{ span: 19 }}>
-              <Form.Item label='Group by:'>
+              <Form.Item label='Group By:'>
                 <Checkbox.Group onChange={v => this.onGroupChange('by', v)}>
                   {GROUP_BY_LIST.map(t => (
                     <Checkbox className='ant-checkbox-group-item' key={t[1]} value={t[1]}>
@@ -633,7 +637,7 @@ class MapGallery extends React.Component {
                   ))}
                 </Checkbox.Group>
               </Form.Item>
-              <Form.Item label='Upload file:'>
+              <Form.Item label='Upload File:'>
                 <Upload name='file' action='api/export_excel/gallery_map_group' onChange={this.onFileUpload}>
                   <Button>
                     <Icon type='upload' /> Click to Upload

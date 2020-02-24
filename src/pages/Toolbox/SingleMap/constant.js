@@ -29,7 +29,11 @@ export const TOOL_TIPS = [
 
 export const MAP_TYPES = { 'Map/Pareto': '', 'Die Stack': '/ds', 'Reticle Stack': '/rs', 'Heat Map': '' }
 
-export const DEFECT_CLASS_LIST = ['mb', 'adc', 'rb']
+export const DEFECT_CLASS_LIST = [
+  ['mb', 'MB'],
+  ['adc', 'ADC'],
+  ['rb', 'RB']
+]
 
 export const DELETE_DEFECTS_OPTIONS = ['clear defects', 'clear defects & export', 'delete defects', 'delete defects & export']
 

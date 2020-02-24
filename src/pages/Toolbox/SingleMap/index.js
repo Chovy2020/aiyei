@@ -1679,6 +1679,7 @@ class SingleMap extends React.Component {
           pagination={false}
           className='single-map-table'
           size='small'
+          scroll={{ y: 380 }}
           bordered
           rowKey={r => `${r.lotId}${r.waferNo}${r.productId}${r.stepId}${r.scanTm}`}
           columns={INFO_COLUMNS}
@@ -1694,6 +1695,7 @@ class SingleMap extends React.Component {
             pagination={false}
             className='single-map-table'
             size='small'
+            scroll={{ y: 380 }}
             bordered
             columns={DSA_TABLE_COLUMNS}
             dataSource={dsaTableData}
@@ -1702,17 +1704,21 @@ class SingleMap extends React.Component {
 
         <CommonDrawer ref={r => (drawer = r)} width={500}>
           <section>
-            <h3>Filter</h3>
+            <h3>Filters</h3>
             <Form layout='vertical' labelCol={{ span: 5 }} wrapperCol={{ span: 19 }}>
-              <Form.Item label='Defect class:'>
-                <Radio.Group options={DEFECT_CLASS_LIST} onChange={this.onDefectClassChange} />
+              <Form.Item label='Defect Class:'>
+                <Radio.Group onChange={this.onDefectClassChange}>
+                  {DEFECT_CLASS_LIST.map(o => (
+                    <Radio value={o[0]}>{o[1]}</Radio>
+                  ))}
+                </Radio.Group>
               </Form.Item>
               {defectClass ? (
                 <Form.Item label=' '>
                   <Checkbox.Group value={filter[defectClass]} options={filterOption[defectClass]} onChange={this.onDefectClassDetailChange} />
                 </Form.Item>
               ) : null}
-              <Form.Item label='Defect size:'>
+              <Form.Item label='Defect Size:'>
                 <Input style={{ width: 60 }} onChange={e => this.onDefectSizeChange(0, e.target.value)} size='small' />
                 -
                 <Input style={{ width: 60 }} onChange={e => this.onDefectSizeChange(1, e.target.value)} size='small' />

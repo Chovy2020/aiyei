@@ -1,4 +1,8 @@
-export const DEFECT_CLASS_LIST = ['mb', 'adc', 'rb']
+export const DEFECT_CLASS_LIST = [
+  ['mb', 'MB'],
+  ['adc', 'ADC'],
+  ['rb', 'RB']
+]
 
 export const GROUP_BY_LIST = [
   ['Product ID', 'product_id'],
