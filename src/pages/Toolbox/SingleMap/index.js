@@ -881,7 +881,7 @@ class SingleMap extends React.Component {
           yAxis: item
         })
       })
-      colorArr.forEach(item => {
+      colorArr.forEach((item, index) => {
         seriesArr.push({
           type: 'bar',
           markPoint: {
@@ -898,9 +898,9 @@ class SingleMap extends React.Component {
               show: true,
               position: 'top',
               formatter: params => {
-                if (yCode >= 300) return toPercent(params.data[1])
+                if (yCode >= 300) return toPercent(params.data[index + 1])
                 if (yCode >= 200) return params.data[1].toFixed(2)
-                return params.data[1]
+                return params.data[index + 1]
               }
             }
           }
