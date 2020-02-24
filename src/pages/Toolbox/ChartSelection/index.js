@@ -9,7 +9,7 @@ import { delay, toPercent} from '@/utils/web'
 import { changeChartSelected, changeChartWafers, changeChartParams } from './action'
 import { BUTTONS, CA_DATA_SOURCES, NORMALIZED, CA_METROLOGY_PRODUCTS } from './constant'
 import reducer from './reducer'
-import { getX, getX2n, getY, getChartData, getPcCmStep, getPcCm, getCaWatTreeData, searchCA } from './service'
+import { getX, getX2n, getY, getChartData, getboxChartData, getPcCmStep, getPcCm, getCaWatTreeData, searchCA } from './service'
 import {
   StyleChartSelection,
   StyleTooltip,
@@ -23,7 +23,6 @@ import CrossModuleChart from './component/CrossModuleChart'
 import CorrelationChart from './component/CorrelationChart'
 
 let chart = null
-let chartOpt = {}
 
 class ChartSelection extends React.Component {
   constructor(props) {
@@ -49,6 +48,7 @@ class ChartSelection extends React.Component {
       x: {},
       x2n: {},
       y: {},
+      boxData: null,
       resData: null,
       newData: null,
       selectData: null,
@@ -56,7 +56,6 @@ class ChartSelection extends React.Component {
       selectNoData: null,
       seriesType: 'bar',
       ifStack: '',
-      colorArr: [],
       tips: [],
       AnalysisCondition: [],
       normShow: false,
@@ -235,8 +234,21 @@ class ChartSelection extends React.Component {
         normBy: normalized
       }
     })
+    // 箱图数据
+    const boxData = await getboxChartData({
+      singleWaferKey,
+      canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
+      filter: {},
+      pareto: {
+        '1stXCode': xValue,
+        '2ndXCode': x2ndValue,
+        yCode: yValue,
+        normBy: normalized
+      }
+    })
     this.setState({
       resData,
+      boxData,
       showCrossModule: false,
       showCorrelation: false
     })
@@ -245,13 +257,12 @@ class ChartSelection extends React.Component {
   dealData = () => {
     const arr = []
     const arrNo = []
-    const colorArr = []
     let AnalysisCondition = []
     const kData = []
     const allBar = []
     arr[0] = ['product']
     arrNo[0] = ['product']
-    const { resData } = this.state
+    const { resData, boxData } = this.state
     if (resData.paretoValue.xAxisData.length > 0 && resData.paretoValue.series.length > 0) {
       resData.paretoValue.xAxisData.forEach((item, index) => {
         arr[index + 1] = [item]
@@ -261,14 +272,19 @@ class ChartSelection extends React.Component {
           allBar.push(item + '-' + jtem.name)
         })
       })
+
       resData.paretoValue.series.forEach(item => {
         arr[0].push(item.name)
         arrNo[0].push(item.name)
         AnalysisCondition.push(item.name)
-        colorArr.push('#' + this.getColor(item.name))
         item.data.forEach((jtem, j) => {
           arr[j + 1].push(jtem)
           arrNo[j + 1].push(null)
+        })
+      })
+
+      boxData.paretoValue.series.forEach(item => {
+        item.data.forEach((jtem, j) => {
           kData[j].push(jtem)
         })
       })
@@ -282,11 +298,10 @@ class ChartSelection extends React.Component {
       const min = sortItem[0]
       const max = sortItem[len - 1]
       const math25 = sortItem[Math.floor(len / 4)]
-      const math75 = len > 3 ? sortItem[Math.ceil((len * 3) / 4)] : max
+      const math75 = len > 3 ? sortItem[Math.ceil((len * 3) / 4)-1] : max
       boxArr.push([math25, math75, min, max])
     })
     this.setState({
-      colorArr,
       AnalysisCondition,
       allBar,
       newData: _.cloneDeep(arr),
@@ -324,6 +339,9 @@ class ChartSelection extends React.Component {
     this.onX2nInit()
     this.onYInit()
     this.onChartInit()
+    setTimeout(() => {
+      chart.resize()
+    },100)
   }
   onX2nchange = x2ndValue => {
     const { formInline } = this.state
@@ -352,7 +370,7 @@ class ChartSelection extends React.Component {
   }
   onYAxisOperChange = (key, value) => {
     const { yAxisOper } = this.state
-    yAxisOper[key] = parseInt(value)
+    yAxisOper[key] = parseFloat(value)
     this.setState({ yAxisOper })
   }
   // 切换图表
@@ -381,7 +399,6 @@ class ChartSelection extends React.Component {
       this.changeChartParamsBar([])
     } else if (func === 'stackBarChart') {
       const { newData, newNoData, resData } = this.state
-      console.log(resData.paretoValue.series)
       let stackContent = resData.paretoValue.series.length === 1 ? '': 'one'
       this.setState({
         selectedAction: 'database',
@@ -402,9 +419,8 @@ class ChartSelection extends React.Component {
   }
   // lineChart和barChart时, 点击列表显示或隐藏
   onChartClick = async data => {
-    const { selectedAction, newData } = this.state
+    const { selectedAction, newData, selectedBar } = this.state
     if (['line-chart', 'bar-chart', 'database'].includes(selectedAction)) {
-      const { selectedBar } = this.state
       data.seriesName = data.seriesName.substring(0, 6) === 'series' ? '' : data.seriesName
       const index = selectedBar.indexOf(data.name + '-' + data.seriesName)
       if (~index) {
@@ -441,12 +457,15 @@ class ChartSelection extends React.Component {
   }
 
   onGenerateChartOption = async () => {
+    await delay(1)
+    window.addEventListener('resize', function () {
+      chart.resize()
+    });
     const { resData, yAxisOper, chartSelecting } = this.state
     if (!resData) return
     const opt = {
       legend: { type: 'scroll', selected: chartSelecting },
       tooltip: { trigger: 'item' },
-      color: this.state.colorArr,
       grid: {
         top: '80',
         left: '3%',
@@ -454,12 +473,15 @@ class ChartSelection extends React.Component {
         bottom: '10%',
         containLabel: true
       },
+      color:['#c23531','#2f4554', '#61a0a8', '#d48265', '#91c7ae','#749f83',  '#ca8622', '#bda29a','#6e7074', '#546570', '#c4ccd3'],
       dataset: { source: [] },
-      xAxis: { type: 'category',data: [] ,
-      axisLabel: {
-        interval: 0,
-        rotate: 90
-      },},
+      xAxis: { 
+        type: 'category',
+        axisLabel: {
+          interval: 0,
+          rotate: 90
+        },
+      },
       yAxis: {
         max: yAxisOper.max || null,
         min: yAxisOper.min || 0,
@@ -468,7 +490,6 @@ class ChartSelection extends React.Component {
       // series: [],
       dataZoom: [{ show: true }]
     }
-    opt.xAxis.data = resData.paretoValue.xAxisData
     const { showLabel, selectedAction, selectData, selectNoData } = this.state
     // 处理数据
     if (selectedAction === 'star') {
@@ -486,32 +507,28 @@ class ChartSelection extends React.Component {
       opt.dataset.source = []
     } else {
       const seriesArr = []
-      const { colorArr, selectedBar, seriesType, ifStack, newData, formInline } = this.state
+      const { selectedBar, seriesType, ifStack, newData, formInline } = this.state
       const yCode = parseInt(formInline['yValue'])
       if (resData.paretoValue.xAxisData.length && resData.paretoValue.series.length) {
-        colorArr.forEach(item => {
+        resData.paretoValue.series.forEach((item,index) => {
           seriesArr.push({
             type: seriesType,
             stack: ifStack,
             itemStyle: {
               color: param => {
-                console.log(param,'param')
-                let cc = param.color
                 param.seriesName = param.seriesName.substring(0, 6) === 'series' ? '' : param.seriesName
                 const idx = selectedBar.indexOf(param.name + '-' + param.seriesName)
-                // return ~idx ? '#ccc' : item
-                return ~idx ? '#ccc' : cc
+                return ~idx ? '#ccc' : opt.color[index % 11]
               }
             },
-            lineStyle: { color: item },
             label: {
               normal: {
                 show: showLabel,
                 position: 'top',
                 formatter: params => {
-                  if (yCode >= 300) return toPercent(params.data[1])
+                  if (yCode >= 300) return toPercent(params.data[index+1])
                   if (yCode >= 200) return params.data[1].toFixed(2)
-                  return params.data[1]
+                  return params.data[index+1]
                 }
               }
             }
@@ -522,8 +539,6 @@ class ChartSelection extends React.Component {
       opt.series = seriesArr
       opt.dataset.source = _.cloneDeep(newData)
     }
-    // console.log(opt)
-    chartOpt = opt
     if (chart) chart.setOption(opt, true)
     // let unSelectedBar = this.state.allBar.filter(item => {
     //   return !this.state.selectedBar.includes(item)
@@ -533,32 +548,41 @@ class ChartSelection extends React.Component {
   // 折线图时，显示选中或非选中点
   showLine = (opt, showLabel, source) => {
     const seriesArr = []
-    const { colorArr } = this.state
-    colorArr.forEach(item => {
+    const { resData } = this.state
+    resData.paretoValue.series.forEach((item,index) => {
       seriesArr.push({
         connectNulls: true,
         type: 'line',
-        itemStyle: { color: item },
-        lineStyle: { color: item },
         label: {
           normal: { show: showLabel, position: 'top' }
         }
       })
     })
-    // console.log(seriesArr, source, '123')
     // 填充值
+    let filterNull = [source[0]]
+    for(let i=1; i<source.length; i++) {
+      let arr = [...new Set(source[i])]
+      if(arr.length > 2 || arr[1] !== null) {
+        filterNull.push(source[i])
+      }
+    }
     opt.series = seriesArr
-    opt.dataset.source = source
+    opt.dataset.source = filterNull
   }
 
-  // 随机生成颜色
-  getColor = str => {
-    let hash = 1315423911
-    for (let i = str.length - 1; i >= 0; i--) {
-      let ch = str.charCodeAt(i)
-      hash ^= (hash << 5) + ch + (hash >> 2)
+  clearAllBar = () => {
+    const { selectedAction,newData,newNoData } = this.state
+    if(selectedAction === 'line-chart' || selectedAction === 'bar-chart' || selectedAction === 'database') {
+      let arr = []
+      this.state.resData.paretoValue.xAxisData.forEach((item, index) => {
+        this.state.resData.paretoValue.series.forEach(jtem => {
+          arr.push(item + '-' + jtem.name)
+        })
+      })
+      this.setState({selectedBar: arr,
+        selectData: _.cloneDeep(newNoData),
+        selectNoData: _.cloneDeep(newData)})
     }
-    return (hash & 0x7fffff).toString(16)
   }
 
   /* crossModuleForm */
@@ -637,7 +661,6 @@ class ChartSelection extends React.Component {
         yAxis: null
       })
       this.setState({ LineCharts })
-      console.log(this.state.LineCharts,'lineChart')
     }
   }
   onCMremove = index => {
@@ -706,7 +729,6 @@ class ChartSelection extends React.Component {
   }
   onCASearch = async () => {
     const { caWat, caRegression, formInline } = this.state
-    console.log(caRegression,'ca')
     const singleWaferKey = this.getWafers()
     const correlation = {
       wat: caWat.tree
@@ -831,25 +853,26 @@ class ChartSelection extends React.Component {
           <Form.Item>
             <FormItemLabel>Min:</FormItemLabel>
             <InputNumber
-              size='small' step={1} min={0} precision={0}
+              size='small' 
               onChange={value => this.onYAxisOperChange('min', value)}
               style={{ width: 120, marginRight: 10 }}
             />
             <FormItemLabel>Max:</FormItemLabel>
             <InputNumber
-              size='small' step={1} min={0} precision={0}
+              size='small' 
               onChange={value => this.onYAxisOperChange('max', value)}
               style={{ width: 120, marginRight: 10 }}
             />
             <FormItemLabel>Interval:</FormItemLabel>
             <InputNumber
-              size='small' step={1} min={0} precision={0}
+              size='small' 
               onChange={value => this.onYAxisOperChange('interval', value)}
               style={{ width: 120, marginRight: 10 }}
             />
             <Checkbox checked={showLabel} onChange={e => this.setState({ showLabel: e.target.checked })}>
               Show Value
             </Checkbox>
+            <Button type="dashed" size="small" onClick={this.clearAllBar}>clear</Button>
           </Form.Item>
         </Form>
 
@@ -883,7 +906,7 @@ class ChartSelection extends React.Component {
           ) : null}
         </StyleTooltip>
 
-        <StyleChart id={`chart-${name}`} />
+        <StyleChart id={`chart-${name}`} style={(formInline.xValue === 'st' || formInline.xValue === 'lwc') ? {height: '600px'} : {}}/>
 
         <StyleOperBtn>
           <Button type='primary' onClick={this.crossModuleAnalysis}>

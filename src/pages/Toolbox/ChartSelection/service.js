@@ -8,6 +8,8 @@ export const getY = (x, x2n) => get(`swp/yaxis/${x},${x2n}`)
 
 export const getChartData = data => post('swp', data)
 
+export const getboxChartData = data => post('swp/box', data)
+
 export const getPcCmStep = data => post('pc/cm/step', data)
 
 export const getPcCm = data => post('pc/cm', data)

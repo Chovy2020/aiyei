@@ -128,8 +128,8 @@ class HorizontalLoginForm extends React.Component {
     const pieDom = document.getElementById('pieChart')
     pieChart = echarts.init(pieDom)
     let opt = {
-      width: this.state.waferSize*3,
-      height: this.state.waferSize*3,
+      width: this.state.waferSize,
+      height: this.state.waferSize,
       series: [
         // {
         //   type: 'pie',
@@ -174,7 +174,7 @@ class HorizontalLoginForm extends React.Component {
     ]
     }
     if(this.state.annularSelect === 'a') {
-      let angel = 100/this.state.radialZone
+      let angel = opt.width/this.state.annularZone
       let num = 1
       for(let i=0; i<this.state.annularZone; i++) {
         opt.series.push({
@@ -194,7 +194,7 @@ class HorizontalLoginForm extends React.Component {
           radius: [],
           data: [],
         })
-        opt.series[i].radius = [i*angel+'%', (i+1)*angel+'%' ]
+        opt.series[i].radius = [i*angel, (i+1)*angel ]
         for(let j=0; j<this.state.radialZone; j++) {
           opt.series[i].data.push({value:1,name:num})
           num++
