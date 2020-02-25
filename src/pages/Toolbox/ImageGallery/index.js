@@ -1,7 +1,8 @@
 import React from 'react'
 import _ from 'lodash'
 import { connect } from 'react-redux'
-import { Form, Select, Pagination, Checkbox, Button, message } from 'antd'
+import { Form, Select, Checkbox, Button, message } from 'antd'
+import LazyLoad from 'react-lazyload'
 import CommonDrawer from '@/components/CommonDrawer'
 import { injectReducer } from '@/utils/store'
 import { delay } from '@/utils/web'
@@ -9,7 +10,7 @@ import { changeImageSelected, changeImageWafers } from './action'
 import { LAYOUT_SIZE, VIEW_GROUPS, CATEGORY_TYPES, FONT_SIZE, getLotId, getWaferNo, getDefectId, getStepId } from './constant'
 import reducer from './reducer'
 import { getClassCodes, getViewFilters, getImages, updateDefectGroup } from './service'
-import { StyleImageGallery, StyleImages } from './style'
+import { StyleImageGallery, StyleImages, StyleImagesGroup } from './style'
 
 class ImageGallery extends React.Component {
   constructor(props) {
@@ -17,10 +18,7 @@ class ImageGallery extends React.Component {
     this.drawer = null
     this.state = {
       // 图片布局
-      layout: {
-        num1: 5,
-        num2: 3
-      },
+      columns: 5,
       showLabel: true,
       labelSize: '12',
       categoryType: 'mb',
@@ -29,8 +27,7 @@ class ImageGallery extends React.Component {
       viewGroup: 'mb',
       viewFilters: [], // ！通过接口获取
       viewFilter: [],
-      images: [],
-      currentImages: [],
+      images: {},
       total: 0,
       pageNo: 1
     }
@@ -93,36 +90,19 @@ class ImageGallery extends React.Component {
       singleGalleryFlag: isFromMapGallery ? 'galleryMap' : 'singleMap'
     }
     const res = await getImages(data)
-    const images = []
-    for (const id in res)
-      for (const url of res[id])
-        images.push({
-          url,
-          id
-        })
-    this.setState({ images, total: images.length || 0, pageNo: 1 })
-    // 默认显示第一页的图片
-    this.generateImages()
-  }
-  // 修改图片布局
-  onLayoutChange = (key, value) => {
-    const { layout } = this.state
-    layout[key] = value
-    this.setState({ layout })
-    this.generateImages()
-  }
-  // 分页切换
-  onPageSizeChange = pageNo => {
-    this.setState({ pageNo })
-    this.generateImages()
-  }
-  // 从缓存取出图片，前端分页
-  generateImages = async () => {
-    await delay(1)
-    const { layout, pageNo, images } = this.state
-    const pageSize = layout.num1 * layout.num2
-    const currentImages = images.filter((img, index) => index >= pageSize * (pageNo - 1) && index < pageSize * pageNo)
-    this.setState({ currentImages })
+    const images = {}
+    for (const group in res) {
+      images[group] = []
+      for (const id in res[group]) {
+        for (const url of res[group][id]) {
+          images[group].push({
+            id,
+            url
+          })
+        }
+      }
+    }
+    this.setState({ images })
   }
   // 选择/反选图片
   onSelect = id => {
@@ -167,35 +147,27 @@ class ImageGallery extends React.Component {
 
   render() {
     const selected = this.getSelected()
-    const { layout, classCodes, categoryType, classCode, viewGroup, viewFilters, currentImages, total, pageNo, showLabel, labelSize } = this.state
-    const { num1, num2 } = layout
+    const { columns, classCodes, categoryType, classCode, viewGroup, viewFilters, images, showLabel, labelSize } = this.state
 
     return (
       <StyleImageGallery>
         <Form layout='vertical' labelCol={{ span: 2 }}>
           <Form.Item label='Layout:'>
-            <Select size='small' defaultValue={num1} style={{ width: 60 }} onChange={v => this.onLayoutChange('num1', v)}>
+            <span>Columns:</span>
+            <Select size='small' defaultValue={columns} style={{ width: 55, marginLeft: 5 }} onChange={columns => this.setState({ columns })}>
               {LAYOUT_SIZE.map(s => (
                 <Select.Option value={s} key={s}>
                   {s}
                 </Select.Option>
               ))}
             </Select>
-            <span style={{ marginRight: 10 }}>X</span>
-            <Select size='small' defaultValue={num2} style={{ width: 60 }} onChange={v => this.onLayoutChange('num2', v)}>
-              {LAYOUT_SIZE.map(s => (
-                <Select.Option value={s} key={s}>
-                  {s}
-                </Select.Option>
-              ))}
-            </Select>
-            <Checkbox size='small' onChange={e => this.setState({ showLabel: e.target.checked })} defaultChecked={showLabel}>
+            <Checkbox size='small' style={{ marginLeft: 20 }} onChange={e => this.setState({ showLabel: e.target.checked })} defaultChecked={showLabel}>
               Show Label
             </Checkbox>
             {showLabel ? (
               <>
-                <span>Label Size:</span>
-                <Select size='small' style={{ width: 50, marginLeft: 5 }} value={labelSize} onChange={labelSize => this.setState({ labelSize })}>
+                <span style={{ marginLeft: 20 }}>Label Size:</span>
+                <Select size='small' style={{ width: 55, marginLeft: 5 }} value={labelSize} onChange={labelSize => this.setState({ labelSize })}>
                   {FONT_SIZE.map(t => (
                     <Select.Option value={t} key={t}>
                       {t}
@@ -239,35 +211,34 @@ class ImageGallery extends React.Component {
           </Form.Item>
         </Form>
 
-        <StyleImages className={`col${num1}`}>
-          {currentImages.map((img, index) => (
-            <li
-              key={`${img.id}-${index}`}
-              className={selected.includes(img.id) ? 'selected' : ''}
-              onClick={() => this.onSelect(img.id)}
-            >
-              <img src={`http://161.189.50.41${img.url}`} alt='' />
-              {showLabel ? (
-                <div className={`wafer-info font-size-${labelSize}`}>
-                  <p>Lot ID: {getLotId(img.id)}</p>
-                  <p>Wafer No: {getWaferNo(img.id)}</p>
-                  <p>Defect ID: {getDefectId(img.id)}</p>
-                  <p>Step: {getStepId(img.id)}</p>
-                </div>
-              ) : null}
-            </li>
+        <StyleImagesGroup>
+          {Object.keys(images).map(key => (
+            <div key={key}>
+              <h2>【{key}】</h2>
+              <StyleImages className={`col${columns}`}>
+                {images[key].map((img, index) => (
+                  <li
+                    key={`${img.id}-${index}`}
+                    className={selected.includes(img.id) ? 'selected' : ''}
+                    onClick={() => this.onSelect(img.id)}
+                  >
+                    <LazyLoad height={200} overflow={true}>
+                      <img src={`http://161.189.50.41${img.url}`} alt='' />
+                    </LazyLoad>
+                    {showLabel ? (
+                      <div className={`wafer-info font-size-${labelSize}`}>
+                        <p>Lot ID: {getLotId(img.id)}</p>
+                        <p>Wafer No: {getWaferNo(img.id)}</p>
+                        <p>Defect ID: {getDefectId(img.id)}</p>
+                        <p>Step: {getStepId(img.id)}</p>
+                      </div>
+                    ) : null}
+                  </li>
+                ))}
+              </StyleImages>
+            </div>
           ))}
-        </StyleImages>
-
-        <Pagination
-          size='small'
-          hideOnSinglePage
-          total={total}
-          showTotal={t => `Total: ${t}`}
-          pageSize={num1 * num2}
-          current={pageNo}
-          onChange={this.onPageSizeChange}
-        />
+        </StyleImagesGroup>
 
         <CommonDrawer ref={r => (this.drawer = r)} width={550}>
           <section>

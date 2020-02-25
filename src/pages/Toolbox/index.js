@@ -20,8 +20,8 @@ class Toolbox extends React.Component {
       activeKey: '1',
       tabCount: 1,
       // panes: [{ type: 'Chart Selection', name: '1' }]
-      panes: [{ type: 'Single Map', name: '1' }]
-      // panes: [{ type: 'Data Query', name: '1' }]
+      // panes: [{ type: 'Single Map', name: '1' }]
+      panes: [{ type: 'Data Query', name: '1' }]
     }
   }
 

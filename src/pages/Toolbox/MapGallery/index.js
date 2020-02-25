@@ -58,7 +58,7 @@ class MapGallery extends React.Component {
       degrees: 0, // 角度 输入框
       rotationVisible: false, // 旋转弹出层是否显示
       total: 0,
-      pageSize: 10,
+      pageSize: 30,
       pageNo: 1
     }
   }
@@ -182,7 +182,6 @@ class MapGallery extends React.Component {
       message.warning('No data')
       return
     }
-    res.map.noGroup[0].exsitImages = 1
     const waferListGroup = res.map
     const { galleryType } = this.state
     this.setState({ waferListGroup, total: res.totalCount })
@@ -551,7 +550,7 @@ class MapGallery extends React.Component {
                       className={`wafer ${galleryType === 'Map' || galleryType === 'Heat Map' ? 'radius' : ''}`}
                       style={wafer.degrees > 0 ? { transform: `rotate(${wafer.degrees}deg)` } : {}}
                     />
-                    {wafer.exsitImages ? (
+                    {wafer.existImages ? (
                       <StyleExistImages />
                     ) : null}
                     <p>Lot ID: {wafer.lotId}</p>

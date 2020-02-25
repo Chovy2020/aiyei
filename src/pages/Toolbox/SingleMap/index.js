@@ -562,7 +562,6 @@ class SingleMap extends React.Component {
   // Map 创建 【点击defect查看图片、鼠标滚轮事件】
   onMapCreated = async () => {
     const { name } = this.props
-    let { zoomTimes } = this.state
     const zrDom = document.getElementById(`main-${name}`)
     if (!zrDom) {
       console.log('zrDom not found')
@@ -611,7 +610,7 @@ class SingleMap extends React.Component {
           imageInfo,
           singleGalleryFlag: 'singleMap'
         })
-        if (_.isEmpty(res)) {
+        if (res.singleMap && _.isEmpty(res.singleMap)) {
           message.warning('No photos yet')
           this.setState({ imageVisible: false })
           return
@@ -620,11 +619,14 @@ class SingleMap extends React.Component {
         imgDom.style.left = e.offsetX + 5 + 'px'
         imgDom.style.display = 'block'
         let arr = []
-        for (const defectInfo in res) {
-          const [lotId, , , waferNo, , defects] = defectInfo.split('|')
-          res[defectInfo].forEach(item => {
-            arr.push({ lotId, waferNo, defects, image: 'http://161.189.50.41:80' + item })
-          })
+        const images = {}
+        for (const group in res) {
+          for (const id in res[group]) {
+            for (const url of res[group][id]) {
+              const [lotId, , , waferNo, , defects] = id.split('|')
+              arr.push({ lotId, waferNo, defects, image: 'http://161.189.50.41:80' + url })
+            }
+          }
         }
         this.setState({ defectImages: arr, imagesTotal: arr.length })
         await delay(1)
@@ -633,7 +635,7 @@ class SingleMap extends React.Component {
     })
     zr.on('mousewheel', e => {
       e = e || window.event
-      let { mapType, timeout } = this.state
+      let { mapType, timeout, zoomTimes } = this.state
       if (mapType !== 'Heat Map' && e.wheelDelta) {
         const dataOption = this.getDataOption()
         const { waferLocation } = dataOption
@@ -652,13 +654,12 @@ class SingleMap extends React.Component {
         const y = parseInt((e.offsetY - waferLocation.y) / zoomTimes)
         if (timeout) clearTimeout(timeout)
         timeout = setTimeout(() => {
-          // console.log(times, x, y)
           this.onMapInit({ zoom: { times, x, y } })
         }, 100)
-        this.setState({ timeout })
+        this.setState({ timeout, zoomTimes })
       }
     })
-    this.setState({ zr, group, zoomTimes })
+    this.setState({ zr, group })
     await delay(1)
     this.onMapInit()
     this.onCheckAreaInit()
@@ -765,6 +766,7 @@ class SingleMap extends React.Component {
   onDefectsDelete = async () => {
     this.setState({ deleteDefectsDialog: false })
     const singleWaferKey = this.getSelected()
+    const singleWaferKey2 = this.getWafers()
     const { deleteDefectsType } = this.state
     if (deleteDefectsType === DELETE_DEFECTS_OPTIONS[0] || deleteDefectsType === DELETE_DEFECTS_OPTIONS[1]) {
       // 从 mapData 中删除
@@ -793,7 +795,7 @@ class SingleMap extends React.Component {
       this.setState({ coordinate: [] })
       this.onMapInit()
     }
-    if (deleteDefectsType === DELETE_DEFECTS_OPTIONS[2]) download('export', { singleWaferKey })
+    if (deleteDefectsType === DELETE_DEFECTS_OPTIONS[2]) download('export', { singleWaferKey: singleWaferKey2 })
     this.setState({ deleteDefectsType: DELETE_DEFECTS_OPTIONS[0] })
   }
   /* - - - - - - - - - - - - Pareto - - - - - - - - - - - -  */
