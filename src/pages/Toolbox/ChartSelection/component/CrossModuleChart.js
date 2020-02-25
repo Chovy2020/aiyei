@@ -129,7 +129,7 @@ class CrossModuleChart extends React.Component {
         let min = Math.min(...sortItem)
         let max = Math.max(...sortItem)
         let math25 = sortItem[Math.floor(len / 4)]
-        let math75 = len > 3 ? sortItem[Math.ceil((len * 3) / 4)] : max
+        let math75 = len > 3 ? sortItem[Math.ceil((len * 3) / 4)-1] : max
         boxArr.push([math25, math75, min, max])
       })
       seriesData = [
