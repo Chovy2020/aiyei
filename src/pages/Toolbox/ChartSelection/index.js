@@ -179,6 +179,26 @@ class ChartSelection extends React.Component {
         // }
       ]
     }
+    let existDefects = false
+    for (const wafer of wafers) {
+      if (wafer.defects.length > 0) {
+        existDefects = true
+        break
+      }
+    }
+    this.setState({ existDefects })
+    wafers = wafers.map(w => {
+      const { lotId, stepId, waferNo, productId, scanTm, defects } = w
+      return {
+        lotId,
+        stepId,
+        waferNo,
+        productId,
+        scanTm,
+        currentDefects: existDefects ? defects : null,
+        defects: []
+      }
+    })
     this.props.changeChartWafers({ name, wafers })
     const chartDom = document.getElementById(`chart-${name}`)
     if (!chartDom) {
