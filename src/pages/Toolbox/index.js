@@ -4,7 +4,7 @@ import { connect } from 'react-redux'
 import { Icon, Tabs, Spin, Tooltip } from 'antd'
 import { TOOLS } from '@/utils/constant'
 import { changeWafers, changePrevPage, changeMenu, changeParams } from '@/utils/action'
-// import { delay } from '@/utils/web'
+import { defectIdsToWafers } from '@/utils/web'
 import { post } from '@/utils/api'
 import { StyleToolbox, Tools, Content, StyleTabPane } from './style'
 import DataQuery from './DataQuery'
@@ -68,37 +68,7 @@ class Toolbox extends React.Component {
       // 有选择图片，即defects，
       if (selected.length > 0) {
         // 对defect图片遍历，如果5个主键都相同，则存放到同一个wafer里
-        selected.forEach(imgKey => {
-          const imgKeyArray = imgKey.split('|')
-          const lotId = imgKeyArray[0]
-          const stepId = imgKeyArray[2]
-          const waferNo = imgKeyArray[3]
-          const productId = imgKeyArray[1]
-          const scanTm = imgKeyArray[4]
-          const defect = parseInt(imgKeyArray[5])
-          const exist = _.find(
-            wafers,
-            w =>
-              w.lotId === lotId &&
-              w.stepId === stepId &&
-              w.waferNo === waferNo &&
-              w.productId === productId &&
-              w.scanTm === scanTm
-          )
-          if (exist) {
-            exist.defects = [...exist.defects, defect]
-          } else {
-            wafers.push({
-              lotId,
-              stepId,
-              waferNo,
-              productId,
-              scanTm,
-              defects: [defect],
-              defectCache: ''
-            })
-          }
-        })
+        wafers = defectIdsToWafers(selected)
       } else {
         // 如果没有选择图片，直接使用当前页拉取图片的wafers（前一个页面传递的，imageGallery初始化存储在store）
         wafers = imageWafers[name] || []

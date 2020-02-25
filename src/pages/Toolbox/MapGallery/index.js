@@ -576,7 +576,7 @@ class MapGallery extends React.Component {
               <Form.Item label='Defect Class:'>
                 <Radio.Group onChange={this.onDefectClassChange}>
                   {DEFECT_CLASS_LIST.map(o => (
-                    <Radio value={o[0]}>{o[1]}</Radio>
+                    <Radio key={o[0]} value={o[0]}>{o[1]}</Radio>
                   ))}
                 </Radio.Group>
               </Form.Item>

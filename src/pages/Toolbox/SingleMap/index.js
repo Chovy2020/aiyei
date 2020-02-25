@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from 'react'
 import { connect } from 'react-redux'
 import {
@@ -54,6 +55,7 @@ import {
   getDSATableData
 } from './service'
 import { StyleSingleMap, StyleWafer, StylePareto, StyleChart, StyleDSA, StyleImages, StyleTable } from './style'
+// import SinglePareto from './component/SingleParato'
 
 // eslint-disable-next-line
 let drawer = null
@@ -451,6 +453,7 @@ class SingleMap extends React.Component {
         return
       }
       this.setState({ angel: 0 })
+      this.onMapAndParetoInit()
       // this.renderMap()
       // this.onParetoInit({ zoom: zoomRecords })
       this.onMapAndParetoInit()
@@ -1369,6 +1372,8 @@ class SingleMap extends React.Component {
     const { dsa, sortName, dsaOrder, dsaTableData } = this.state
     const { filterOption, filter, defectClass } = this.state
 
+    const wafers = this.getWafers()
+
     return (
       <StyleSingleMap>
         <Form layout='vertical' labelCol={{ span: 2 }}>
@@ -1709,7 +1714,7 @@ class SingleMap extends React.Component {
               <Form.Item label='Defect Class:'>
                 <Radio.Group onChange={this.onDefectClassChange}>
                   {DEFECT_CLASS_LIST.map(o => (
-                    <Radio value={o[0]}>{o[1]}</Radio>
+                    <Radio key={o[0]} value={o[0]}>{o[1]}</Radio>
                   ))}
                 </Radio.Group>
               </Form.Item>
@@ -1755,6 +1760,8 @@ class SingleMap extends React.Component {
             </Form>
           </section>
         </CommonDrawer>
+
+        {/* <SinglePareto name={name} wafers={wafers} /> */}
       </StyleSingleMap>
     )
   }
