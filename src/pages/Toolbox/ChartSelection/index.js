@@ -22,19 +22,18 @@ import {
 import CrossModuleChart from './component/CrossModuleChart'
 import CorrelationChart from './component/CorrelationChart'
 
-let chart = null
-
 class ChartSelection extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
+      chartObj: null,
       chartSelecting: {},
       singleWaferKey: [],
       selectedAction: 'bar-chart',
       allBar: [],
       selectedBar: [],
       formInline: {
-        xValue: 'lwc',
+        xValue: 'mb',
         x2ndValue: '',
         yValue: '100',
         normalized: ''
@@ -64,6 +63,7 @@ class ChartSelection extends React.Component {
       boxChartData: [],
       cmStepData: null,
       cmStepValue: [],
+      cmStepArr: [],
       /* LineCharts */
       LineCharts: [],
       /* Correlation Analysis */
@@ -185,9 +185,9 @@ class ChartSelection extends React.Component {
       message.error('chartDom not found')
       return
     }
-    chart = echarts.init(chartDom)
-    chart.on('click', params => this.onChartClick(params))
-    chart.on('legendselectchanged', params => this.onlegendselectchanged(params))
+    this.state.chartObj = echarts.init(chartDom)
+    this.state.chartObj.on('click', params => this.onChartClick(params))
+    this.state.chartObj.on('legendselectchanged', params => this.onlegendselectchanged(params))
     this.onXInit()
     this.onX2nInit()
     this.onYInit()
@@ -340,7 +340,7 @@ class ChartSelection extends React.Component {
     this.onYInit()
     this.onChartInit()
     setTimeout(() => {
-      chart.resize()
+      this.state.chartObj.resize()
     },100)
   }
   onX2nchange = x2ndValue => {
@@ -458,9 +458,12 @@ class ChartSelection extends React.Component {
 
   onGenerateChartOption = async () => {
     await delay(1)
-    window.addEventListener('resize', function () {
-      chart.resize()
-    });
+    // if(this.state.chartObj) {
+    //   window.addEventListener('resize', function () {
+    //     this.setState({chartObj: this.state.chartObj.resize()})
+    //   });
+    // }
+    
     const { resData, yAxisOper, chartSelecting } = this.state
     if (!resData) return
     const opt = {
@@ -498,6 +501,7 @@ class ChartSelection extends React.Component {
       this.showLine(opt, showLabel, selectNoData)
     } else if (selectedAction === 'box-plot') {
       const { boxChartData } = this.state
+      opt.xAxis.data = resData.paretoValue.xAxisData
       opt.series = [
         {
           type: 'k',
@@ -539,7 +543,7 @@ class ChartSelection extends React.Component {
       opt.series = seriesArr
       opt.dataset.source = _.cloneDeep(newData)
     }
-    if (chart) chart.setOption(opt, true)
+    if (this.state.chartObj) this.state.chartObj.setOption(opt, true)
     // let unSelectedBar = this.state.allBar.filter(item => {
     //   return !this.state.selectedBar.includes(item)
     // })
@@ -582,6 +586,7 @@ class ChartSelection extends React.Component {
       this.setState({selectedBar: arr,
         selectData: _.cloneDeep(newNoData),
         selectNoData: _.cloneDeep(newData)})
+      this.changeChartParamsBar(arr)
     }
   }
 
@@ -634,39 +639,45 @@ class ChartSelection extends React.Component {
     this.setState({ cmStepValue })
   }
   crossModuleAdd = async () => {
-    const { formInline, filter, cmStepValue } = this.state
+    const { formInline, filter, cmStepValue, cmStepArr } = this.state
     const singleWaferKey = this.getWafers()
     const filter1 = {}
+    let arr = [...new Set(cmStepValue, cmStepArr)]
+    this.setState({cmStepArr: arr})
     filter1[formInline.x2ndValue] = filter
     const res = await getPcCm({
       singleWaferKey,
       filter: filter1,
-      flowStep: cmStepValue
+      flowStep: arr
     })
-    if (res && res.series) {
-      const series = []
-      res.series.forEach(item => {
-        series.push({
-          type: item.name,
-          data: item.data,
-          remark: item.remark
+    if (res && res.length>0) {
+      let LineCharts = []
+      res.forEach(item => {
+        const series = []
+        item.series.forEach(jtem => {
+          series.push({
+            type: jtem.name,
+            data: jtem.data,
+            remark: jtem.remark
+          })
+        })
+        LineCharts.push({
+          series,
+          xAxis: {
+            data: item.xAxisData
+          },
+          yAxis: null,
+          step: item.step
         })
       })
-      const { LineCharts } = this.state
-      LineCharts.push({
-        series,
-        xAxis: {
-          data: res.xAxisData
-        },
-        yAxis: null
-      })
       this.setState({ LineCharts })
+      console.log(LineCharts)
     }
   }
   onCMremove = index => {
     const { LineCharts } = this.state
     LineCharts.splice(index, 1)
-    this.setState({ LineCharts })
+    this.setState({ LineCharts})
   }
 
   /* Correlation Analysis */
@@ -906,7 +917,7 @@ class ChartSelection extends React.Component {
           ) : null}
         </StyleTooltip>
 
-        <StyleChart id={`chart-${name}`} style={(formInline.xValue === 'st' || formInline.xValue === 'lwc') ? {height: '600px'} : {}}/>
+        <StyleChart id={`chart-${name}`} style={(formInline.xValue === 'st' || formInline.xValue === 'lwc') ? {height: '600px'} : {height: '400px'}}/>
 
         <StyleOperBtn>
           <Button type='primary' onClick={this.crossModuleAnalysis}>
