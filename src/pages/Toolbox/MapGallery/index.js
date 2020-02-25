@@ -10,7 +10,7 @@ import { changeMapSelected, changeMapWafers } from './action'
 import { DEFECT_CLASS_LIST, GROUP_BY_LIST, YES_NO } from './constant'
 import reducer from './reducer'
 import { downloadCSV, getNewMap, getNewStack } from './service'
-import { StyleMapGallery, StyleWaferMapGroup, StyleWaferMap } from './style'
+import { StyleMapGallery, StyleWaferMapGroup, StyleWaferMap, StyleExistImages } from './style'
 import CommonDrawer from '@/components/CommonDrawer'
 
 let drawer = null
@@ -182,10 +182,11 @@ class MapGallery extends React.Component {
       message.warning('No data')
       return
     }
+    res.map.noGroup[0].exsitImages = 1
     const waferListGroup = res.map
+    const { galleryType } = this.state
     this.setState({ waferListGroup, total: res.totalCount })
     // 完成后渲染
-    const { galleryType } = this.state
     for (const key in waferListGroup) {
       if (waferListGroup[key]) {
         waferListGroup[key].forEach(wafer => {
@@ -550,6 +551,9 @@ class MapGallery extends React.Component {
                       className={`wafer ${galleryType === 'Map' || galleryType === 'Heat Map' ? 'radius' : ''}`}
                       style={wafer.degrees > 0 ? { transform: `rotate(${wafer.degrees}deg)` } : {}}
                     />
+                    {wafer.exsitImages ? (
+                      <StyleExistImages />
+                    ) : null}
                     <p>Lot ID: {wafer.lotId}</p>
                     <p>Wafer No: {wafer.waferNo}</p>
                     <p>Step ID: {wafer.stepId}</p>

@@ -23,6 +23,7 @@ export const StyleWaferMap = styled.ul`
     display: block;
     overflow: hidden;
     border: 1px solid transparent;
+    position: relative;
     .wafer {
       width: 100px;
       height: 100px;
@@ -50,4 +51,15 @@ export const StyleWaferMap = styled.ul`
       }
     }
   }
+`
+
+export const StyleExistImages = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border: 10px solid transparent;
+  border-top: 10px solid red;
+  border-left: 10px solid red;
 `
