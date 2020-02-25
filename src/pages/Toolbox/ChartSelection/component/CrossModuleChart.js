@@ -8,7 +8,7 @@ import { delay } from '@/utils/web'
 const StyleCrossModuleChart = styled.div``
 const StyleOperBtn = styled.div`
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 10px 0;
   button {
     width: 100px;
@@ -29,7 +29,7 @@ const StyleTooltip = styled.div`
 `
 const StyleChart = styled.div`
   width: 100%;
-  height: 400px;
+  height: 600px;
 `
 
 class CrossModuleChart extends React.Component {
@@ -248,14 +248,15 @@ class CrossModuleChart extends React.Component {
     return (
       <StyleCrossModuleChart>
         <StyleOperBtn>
-          {selectedAction !== 'boxChart' ? (
+          <div>Step ID: {this.props.data.step}</div>
+          <div>{selectedAction !== 'boxChart' ? (
             <Button type='primary' onClick={this.onCMshowPM}>
               Show PM
             </Button>
           ) : null}
           <Button type='danger' onClick={() => onCMremove(index)}>
             Remove
-          </Button>
+          </Button></div>
         </StyleOperBtn>
         <StyleTooltip>
           {btns.map(item => (
