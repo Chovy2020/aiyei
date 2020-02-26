@@ -91,10 +91,12 @@ class ImageGallery extends React.Component {
     }
     const res = await getImages(data)
     const images = {}
+    let count = 0
     for (const group in res) {
       images[group] = []
       for (const id in res[group]) {
         for (const url of res[group][id]) {
+          count ++
           images[group].push({
             id,
             url
@@ -103,6 +105,7 @@ class ImageGallery extends React.Component {
       }
     }
     this.setState({ images })
+    if (count === 0) message.warning('No photos yet')
   }
   // 选择/反选图片
   onSelect = id => {
@@ -214,7 +217,9 @@ class ImageGallery extends React.Component {
         <StyleImagesGroup>
           {Object.keys(images).map(key => (
             <div key={key}>
-              <h2>【{key}】</h2>
+              {images[key].length > 0 ? (
+                <h2>【{key}】</h2>
+              ) : null}
               <StyleImages className={`col${columns}`}>
                 {images[key].map((img, index) => (
                   <li
