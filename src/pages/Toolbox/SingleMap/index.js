@@ -75,6 +75,7 @@ class SingleMap extends React.Component {
       paretoChart: null,
       dsaChart: null,
       zoomTimes: 1,
+      selectedPointsKey: [],
       // ---
       singleMapColors: {
         '': '#67c6a7'
@@ -260,11 +261,7 @@ class SingleMap extends React.Component {
       showOtherMap: this.showOtherMapInit(wafers)
     })
   }
-  componentDidUpdate = (prevProps, prevState) => {
-    // 重新初始化，需要清空store当前选中的defects
-    // const { name } = this.props
-    // this.props.changeSingleSelected({ name, selected: [] })
-  }
+  // componentDidUpdate = (prevProps, prevState) => {}
   // productId唯一时,显示Die Stack/Reticle Stack/Heap Map
   showOtherMapInit = wafers => {
     if (wafers.length > 1) {
@@ -365,8 +362,8 @@ class SingleMap extends React.Component {
     }
   }
   onDropDownReset = () => {
-    const { name } = this.props
-    this.props.changeSingleSelected({ name, selected: [] })
+    // const { name } = this.props
+    // this.props.changeSingleSelected({ name, selected: [] })
     this.setState({
       angel: 0,
       selectAction: '',
@@ -513,11 +510,10 @@ class SingleMap extends React.Component {
     this.renderMap()
     // - - - - - - singleSelected - - - - - -
     // 点击标记的时候计算：如果区域内存在defect，统计选中的defects，存到store，后续分类、删除或页面跳转
-    const { name } = this.props
     const existBar = selectedBar.length > 0
     const existArea = coordinate.length > 0
     const wafers = this.getWafers()
-    const selected = []
+    const selectedPointsKey = []
     for (const wafer of mapData) {
       const w = {
         lotId: wafer.lotId,
@@ -549,10 +545,9 @@ class SingleMap extends React.Component {
           }
         }
       }
-      selected.push(w)
+      selectedPointsKey.push(w)
     }
-    this.props.changeSingleSelected({ name, selected })
-    this.setState({ group, chosedArea })
+    this.setState({ selectedPointsKey, group, chosedArea })
   }
   /* - - - - - - - - - - - - Map - - - - - - - - - - - -  */
   onMapAndParetoInit = () => {
@@ -718,6 +713,29 @@ class SingleMap extends React.Component {
       }
     }
     this.setState({ pointRecords, group })
+    // 完成renderMap, 统计当前的所有点，存store
+    const selected = []
+    for (const w of mapData) {
+      const wafer = {
+        lotId: w.lotId,
+        productId: w.productId,
+        scanTm: w.scanTm,
+        stepId: w.stepId,
+        waferNo: w.waferNo,
+        defects: []
+      }
+      for (const mb in w.defectInfos) {
+        for (const ob in w.defectInfos[mb]) {
+          if (existBar && selectedBar.includes(`${mb}-${ob}`)) continue
+          for (const coo in w.defectInfos[mb][ob]) {
+            wafer.defects = [...wafer.defects, ...w.defectInfos[mb][ob][coo]]
+          }
+        }
+      }
+      selected.push(wafer)
+    }
+    const { name } = this.props
+    this.props.changeSingleSelected({ name, selected })
   }
   // 记录本次放大数据
   recordZoom = () => {
@@ -1018,9 +1036,9 @@ class SingleMap extends React.Component {
   }
   // 封装接口请求数据
   getFormData = (option = {}) => {
-    const { paretoParams: pareto, selectedAction, dsa } = this.state
+    const { paretoParams: pareto, selectedAction, dsa, selectedPointsKey } = this.state
     const filter = this.getFilter()
-    const singleWaferKey = ['star0', 'star'].includes(selectedAction) ? this.getSelected() : this.getWafers()
+    const singleWaferKey = ['star0', 'star'].includes(selectedAction) ? selectedPointsKey : this.getWafers()
     const selectAction = this.getSelectAction()
     const { zoom } = option
     const canvas = { canvasSize: 400, magnification: '1', centralLocation: '200,200' }
@@ -1238,13 +1256,16 @@ class SingleMap extends React.Component {
       if (item.defectInfos.length > 1) {
         const children = []
         item.defectInfos.forEach((jtem, index2) => {
-          children.push({
-            key: index + '-' + index2,
-            step: jtem.step,
-            scanTm: jtem.scanTm,
-            defectId: jtem.defectId,
-            imgUrl: jtem.imgUrl
-          })
+          // 第一条数据不重复显示
+          if (index2 > 0) {
+            children.push({
+              key: index + '-' + index2,
+              step: jtem.step,
+              scanTm: jtem.scanTm,
+              defectId: jtem.defectId,
+              imgUrl: jtem.imgUrl
+            })
+          }
         })
         dsaTableData[index].children = children
       }
