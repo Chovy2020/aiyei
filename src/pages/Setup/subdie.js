@@ -2,8 +2,8 @@
 import React from 'react'
 import _ from 'lodash'
 import { delay } from '@/utils/web'
-import { Form,Input,InputNumber, Select, Button,Icon,Modal,message,Table} from 'antd'
-import { getSubDie, updateSubDie } from './service'
+import { Form,Input,InputNumber, Select, Button,Icon,Modal,message,Table, Popconfirm} from 'antd'
+import { getSubDie, updateSubDie, deleteSubDie } from './service'
 import {DiePitch,LayoutInline,LayoutVertical,DivStyle} from './style'
 
 const { Option } = Select;
@@ -21,10 +21,12 @@ class HorizontalLoginForm extends React.Component {
     this.state = {
       cfgDbPrimaryKeys: '',
       productStepId: [],
+      productId: '',
+      stepId: '',
       visible: false,
       addSubdieProduct:'',
       addSubdieStepId: '',
-      diePitchTable: [{id:1, x: '40000',y:'30000'}],
+      diePitchTable: [{id:1, x: '40000',y:'40000'}],
       ratio: 1,
       tableData: [],
       boxArr: [],
@@ -40,7 +42,9 @@ class HorizontalLoginForm extends React.Component {
       data.forEach(item => {
         arr.push({productId:item.productId,stepId:item.stepId})
       })
+      data
       this.setState({productStepId:arr})
+      console.log(data,'data')
     })
   }
 
@@ -76,7 +80,6 @@ class HorizontalLoginForm extends React.Component {
           }
       ]
       }).then(data => {
-        console.log(data)
         this.initSubDie()
       })
     }else {
@@ -84,13 +87,20 @@ class HorizontalLoginForm extends React.Component {
     }
   }
 
-  handleCancel = () => {
-    this.setState({visible: false})
-  }
   changeCfgDbPrimaryKeys = (e) => {
     this.setState({cfgDbPrimaryKeys: [this.state.productStepId[e]].productId+'-'+[this.state.productStepId[e]].stepId})
-    getSubDie({cfgDbPrimaryKeys:[this.state.productStepId[e]]}).then(response => {
-      this.setState({tableData: response[0].subDieIds})
+    getSubDie({cfgDbPrimaryKeys:[this.state.productStepId[e]]}).then(res => {
+      let subDieIds = res[0].subDieIds
+      if(subDieIds.length>0) {
+        this.setState({
+          tableData: subDieIds, 
+          diePitchTable: [{id:1, x: subDieIds[0].x === 0 ? 40000 : subDieIds[0].x, y:subDieIds[0].y === 0 ? 40000 :  subDieIds[0].y}],
+          productId: res[0].productId,
+          stepId: res[0].stepId,
+          boxArr: subDieIds,
+          ratio: Math.max(subDieIds[0].x === 0 ? 40000 : subDieIds[0].x , subDieIds[0].y === 0 ? 40000 : subDieIds[0].y)/400
+        })
+      } 
     })
   }
   changeSubProduct = (e) => {
@@ -124,8 +134,49 @@ class HorizontalLoginForm extends React.Component {
   }
 
   saveTable = () => {
-    let diePitch = this.state.diePitchTable[0]
-    this.setState({ratio: Math.max(diePitch.x , diePitch.y)/400, boxArr: this.state.tableData})
+    if(this.state.tableData.length === 0) {
+      message.warning('请先选择Product - Step ID');
+    }else {
+      let { productId, stepId, diePitchTable, tableData } = this.state
+      let diePitch = diePitchTable[0]
+      this.setState({ratio: Math.max(diePitch.x , diePitch.y)/400, boxArr: tableData})
+      let newTable = []
+      tableData.forEach(item => {
+        let newObj = {}
+        Object.assign( newObj, item, {x: diePitchTable[0].x, y: diePitchTable[0].y } )
+        newTable.push(newObj)
+      })
+      updateSubDie({
+        "cfgSubDies": [
+          {
+              "productId": productId,
+              "stepId": stepId,
+              "technology": "T1",
+              "subDieIds": newTable,
+              "createBy": "XRJ",
+              "remarks": null,
+              "updateTm": null
+          }
+        ]
+      })
+    }
+  }
+
+  handleDelete = record => {
+    const { productId, stepId } = this.state
+    deleteSubDie({
+      "cfgSubDies": [
+        {
+            "productId": productId,
+            "stepId": stepId,
+            "technology": "T1",
+            "subDieIds": record,
+            "createBy": "XRJ",
+            "remarks": null,
+            "updateTm": null
+        }
+    ]
+    })
   }
   
   changeCell = (value, id, cellName) => {
@@ -138,14 +189,13 @@ class HorizontalLoginForm extends React.Component {
       <div>
         <Form layout="inline">
           <Form.Item label="Product - Step ID">
-            <Select style={{ width: 400 }} defaultValue={this.cfgDbPrimaryKeys} onChange={this.changeCfgDbPrimaryKeys}>
+            <Select style={{ width: 400 }} defaultValue={this.state.cfgDbPrimaryKeys}  onChange={this.changeCfgDbPrimaryKeys}>
     {this.state.productStepId.map((item, index) => <Option key={index}>{item.productId+'-'+item.stepId}</Option>)}
             </Select>
           </Form.Item>
           <Form.Item>
-            <Button type="default" onClick={this.showModal}>
-              New
-            </Button>
+            <Button type="default" onClick={this.showModal}>New</Button>
+            {/* <Button type="dashed" onClick={this.deleteId}>Delete</Button> */}
           </Form.Item>
         </Form>
         <Modal
@@ -196,15 +246,6 @@ class HorizontalLoginForm extends React.Component {
                 <InputNumber value={text} onChange={(value) => this.changeCell(value,record.subDieId,'endY')}/>
               )}/>
               </ColumnGroup>
-              <Column
-                title="Action"
-                key="action"
-                render={(text, record) => (
-                  <span>
-                    <a>Delete</a>
-                  </span>
-                )}
-              />
             </Table>
             <ButtonGroup>
               <Button type="default" onClick={this.addTableCell}><Icon type="plus" /></Button>

@@ -11,19 +11,20 @@ const StyleChart = styled.div`
   height: 400px;
 `
 
-let chart = null
-
 class CorrelationChart extends React.Component {
   constructor(props) {
     super(props)
+    this.state = {
+      chartObj: null
+    }
   }
 
   componentDidMount() {
     const { data, name, index } = this.props
-    const chartDom = document.getElementById(`chart-${name}-${index}`)
+    const chartDom = this.refs[`chart-${name}-${index}`]
     if (chartDom) {
-      chart = echarts.init(chartDom)
-      chart.setOption({
+      this.state.chartObj = echarts.init(chartDom)
+      this.state.chartObj.setOption({
         xAxis: {},
         yAxis: {},
         series: [
@@ -48,7 +49,7 @@ class CorrelationChart extends React.Component {
         <div>
           R<sup>2</sup>= {data.correlationValue}
         </div>
-        <StyleChart id={`chart-${name}-${index}`} />
+        <StyleChart ref={`chart-${name}-${index}`} />
       </StyleLineChart>
     )
   }
