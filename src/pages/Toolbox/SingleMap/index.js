@@ -59,22 +59,25 @@ import { StyleSingleMap, StyleWafer, StylePareto, StyleChart, StyleDSA, StyleIma
 
 // eslint-disable-next-line
 let drawer = null
-let zr = null
-let group = null
-let rectRecords = []
-let pointRecords = []
-let timeout = null
-let chosedArea = []
-let zoomRecords = {}
-let mouseDownStartInner = false
-let paretoChart = null
-let dsaChart = null
-let zoomTimes = 1
 
 class SingleMap extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
+      zr: null,
+      group: null,
+      rectRecords: [],
+      pointRecords: [],
+      signRecords: [],
+      timeout: null,
+      chosedArea: [],
+      zoomRecords: {},
+      mouseDownStartInner: false,
+      paretoChart: null,
+      dsaChart: null,
+      zoomTimes: 1,
+      selectedPointsKey: [],
+      // ---
       singleMapColors: {
         '': '#67c6a7'
       },
@@ -204,30 +207,13 @@ class SingleMap extends React.Component {
     if (wafers.length === 0) {
       wafers = [
         {
-          lotId: 'F0001.000',
-          stepId: 'M1_CMP',
-          waferNo: '1',
-          productId: 'Device01',
-          scanTm: '2020-01-01 12:51:35',
-          defects: []
-          // currentDefects: [101, 69]
+          lotId: "F0004.000",
+          stepId: "M1_CMP",
+          waferNo: "1",
+          productId: "Device01",
+          scanTm: "2020-01-05 23:43:35",
+          defects: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28]
         },
-        {
-          lotId: 'F0001.000',
-          stepId: 'M1_CMP',
-          waferNo: '1',
-          productId: 'Device01',
-          scanTm: '2020-01-01 13:43:35',
-          defects: []
-        },
-        {
-          lotId: 'F0001.000',
-          stepId: 'M2_CMP',
-          waferNo: '1',
-          productId: 'Device01',
-          scanTm: '2020-01-02 10:43:35',
-          defects: []
-        }
       ]
     }
     let existDefects = false
@@ -259,16 +245,12 @@ class SingleMap extends React.Component {
       showOtherMap: this.showOtherMapInit(wafers)
     })
   }
-  componentDidUpdate = (prevProps, prevState) => {
-    // 重新初始化，需要清空store当前选中的defects
-    // const { name } = this.props
-    // this.props.changeSingleSelected({ name, selected: [] })
-  }
+  // componentDidUpdate = (prevProps, prevState) => {}
   // productId唯一时,显示Die Stack/Reticle Stack/Heap Map
   showOtherMapInit = wafers => {
     if (wafers.length > 1) {
       const firstWaferProductId = wafers[0].productId
-      for(const wafer of wafers) {
+      for (const wafer of wafers) {
         if (wafer.productId !== firstWaferProductId) return false
       }
     }
@@ -277,6 +259,7 @@ class SingleMap extends React.Component {
   // 初始化 ParetoChart, 绑定点击事件
   onParetoChartInit = () => {
     const { name } = this.props
+    let { paretoChart } = this.state
     const paretoChartDom = document.getElementById(`pareto-chart-${name}`)
     if (paretoChartDom) {
       paretoChart = echarts.init(paretoChartDom)
@@ -284,10 +267,12 @@ class SingleMap extends React.Component {
     } else {
       console.log('paretoChartDom not found')
     }
+    this.setState({ paretoChart })
   }
   // 初始化 DSAChart, 绑定点击事件
   onDSAChartInit = () => {
     const { name } = this.props
+    let { dsaChart } = this.state
     const dsaChartDom = document.getElementById(`dsa-chart-${name}`)
     if (dsaChartDom) {
       dsaChart = echarts.init(dsaChartDom)
@@ -295,6 +280,7 @@ class SingleMap extends React.Component {
     } else {
       console.log('dsaChartDom not found')
     }
+    this.setState({ dsaChart })
   }
   // computed
   getDataOption = () => {
@@ -304,6 +290,8 @@ class SingleMap extends React.Component {
   //选择区域 事件绑定
   onCheckAreaInit = () => {
     let x, y, distanceX, distanceY, moveRect
+    const { zr, group, chosedArea } = this.state
+    let { mouseDownStartInner } = this.state
     zr.on('mousedown', e => {
       const { selectedAction } = this.state
       if (selectedAction === 'chooseArea') {
@@ -336,6 +324,7 @@ class SingleMap extends React.Component {
         mouseDownStartInner = false
       }
     })
+    this.setState({ zr, group, chosedArea, mouseDownStartInner })
   }
   // 下拉菜单展开
   onDropDownClick = ({ key }) => {
@@ -357,8 +346,8 @@ class SingleMap extends React.Component {
     }
   }
   onDropDownReset = () => {
-    const { name } = this.props
-    this.props.changeSingleSelected({ name, selected: [] })
+    // const { name } = this.props
+    // this.props.changeSingleSelected({ name, selected: [] })
     this.setState({
       angel: 0,
       selectAction: '',
@@ -430,7 +419,7 @@ class SingleMap extends React.Component {
   }
   onDoAction = async func => {
     this.setState({ selectedAction: func })
-    const { coordinate } = this.state
+    const { coordinate, group, chosedArea } = this.state
     const noSelectedPoints = coordinate.length === 0
     if (func === 'chooseArea') {
       this.setState({ angel: 0 })
@@ -453,9 +442,6 @@ class SingleMap extends React.Component {
         return
       }
       this.setState({ angel: 0 })
-      this.onMapAndParetoInit()
-      // this.renderMap()
-      // this.onParetoInit({ zoom: zoomRecords })
       this.onMapAndParetoInit()
     } else if (func === 'reclassify') {
       if (noSelectedPoints) {
@@ -481,11 +467,13 @@ class SingleMap extends React.Component {
     } else if (func === 'refresh') {
       this.onDropDownReset()
     }
+    this.setState({ group, chosedArea })
   }
   // 标记
   onDoActionPodcast = () => {
     // 把区域内的坐标都找出来，存放到coordinate，后续绘制使用
-    const { mapData, coordinate, selectedBar } = this.state
+    const { mapData, coordinate, selectedBar, group } = this.state
+    let { chosedArea } = this.state
     for (const wafer of mapData) {
       for (const mb in wafer.defectInfos) {
         for (const ob in wafer.defectInfos[mb]) {
@@ -506,11 +494,10 @@ class SingleMap extends React.Component {
     this.renderMap()
     // - - - - - - singleSelected - - - - - -
     // 点击标记的时候计算：如果区域内存在defect，统计选中的defects，存到store，后续分类、删除或页面跳转
-    const { name } = this.props
     const existBar = selectedBar.length > 0
     const existArea = coordinate.length > 0
     const wafers = this.getWafers()
-    const selected = []
+    const selectedPointsKey = []
     for (const wafer of mapData) {
       const w = {
         lotId: wafer.lotId,
@@ -542,9 +529,9 @@ class SingleMap extends React.Component {
           }
         }
       }
-      selected.push(w)
+      selectedPointsKey.push(w)
     }
-    this.props.changeSingleSelected({ name, selected })
+    this.setState({ selectedPointsKey, group, chosedArea })
   }
   /* - - - - - - - - - - - - Map - - - - - - - - - - - -  */
   onMapAndParetoInit = () => {
@@ -559,9 +546,8 @@ class SingleMap extends React.Component {
       console.log('zrDom not found')
       return
     }
-    zr = zrender.init(zrDom)
-    group = new zrender.Group()
-    await delay(1)
+    const zr = zrender.init(zrDom)
+    const group = new zrender.Group()
     //  判断是否点击了小圆点
     group.on('click', async e => {
       this.setState({ imageVisible: true })
@@ -601,7 +587,7 @@ class SingleMap extends React.Component {
         }
         const res = await getImages({
           imageInfo,
-          singleGalleryFlag: 'singleMap'
+          singleGalleryFlag: 'galleryMap'
         })
         if (_.isEmpty(res)) {
           message.warning('No photos yet')
@@ -612,22 +598,22 @@ class SingleMap extends React.Component {
         imgDom.style.left = e.offsetX + 5 + 'px'
         imgDom.style.display = 'block'
         let arr = []
-        for (const defectInfo in res) {
-          const [lotId, , , waferNo, , defects] = defectInfo.split('|')
-          res[defectInfo].forEach(item => {
-            arr.push({ lotId, waferNo, defects, image: 'http://161.189.50.41:80' + item })
-          })
+        for (const group in res) {
+          for (const id in res[group]) {
+            for (const url of res[group][id]) {
+              const [lotId, , , waferNo, , defects] = id.split('|')
+              arr.push({ lotId, waferNo, defects, image: 'http://161.189.50.41' + url })
+            }
+          }
         }
         this.setState({ defectImages: arr, imagesTotal: arr.length })
         await delay(1)
         this.onImageDetailPageChange(1)
       }
     })
-    this.onMapInit()
-    this.onCheckAreaInit()
     zr.on('mousewheel', e => {
       e = e || window.event
-      const { mapType } = this.state
+      let { mapType, timeout, zoomTimes } = this.state
       if (mapType !== 'Heat Map' && e.wheelDelta) {
         const dataOption = this.getDataOption()
         const { waferLocation } = dataOption
@@ -646,17 +632,24 @@ class SingleMap extends React.Component {
         const y = parseInt((e.offsetY - waferLocation.y) / zoomTimes)
         if (timeout) clearTimeout(timeout)
         timeout = setTimeout(() => {
-          console.log(times, x, y)
           this.onMapInit({ zoom: { times, x, y } })
         }, 100)
+        this.setState({ timeout, zoomTimes })
       }
     })
+    this.setState({ zr, group })
+    await delay(1)
+    this.onMapInit()
+    this.onCheckAreaInit()
   }
   // Wafer 初始化
   onMapInit = async option => {
     await delay(1)
+    const { group } = this.state
+    let { zoomTimes } = this.state
     // this.setState({ selectedAction: '' })
     group.removeAll()
+    this.setState({ group })
     const { dsa, mapType } = this.state
     const formData = this.getFormData(option)
     const mapData = await post(`${dsa ? 'dm' : 'swm'}${MAP_TYPES[mapType]}`, formData)
@@ -668,23 +661,32 @@ class SingleMap extends React.Component {
     if (mapType === 'Map/Pareto' && zoomTimes === 1) this.drawIsogon()
     this.renderMap()
     this.recordZoom()
+    this.setState({ zoomTimes })
   }
   // rednerPoint & renderPareto
   renderMap = async () => {
     await delay(1)
-    const { mapData, coordinate, selectedBar, selectedAction, singleMapColors } = this.state
+    const { mapData, coordinate, selectedBar, selectedAction, singleMapColors, pointRecords, group, signRecords } = this.state
     const existBar = selectedBar.length > 0
     const existArea = coordinate.length > 0
     // - - - - - - renderMap - - - - - -
     if (mapData.length === 0) return
     this.clearPoints()
-    for (const wafer of mapData) {
-      for (const mb in wafer.defectInfos) {
-        for (const ob in wafer.defectInfos[mb]) {
+    for (const w of mapData) {
+      for (const mb in w.defectInfos) {
+        for (const ob in w.defectInfos[mb]) {
           if (existBar && selectedBar.includes(`${mb}-${ob}`)) continue
-          for (const coo in wafer.defectInfos[mb][ob]) {
+          if (!singleMapColors[ob]) singleMapColors[ob] = '#' + getColor(ob)
+          for (const coo in w.defectInfos[mb][ob]) {
             // console.log('coo', coo)
             let [x, y] = coo.split(',')
+            // 有图片的 绘制外部标记
+            const defects = w.defectInfos[mb][ob][coo]
+            if (defects.includes(-1)) {
+              const Rect = new zrender.Rect({ shape: { x: x - 4, y: y - 4, width: 8, height: 8 }, style: {fill: '#00000000', stroke: '#f00'} })
+              group.add(Rect)
+              signRecords.push(Rect)
+            }
             // 同一个坐标下 只绘制一次点
             // 选中的区域点绘制成 星星
             let Point = null
@@ -701,13 +703,37 @@ class SingleMap extends React.Component {
         }
       }
     }
-    // console.log('pointRecords', pointRecords)
+    this.setState({ pointRecords, signRecords, group })
+    // 完成renderMap, 统计当前的所有点，存store
+    const selected = []
+    for (const w of mapData) {
+      const wafer = {
+        lotId: w.lotId,
+        productId: w.productId,
+        scanTm: w.scanTm,
+        stepId: w.stepId,
+        waferNo: w.waferNo,
+        defects: []
+      }
+      for (const mb in w.defectInfos) {
+        for (const ob in w.defectInfos[mb]) {
+          if (existBar && selectedBar.includes(`${mb}-${ob}`)) continue
+          for (const coo in w.defectInfos[mb][ob]) {
+            wafer.defects = [...wafer.defects, ...w.defectInfos[mb][ob][coo]]
+          }
+        }
+      }
+      wafer.defects = wafer.defects.filter(id => id !== -1)
+      selected.push(wafer)
+    }
+    const { name } = this.props
+    this.props.changeSingleSelected({ name, selected })
   }
   // 记录本次放大数据
   recordZoom = () => {
     const dataOption = this.getDataOption()
     const { magnification: times, centralLocation: center } = dataOption
-    zoomRecords = { times, x: center.x, y: center.y }
+    this.setState({ zoomRecords: { times, x: center.x, y: center.y } })
   }
   /* - - - - - - - - - - - - 下拉菜单功能 和 map侧边功能 - - - - - - - - - - - -  */
   // 晶元旋转
@@ -721,6 +747,7 @@ class SingleMap extends React.Component {
   onOverlapOk = () => {
     this.setState({ overlapDialog: false })
     this.renderRects()
+    const { zoomTimes } = this.state
     if (zoomTimes === 1) this.drawIsogon()
   }
   onReclassifyFormChange = (key, value) => {
@@ -749,6 +776,7 @@ class SingleMap extends React.Component {
   onDefectsDelete = async () => {
     this.setState({ deleteDefectsDialog: false })
     const singleWaferKey = this.getSelected()
+    const singleWaferKey2 = this.getWafers()
     const { deleteDefectsType } = this.state
     if (deleteDefectsType === DELETE_DEFECTS_OPTIONS[0] || deleteDefectsType === DELETE_DEFECTS_OPTIONS[1]) {
       // 从 mapData 中删除
@@ -777,7 +805,7 @@ class SingleMap extends React.Component {
       this.setState({ coordinate: [] })
       this.onMapInit()
     }
-    if (deleteDefectsType === DELETE_DEFECTS_OPTIONS[2]) download('export', { singleWaferKey })
+    if (deleteDefectsType === DELETE_DEFECTS_OPTIONS[2]) download('export', { singleWaferKey: singleWaferKey2 })
     this.setState({ deleteDefectsType: DELETE_DEFECTS_OPTIONS[0] })
   }
   /* - - - - - - - - - - - - Pareto - - - - - - - - - - - -  */
@@ -809,7 +837,7 @@ class SingleMap extends React.Component {
       // 计算颜色
       const { singleMapColors } = this.state
       if (paretoData && paretoData.paretoValue && paretoData.paretoValue.series.length > 0) {
-        paretoData.paretoValue.series.forEach(({name}) => {
+        paretoData.paretoValue.series.forEach(({ name }) => {
           if (!singleMapColors[name]) singleMapColors[name] = '#' + getColor(name)
         })
       }
@@ -903,7 +931,9 @@ class SingleMap extends React.Component {
       opt.series = seriesArr
       opt.color = colorArr
     }
+    const { paretoChart } = this.state
     paretoChart.setOption(opt)
+    this.setState({ paretoChart })
   }
   onChangeX = async x => {
     const { paretoParams } = this.state
@@ -998,9 +1028,9 @@ class SingleMap extends React.Component {
   }
   // 封装接口请求数据
   getFormData = (option = {}) => {
-    const { paretoParams: pareto, selectedAction, dsa } = this.state
+    const { paretoParams: pareto, selectedAction, dsa, selectedPointsKey } = this.state
     const filter = this.getFilter()
-    const singleWaferKey = ['star0', 'star'].includes(selectedAction) ? this.getSelected() : this.getWafers()
+    const singleWaferKey = ['star0', 'star'].includes(selectedAction) ? selectedPointsKey : this.getWafers()
     const selectAction = this.getSelectAction()
     const { zoom } = option
     const canvas = { canvasSize: 400, magnification: '1', centralLocation: '200,200' }
@@ -1040,11 +1070,12 @@ class SingleMap extends React.Component {
     }
     // 清除当前的Map 和 pareto
     this.clearPoints()
+    const { paretoChart } = this.state
     paretoChart.clear()
-    this.setState({ dsa: !dsa, colorsObj: {}, selectedBar: [], dsaInfo: dsa ? {} : { dsaOrder: '1', sortName: '1' } })
+    this.setState({ paretoChart, dsa: !dsa, colorsObj: {}, selectedBar: [], dsaInfo: dsa ? {} : { dsaOrder: '1', sortName: '1' } })
     this.saveSelectedBar([])
     this.onMapAndParetoInit()
-    if (!dsa) this.onDSATableInit()
+    // if (!dsa) this.onDSATableInit()
   }
   // DSA 排序
   onDSASortChange = (index, value) => {
@@ -1146,7 +1177,9 @@ class SingleMap extends React.Component {
         })
       })
     }
-    dsaChart.setOption(opt,true)
+    const { dsaChart } = this.state
+    dsaChart.setOption(opt, true)
+    this.setState({ dsaChart })
   }
   // DSA 柱状图点击
   onDSAChartClick = params => {
@@ -1215,13 +1248,16 @@ class SingleMap extends React.Component {
       if (item.defectInfos.length > 1) {
         const children = []
         item.defectInfos.forEach((jtem, index2) => {
-          children.push({
-            key: index + '-' + index2,
-            step: jtem.step,
-            scanTm: jtem.scanTm,
-            defectId: jtem.defectId,
-            imgUrl: jtem.imgUrl
-          })
+          // 第一条数据不重复显示
+          if (index2 > 0) {
+            children.push({
+              key: index + '-' + index2,
+              step: jtem.step,
+              scanTm: jtem.scanTm,
+              defectId: jtem.defectId,
+              imgUrl: jtem.imgUrl
+            })
+          }
         })
         dsaTableData[index].children = children
       }
@@ -1233,7 +1269,7 @@ class SingleMap extends React.Component {
   // 搜索过滤Filter
   onFilterSubmit = () => {
     drawer.onClose()
-    const { dsa } = this.state
+    const { dsa, paretoChart } = this.state
     const singleWaferKey = this.getWafers()
     if (dsa && singleWaferKey.length < 2) {
       message.warning('At least 2 wafers required')
@@ -1242,7 +1278,7 @@ class SingleMap extends React.Component {
     // 清除当前的Map 和 pareto
     this.clearPoints()
     paretoChart.clear()
-    this.setState({ colorsObj: {}, selectedBar: [] })
+    this.setState({ paretoChart, colorsObj: {}, selectedBar: [] })
     this.saveSelectedBar([])
     this.onMapAndParetoInit()
     if (dsa) this.onDSATableInit()
@@ -1277,6 +1313,7 @@ class SingleMap extends React.Component {
   //画外层大圆
   renderOutterCircle = () => {
     // 半径=画布长度*放大倍数/2    canvasLength*magnification/2
+    const { zr, group } = this.state
     const dataOption = this.getDataOption()
     const circleR = (dataOption.canvasLength * dataOption.magnification) / 2
     const circleX = dataOption.waferLocation.x + circleR
@@ -1288,16 +1325,20 @@ class SingleMap extends React.Component {
     })
     group.add(circle)
     zr.add(group)
+    this.setState({ zr, group })
   }
   // 清除方格
   clearRects = () => {
+    const { rectRecords, group } = this.state
     rectRecords.forEach(item => {
       group.remove(item)
     })
+    this.setState({ rectRecords, group })
   }
   // 渲染方格
   renderRects = () => {
     this.clearRects()
+    const { zr, group, rectRecords } = this.state
     // 单个方格宽度、单个方格高度、有效方格数据、填充方格数据
     const dataOption = this.getDataOption()
     const { dieWidth: width, dieHeight: height, dies = [], noScanDies = [] } = dataOption
@@ -1335,19 +1376,26 @@ class SingleMap extends React.Component {
       })
     }
     zr.add(group)
+    this.setState({ zr, group, rectRecords })
   }
   // 三角形
   drawIsogon = () => {
+    const { zr, group } = this.state
     const Isogon = new zrender.Isogon({ shape: { x: 200, y: 400, r: 13, n: 3 }, style: { fill: 'blue' } })
     group.add(Isogon)
     zr.add(group)
+    this.setState({ zr, group })
   }
   // 清除圆点
   clearPoints = () => {
+    const { pointRecords, signRecords, group } = this.state
     pointRecords.forEach(item => {
       group.remove(item)
     })
-    pointRecords = []
+    signRecords.forEach(item => {
+      group.remove(item)
+    })
+    this.setState({ pointRecords: [], signRecords: [], group })
   }
 
   render() {
@@ -1363,6 +1411,7 @@ class SingleMap extends React.Component {
       selectedAction,
       heatMin,
       heatMax,
+      zoomTimes,
       rotationDialog
     } = this.state
     const { overlapDialog, deleteDefectsType } = this.state

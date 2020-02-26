@@ -1,15 +1,15 @@
 export const LAYOUT_SIZE = [3, 4, 5]
 
 export const VIEW_GROUPS = [
-  ['Manual Bin', 'mb'],
-  ['Rough Bin', 'rb'],
-  ['ADC Bin', 'adc'],
-  ['Lot ID', 'lotId'],
-  ['Wafer ID', 'waferId'],
-  ['Step ID', 'stepId'],
-  ['Product ID', 'productId'],
-  ['scan time', 'scanTm'],
-  ['review time', 'reviewTm']
+  ['Manual Bin', 'MB'],
+  ['Rough Bin', 'RB'],
+  ['ADC Bin', 'ADC'],
+  ['Lot ID', 'LotId'],
+  ['Wafer ID', 'WaferId'],
+  ['Step ID', 'StepId'],
+  ['Product ID', 'ProductId'],
+  ['scan time', 'ScanTime'],
+  ['review time', 'ReviewTime']
 ]
 
 export const CATEGORY_TYPES = [

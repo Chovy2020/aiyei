@@ -2,11 +2,18 @@ import styled from 'styled-components'
 // import { Card, List } from 'antd'
 
 export const StyleImageGallery = styled.div`
-  .ant-select {
-    margin-right: 10px;
-  }
+  .ant-select + .ant-select,
+  .ant-select + button,
   button + button {
-    margin-left: 10px;
+    margin-left: 20px;
+  }
+`
+
+export const StyleImagesGroup = styled.div`
+  width: 100%;
+  h2 {
+    padding-left: 100px;
+    margin: 0;
   }
 `
 
@@ -43,16 +50,16 @@ export const StyleImages = styled.ul`
         margin: 0;
         line-height: 1.5;
       }
-      &.font-size-12 p{
+      &.font-size-12 p {
         font-size: 12px;
       }
-      &.font-size-14 p{
+      &.font-size-14 p {
         font-size: 14px;
       }
-      &.font-size-16 p{
+      &.font-size-16 p {
         font-size: 16px;
       }
-      &.font-size-18 p{
+      &.font-size-18 p {
         font-size: 18px;
       }
     }
