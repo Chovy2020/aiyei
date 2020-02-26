@@ -24,7 +24,7 @@ class ImageGallery extends React.Component {
       categoryType: 'mb',
       classCodes: [], // ！通过接口获取
       classCode: '',
-      viewGroup: 'mb',
+      viewGroup: 'MB',
       viewFilters: [], // ！通过接口获取
       viewFilter: [],
       images: {},
@@ -87,7 +87,7 @@ class ImageGallery extends React.Component {
       imageGroupBy: viewGroup,
       mbFilter: viewFilter.map(item => parseInt(item)),
       imageInfo: imageInfo,
-      singleGalleryFlag: isFromMapGallery ? 'galleryMap' : 'singleMap'
+      singleGalleryFlag: 'galleryMap'
     }
     const res = await getImages(data)
     const images = {}

@@ -603,9 +603,9 @@ class SingleMap extends React.Component {
         }
         const res = await getImages({
           imageInfo,
-          singleGalleryFlag: 'singleMap'
+          singleGalleryFlag: 'galleryMap'
         })
-        if (res.singleMap && _.isEmpty(res.singleMap)) {
+        if (_.isEmpty(res)) {
           message.warning('No photos yet')
           this.setState({ imageVisible: false })
           return
@@ -614,12 +614,11 @@ class SingleMap extends React.Component {
         imgDom.style.left = e.offsetX + 5 + 'px'
         imgDom.style.display = 'block'
         let arr = []
-        const images = {}
         for (const group in res) {
           for (const id in res[group]) {
             for (const url of res[group][id]) {
               const [lotId, , , waferNo, , defects] = id.split('|')
-              arr.push({ lotId, waferNo, defects, image: 'http://161.189.50.41:80' + url })
+              arr.push({ lotId, waferNo, defects, image: 'http://161.189.50.41' + url })
             }
           }
         }
