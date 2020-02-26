@@ -26,6 +26,7 @@ export const updateCluster = data => post('cfg_db/cluster/edit', data)
 //       }
 //   ]
 // }
+export const deleteCluster = data => post('cfg_db/cluster/delete', data)
 
 // add 查询
 export const getAdder = data => post('cfg_db/adder/query', data)
@@ -52,6 +53,8 @@ export const updateAdder = data => post('cfg_db/adder/edit', data)
 //       }
 //   ]
 // }
+export const deleteAdder = data => post('cfg_db/adder/delete', data)
+
 // zone 查询
 export const getZone = data => post('cfg_db/zone/query', data)
 // {
@@ -168,6 +171,8 @@ export const updateSubDie = data => post('cfg_db/sub_die/edit', data)
 //       }
 //   ]
 // }
+export const deleteSubDie = data => post('cfg_db/sub_die/delete', data)
+
 // repeater查询
 export const getRepeater = data => post('cfg_db/repeater/query', data)
 // {
@@ -196,3 +201,4 @@ export const updateRepeater = data => post('cfg_db/repeater/edit', data)
 // 		}
 // 		]
 // }
+export const deleteRepeater = data => post('cfg_db/repeater/delete', data)

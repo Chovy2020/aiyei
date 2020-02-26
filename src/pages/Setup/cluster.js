@@ -3,7 +3,7 @@ import _ from 'lodash'
 import { Table, Input, InputNumber, Button, Icon, Popconfirm } from 'antd'
 import Highlighter from 'react-highlight-words'
 import { StyleCluster } from './style'
-import { getCluster, updateCluster } from './service'
+import { getCluster, updateCluster, deleteCluster } from './service'
 
 const ButtonGroup = Button.Group
 
@@ -43,14 +43,10 @@ class Cluster extends React.Component {
     this.setState({ tableData: [...this.state.tableData, newCell] })
   }
 
-  handleDelete = key => {
-    const newData = _.cloneDeep(this.state.tableData)
-    newData.splice(key, 1)
-    const resData = _.cloneDeep(newData).map((item, idx) => {
-      item.key = idx
-      return item
+  handleDelete = record => {
+    deleteCluster({"cfgDbPrimaryKeys": [{"productId": record.productId,"stepId": record.stepId}]}).then(response => {
+      this.init()
     })
-    this.setState({ tableData: resData })
   }
 
   saveTable = () => {
@@ -172,7 +168,7 @@ class Cluster extends React.Component {
         title:'Action',
         key:'action',
         render:(text, record) => (
-          <Popconfirm title='Sure to delete?' onConfirm={() => this.handleDelete(record.key)}>
+          <Popconfirm title='Sure to delete?' onConfirm={() => this.handleDelete(record)}>
             <Icon type='delete' />
           </Popconfirm>
         )

@@ -4,7 +4,7 @@ import _ from 'lodash'
 import echarts from 'echarts'
 import { Form, Radio, Input, InputNumber, Select, Button, Modal, message, Table, Popconfirm, Icon } from 'antd'
 import { delay } from '@/utils/web'
-import { getZone } from './service'
+import { getZone, updateZone } from './service'
 import { LayoutInline, LayoutVertical, DiePitch, StyleCluster } from './style'
 
 const { Option } = Select
@@ -15,8 +15,12 @@ let pieChart = null
 class HorizontalLoginForm extends React.Component {
   constructor(props) {
     super(props)
-    this.state = { cfgDbPrimaryKeys: {},
+    this.state = { 
+      pieChart: null,
+      cfgDbPrimaryKeys: '',
       productStepId: [],
+      productId: '',
+      stepId: '',
       visible: false,
       addSubdieProduct: '',
       addSubdieStepId: '',
@@ -26,8 +30,8 @@ class HorizontalLoginForm extends React.Component {
       radial: 360,
       radiusArr: [{ seq: 1, value: '' }],
       theaterArr: [{ seq: 1, value: '' }],
-      annularSelect: 'a',
-      waferSize: '150' }
+      generateType: '',
+      waferSize: '' }
   }
 
   componentDidMount() {
@@ -50,6 +54,18 @@ class HorizontalLoginForm extends React.Component {
       const newData = { productId: addSubdieProduct, stepId: addSubdieStepId }
       this.setState({ visible: false, productStepId: [...productStepId, newData], cfgDbPrimaryKeys: `${addSubdieProduct}-${addSubdieStepId}` })
       console.log(productStepId)
+      updateZone({
+        "cfgZoneDefinitions": [{
+          "waferSize": 150,
+          "generateType": 'Automatic',
+          "annular": 1,
+          "zoneCount": 1,
+          "productId": addSubdieProduct, 
+          "stepId": addSubdieStepId,technology: "default",
+          "technology": "default",
+          "createBy": "XRJ",
+          "remarks": null,
+          "updateTm": null }]})
     } else {
       message.warning('Product和Step Id不能为空')
     }
@@ -61,8 +77,18 @@ class HorizontalLoginForm extends React.Component {
 
   changeCfgDbPrimaryKeys = e => {
     this.setState({ cfgDbPrimaryKeys: `${[this.state.productStepId[e]].productId}-${[this.state.productStepId[e]].stepId}` })
-    getZone({ cfgDbPrimaryKeys: [this.state.productStepId[e]] }).then(response => {
-      this.setState({ tableData: response[0].subDieIds })
+    getZone({ cfgDbPrimaryKeys: [this.state.productStepId[e]] }).then(res => {
+      if(res.length) {
+        this.setState({ 
+          waferSize: res[0].waferSize, 
+          generateType: res[0].generateType,
+          annularZone: res[0].annular,
+          radialZone: res[0].zoneCount,
+          productId: res[0].productId,
+          stepId: res[0].stepId
+        })
+        this.drawPie()
+      }
     })
   }
 
@@ -118,15 +144,15 @@ class HorizontalLoginForm extends React.Component {
   changeAnnularZone= value => {
     this.setState({ annularZone: value })
   }
-  changeAnnularSelect = e => {
-    this.setState({ annularSelect: e.target.value })
+  changeGenerateType = e => {
+    this.setState({ generateType: e.target.value })
   }
   changeWaferSize = value => {
     this.setState({ waferSize: value})
   }
   drawPie = () => {
     const pieDom = document.getElementById('pieChart')
-    pieChart = echarts.init(pieDom)
+    this.state.pieChart = echarts.init(pieDom)
     let opt = {
       width: this.state.waferSize,
       height: this.state.waferSize,
@@ -173,7 +199,7 @@ class HorizontalLoginForm extends React.Component {
         // }
     ]
     }
-    if(this.state.annularSelect === 'a') {
+    if(this.state.generateType === 'Automatic') {
       let angel = opt.width/this.state.annularZone
       let num = 1
       for(let i=0; i<this.state.annularZone; i++) {
@@ -226,9 +252,20 @@ class HorizontalLoginForm extends React.Component {
         })
       })
     }
-    
-    console.log(opt)
-    if(pieChart) {pieChart.setOption(opt,true)}
+    if(this.state.pieChart) {this.state.pieChart.setOption(opt,true)}
+
+    updateZone({
+      "cfgZoneDefinitions": [{
+        "waferSize": this.state.waferSize,
+        "generateType": this.state.generateType,
+        "annular": this.state.annularZone,
+        "zoneCount": this.state.radialZone,
+        "productId": this.state.productId, 
+        "stepId": this.state.stepId,
+        "technology": "default",
+        "createBy": "XRJ",
+        "remarks": null,
+        "updateTm": null }]})
   }
 
   render() {
@@ -237,7 +274,7 @@ class HorizontalLoginForm extends React.Component {
       <div>
         <Form layout='inline'>
           <Form.Item label='Product - Step ID'>
-            <Select style={{ width: 400 }} defaultValue={this.cfgDbPrimaryKeys} onChange={this.changeCfgDbPrimaryKeys}>
+            <Select style={{ width: 400 }} defaultValue={this.state.cfgDbPrimaryKeys} onChange={this.changeCfgDbPrimaryKeys}>
               {this.state.productStepId.map((item, index) => <Option key={index}>{`${item.productId}-${item.stepId}`}</Option>)}
             </Select>
           </Form.Item>
@@ -266,18 +303,18 @@ class HorizontalLoginForm extends React.Component {
           <LayoutVertical>
             <Form {...formItemLayout}>
               <Form.Item label='Annular Selection'>
-                <Radio.Group onChange={this.changeAnnularSelect} value={this.state.annularSelect}>
-                  <Radio value='a' checked>Automatic</Radio>
-                  <Radio value='m'>Manual</Radio>
+                <Radio.Group onChange={this.changeGenerateType} value={this.state.generateType}>
+                  <Radio value='Automatic'>Automatic</Radio>
+                  <Radio value='Manual'>Manual</Radio>
                 </Radio.Group>
               </Form.Item>
               <Form.Item label='Wafer Size'>
-                <Select style={{ width: 400 }} defaultValue={this.state.waferSize} onChange={this.changeWaferSize}>
+                <Select style={{ width: 400 }} value={this.state.waferSize} onChange={this.changeWaferSize}>
                   <Option value='100'>100</Option>
                   <Option value='150'>150</Option>
                 </Select>
               </Form.Item>
-              { this.state.annularSelect === 'a' && 
+              { this.state.generateType === 'Automatic' && 
                 <div>
                   <Form.Item label='Number of annular zones'>
                     <InputNumber value={this.state.annularZone} min={1} onChange={this.changeAnnularZone} />
@@ -288,7 +325,7 @@ class HorizontalLoginForm extends React.Component {
                   </Form.Item>
                 </div> }
             </Form>
-            {this.state.annularSelect === 'm' &&  
+            {this.state.generateType === 'Manual' &&  
             <LayoutInline>
               <StyleCluster>
                 <h4>Radius</h4>

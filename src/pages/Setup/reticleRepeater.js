@@ -3,7 +3,7 @@ import _ from 'lodash'
 import { Table, Input, InputNumber, Button, Icon, Popconfirm } from 'antd'
 import Highlighter from 'react-highlight-words'
 import { StyleCluster } from './style'
-import { getRepeater, updateRepeater } from './service'
+import { getRepeater, updateRepeater, deleteRepeater } from './service'
 
 const ButtonGroup = Button.Group
 
@@ -45,18 +45,16 @@ class ReticleRepeater extends React.Component {
     this.setState({ tableData: [...this.state.tableData, newCell] })
   }
 
-  handleDelete = key => {
-    const newData = _.cloneDeep(this.state.tableData)
-    newData.splice(key, 1)
-    const resData = _.cloneDeep(newData).map((item, idx) => {
-      item.key = idx
-      return item
+  handleDelete = record => {
+    deleteRepeater({"cfgDbPrimaryKeys": [{"productId": record.productId,"stepId": record.stepId}]}).then(response => {
+      this.init()
     })
-    this.setState({ tableData: resData })
   }
 
   saveTable = () => {
-    const cfgRepeaters = this.state.tableData.map(item => ({ productId: item.productId,
+    const cfgRepeaters = this.state.tableData.map(item => ({ 
+      "technology": 'default',
+      productId: item.productId,
       stepId: item.stepId,
       reticleSize: item.reticleSize,
       originalReticleDie: item.originalReticleDie,
@@ -193,7 +191,7 @@ class ReticleRepeater extends React.Component {
         title:'Action',
         key:'action',
         render:(text, record) => (
-          <Popconfirm title='Sure to delete?' onConfirm={() => this.handleDelete(record.key)}>
+          <Popconfirm title='Sure to delete?' onConfirm={() => this.handleDelete(record)}>
             <Icon type='delete' />
           </Popconfirm>
         )
