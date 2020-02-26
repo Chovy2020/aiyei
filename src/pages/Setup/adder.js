@@ -155,6 +155,7 @@ class Adder extends React.Component {
       },{
         title:'Action',
         key:'action',
+        align:'center',
         render:(text, record) => (
           <Popconfirm title='Sure to delete?' onConfirm={() => this.handleDelete(record)}>
             <Icon type='delete' />
