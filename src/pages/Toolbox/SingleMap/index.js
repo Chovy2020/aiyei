@@ -1046,9 +1046,9 @@ class SingleMap extends React.Component {
       selectAction
     }
     if (dsa) {
-      const { dsaInfo } = this.state
-      formData.dsaOrder = dsaInfo.dsaOrder || ''
-      formData.sortName = dsaInfo.sortName || ''
+      const { sortName, dsaOrder } = this.state
+      formData.dsaOrder = dsaOrder || ''
+      formData.dsaSortName = sortName || ''
     }
     return formData
   }
@@ -1075,7 +1075,7 @@ class SingleMap extends React.Component {
     this.setState({ paretoChart, dsa: !dsa, colorsObj: {}, selectedBar: [], dsaInfo: dsa ? {} : { dsaOrder: '1', sortName: '1' } })
     this.saveSelectedBar([])
     this.onMapAndParetoInit()
-    // if (!dsa) this.onDSATableInit()
+    if (!dsa) this.onDSATableInit()
   }
   // DSA 排序
   onDSASortChange = (index, value) => {
@@ -1111,6 +1111,8 @@ class SingleMap extends React.Component {
   // DSA 图表
   renderDsaPareto = async () => {
     await delay(1)
+    const { dsaChart } = this.state
+    dsaChart.clear()
     const { dsaData, selectedBar, disappearBar } = this.state
     const opt = {
       width: '800',
@@ -1177,7 +1179,6 @@ class SingleMap extends React.Component {
         })
       })
     }
-    const { dsaChart } = this.state
     dsaChart.setOption(opt, true)
     this.setState({ dsaChart })
   }
