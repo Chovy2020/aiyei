@@ -1,4 +1,3 @@
-/* eslint-disable react/jsx-props-no-spreading */
 import React from 'react'
 import { connect } from 'react-redux'
 import { Form, DatePicker, Checkbox, Button, Input } from 'antd'
@@ -115,8 +114,18 @@ class DataQuery extends React.Component {
     this.resetItems()
   }
 
-  onQueryChange = value => {
-    this.props.changeItems(value)
+  onQueryChange = newItems => {
+    // 新增项 放置最后
+    let { items } = this.props
+    if (newItems.length > items.length) {
+      const newItem = _.difference(newItems, items)[0]
+      items.push(newItem)
+      this.props.changeItems(items)
+    } else {
+      const newItem = _.difference(items, newItems)[0]
+      items = items.filter(item => item !== newItem)
+      this.props.changeItems(items)
+    }
     this.resetItems()
   }
 
