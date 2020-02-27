@@ -5,7 +5,7 @@ import initReducer from './reducer'
 
 const staticReducers = { Init: initReducer }
 
-function createReducer(asyncReducers) {
+const createReducer = asyncReducers => {
   return combineReducers({
     ...staticReducers,
     ...asyncReducers

@@ -19,7 +19,6 @@ class Toolbox extends React.Component {
     this.state = {
       activeKey: '1',
       tabCount: 1,
-      // panes: [{ type: 'Chart Selection', name: '1' }]
       // panes: [{ type: 'Single Map', name: '1' }]
       panes: [{ type: 'Data Query', name: '1' }]
     }
@@ -28,7 +27,11 @@ class Toolbox extends React.Component {
   componentDidMount() {
     this.props.changeMenu('toolbox')
   }
-
+  /**
+   * 生成各tab页面组件
+   * @param {String} type 页面类型
+   * @param {String} name 页面名称（唯一key）
+   */
   generatePage = ({ type, name }) => {
     switch (type) {
       case 'Data Query':
@@ -45,21 +48,17 @@ class Toolbox extends React.Component {
         return null
     }
   }
-
-  onTabChange = activeKey => {
-    this.setState({ activeKey })
-  }
-
   /**
-   * 将【当前页】需要传递的数据（store） 保存后，再跳转新tab
-   * @param {String} name 当前tab页的name
+   * 将【当前页】需要传递的数据保存至store后，再跳转新tab
+   * @param {String} name 当前页面的name
+   * @param {Object} next 下一个页面对象
    */
   beforeAddTab = async (name, next) => {
     const { panes, tabCount } = this.state
     next.name = `${tabCount + 1}`
     // 当前页 { type, name }
     const prev = _.find(panes, p => p.name === name)
-    console.log('beforeAddTab => prev:', prev, 'next:', next)
+    // console.log('beforeAddTab => prev:', prev, 'next:', next)
     let wafers = []
     /* ------ Image Gallery ------ */
     if (prev.type === 'Image Gallery') {
@@ -127,26 +126,29 @@ class Toolbox extends React.Component {
     }
     // 存储到store.Init
     this.props.changePrevPage(prev)
-    console.log(`传递到下个页面的wafers:`, wafers.length, wafers)
+    // console.log(`传递到下个页面的wafers:`, wafers.length, wafers)
     this.props.changeWafers(wafers)
   }
-
+  /**
+   * 添加新页面
+   * @param {String} toolType 新页面类型
+   */
   addTab = async toolType => {
     const { panes } = this.state
     let { tabCount, activeKey } = this.state
     await this.beforeAddTab(activeKey, { type: toolType })
-    // 先将当前页码存store
-    // this.props.changePreviousPage(activeKey)
     tabCount += 1
     activeKey = `${tabCount}`
     panes.push({ type: toolType, name: activeKey })
     this.setState({ activeKey, panes, tabCount })
-    // this.props.initPage(activeKey)
   }
-
+  /**
+   * 页面关闭
+   * @param {String} targetKey 页面name
+   * @param {String} action 事件类型
+   */
   onEdit = (targetKey, action) => {
     if (action === 'remove') {
-      // this.props.initPage(targetKey)
       let { panes, activeKey } = this.state
       if (activeKey === targetKey) {
         for (const i in panes) {
@@ -176,7 +178,7 @@ class Toolbox extends React.Component {
             ))}
           </Tools>
           <Content>
-            <Tabs hideAdd onChange={this.onTabChange} activeKey={activeKey} type='editable-card' onEdit={this.onEdit}>
+            <Tabs hideAdd onChange={activeKey => this.setState({ activeKey })} activeKey={activeKey} type='editable-card' onEdit={this.onEdit}>
               {panes.map(pane => (
                 <StyleTabPane tab={pane.type} key={pane.name} closable={pane.name !== '1'}>
                   {this.generatePage(pane)}

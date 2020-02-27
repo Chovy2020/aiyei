@@ -1,3 +1,4 @@
+// 全局数据
 const initialState = {
   activeMenu: 'toolbox',
   toolBoxLoading: false,

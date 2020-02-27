@@ -1,5 +1,6 @@
+// 每排显示几张图片
 export const LAYOUT_SIZE = [3, 4, 5]
-
+// groups 列表
 export const VIEW_GROUPS = [
   ['Manual Bin', 'MB'],
   ['Rough Bin', 'RB'],
@@ -11,15 +12,15 @@ export const VIEW_GROUPS = [
   ['scan time', 'ScanTime'],
   ['review time', 'ReviewTime']
 ]
-
+// 分类列表
 export const CATEGORY_TYPES = [
   ['Manual Bin', 'mb'],
   ['Rough Bin', 'rb'],
   ['ADC Bin', 'adc']
 ]
-
+// 字体大小
 export const FONT_SIZE = ['12', '14', '16', '18']
-
+// 图片上信息显示
 export const getLotId = waferId => waferId.split('|')[0]
 export const getWaferNo = waferId => waferId.split('|')[1]
 export const getDefectId = waferId => waferId.split('|')[5]

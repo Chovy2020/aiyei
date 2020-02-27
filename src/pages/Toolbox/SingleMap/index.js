@@ -55,14 +55,11 @@ import {
   getDSATableData
 } from './service'
 import { StyleSingleMap, StyleWafer, StylePareto, StyleChart, StyleDSA, StyleImages, StyleTable } from './style'
-// import SinglePareto from './component/SingleParato'
-
-// eslint-disable-next-line
-let drawer = null
 
 class SingleMap extends React.Component {
   constructor(props) {
     super(props)
+    this.drawer = null
     this.state = {
       zr: null,
       group: null,
@@ -101,7 +98,6 @@ class SingleMap extends React.Component {
       colorsObj: {},
       /* Wafer */
       angel: 0,
-      customizeAngel: false,
       selectedAction: '',
       // 方格实例记录
       rotationDialog: false,
@@ -245,7 +241,6 @@ class SingleMap extends React.Component {
       showOtherMap: this.showOtherMapInit(wafers)
     })
   }
-  // componentDidUpdate = (prevProps, prevState) => {}
   // productId唯一时,显示Die Stack/Reticle Stack/Heap Map
   showOtherMapInit = wafers => {
     if (wafers.length > 1) {
@@ -663,7 +658,7 @@ class SingleMap extends React.Component {
     this.recordZoom()
     this.setState({ zoomTimes })
   }
-  // rednerPoint & renderPareto
+  // 绘制Map
   renderMap = async () => {
     await delay(1)
     const { mapData, coordinate, selectedBar, selectedAction, singleMapColors, pointRecords, group, signRecords } = this.state
@@ -1265,11 +1260,10 @@ class SingleMap extends React.Component {
     })
     this.setState({ dsaTableData })
   }
-
   /* - - - - - - - - - - - - Filters - - - - - - - - - - - -  */
   // 搜索过滤Filter
   onFilterSubmit = () => {
-    drawer.onClose()
+    this.drawer.onClose()
     const { dsa, paretoChart } = this.state
     const singleWaferKey = this.getWafers()
     if (dsa && singleWaferKey.length < 2) {
@@ -1421,8 +1415,6 @@ class SingleMap extends React.Component {
     const { x, x2n, y, paretoParams, ifAvg } = this.state
     const { dsa, sortName, dsaOrder, dsaTableData } = this.state
     const { filterOption, filter, defectClass } = this.state
-
-    const wafers = this.getWafers()
 
     return (
       <StyleSingleMap>
@@ -1757,7 +1749,7 @@ class SingleMap extends React.Component {
           />
         ) : null}
 
-        <CommonDrawer ref={r => (drawer = r)} width={500}>
+        <CommonDrawer ref={r => (this.drawer = r)} width={500}>
           <section>
             <h3>Filters</h3>
             <Form layout='vertical' labelCol={{ span: 5 }} wrapperCol={{ span: 19 }}>
@@ -1810,8 +1802,6 @@ class SingleMap extends React.Component {
             </Form>
           </section>
         </CommonDrawer>
-
-        {/* <SinglePareto name={name} wafers={wafers} /> */}
       </StyleSingleMap>
     )
   }

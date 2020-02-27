@@ -1,4 +1,5 @@
 import _ from 'lodash'
+
 const initState = {
   imageSelected: {},
   imageWafers: {}
