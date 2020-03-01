@@ -3,7 +3,7 @@ import _ from 'lodash'
 import { connect } from 'react-redux'
 import { Icon, Tabs, Spin, Tooltip } from 'antd'
 import { TOOLS } from '@/utils/constant'
-import { changeWafers, changePrevPage, changeMenu, changeParams } from '@/utils/action'
+import { changeWafers, changePrevPage, changeMenu, changeParams, changeShiftMultipleMode } from '@/utils/action'
 import { defectIdsToWafers } from '@/utils/web'
 import { post } from '@/utils/api'
 import { StyleToolbox, Tools, Content, StyleTabPane } from './style'
@@ -26,6 +26,13 @@ class Toolbox extends React.Component {
 
   componentDidMount() {
     this.props.changeMenu('toolbox')
+    const body = document.getElementsByTagName('body')[0]
+    body.addEventListener('keydown', e => {
+      if (e.keyCode === 16) this.props.changeShiftMultipleMode(true)
+    })
+    body.addEventListener('keyup', e => {
+      if (e.keyCode === 16) this.props.changeShiftMultipleMode(false)
+    })
   }
   /**
    * 生成各tab页面组件
@@ -67,7 +74,13 @@ class Toolbox extends React.Component {
       // 有选择图片，即defects，
       if (selected.length > 0) {
         // 对defect图片遍历，如果5个主键都相同，则存放到同一个wafer里
-        wafers = defectIdsToWafers(selected)
+        // 2020.3.1 增加连选  改动了 selected结构  需要去重
+        const idList = []
+        for (const s of selected) {
+          const [id,,] = s.split(',')
+          if (idList.lenght === 0 || !idList.includes(id)) idList.push(id)
+        }
+        wafers = defectIdsToWafers(idList)
       } else {
         // 如果没有选择图片，直接使用当前页拉取图片的wafers（前一个页面传递的，imageGallery初始化存储在store）
         wafers = imageWafers[name] || []
@@ -200,6 +213,7 @@ const mapStateToProps = state => ({
   ...state.ImageGallery
 })
 const mapDispatchToProps = {
+  changeShiftMultipleMode,
   changePrevPage,
   changeWafers,
   changeParams,
