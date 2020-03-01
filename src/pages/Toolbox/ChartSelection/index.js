@@ -21,6 +21,7 @@ import {
 } from './style'
 import CrossModuleChart from './component/CrossModuleChart'
 import CorrelationChart from './component/CorrelationChart'
+import RiseChart from './component/RiseChart'
 
 class ChartSelection extends React.Component {
   constructor(props) {
@@ -47,6 +48,10 @@ class ChartSelection extends React.Component {
       x: {},
       x2n: {},
       y: {},
+      showIntelligence: false,
+      riseChartxAxis: [],
+      riseChartName: '',
+      riseChartData: [],
       boxData: null,
       resData: null,
       newData: null,
@@ -254,6 +259,16 @@ class ChartSelection extends React.Component {
         normBy: normalized
       }
     })
+    const showIntelligence = resData.paretoValue.series.length !== 1
+    const riseChartxAxis = resData.paretoValue.xAxisData
+    console.log(resData.paretoValue.series[0].name, resData.paretoValue.series[0].data, '1')
+    console.log(showIntelligence)
+    if(!showIntelligence) {
+      this.setState({
+        riseChartName: resData.paretoValue.series[0].name,
+        riseChartData: resData.paretoValue.series[0].data
+      }) 
+    }
     // 箱图数据
     const boxData = await getboxChartData({
       singleWaferKey,
@@ -270,7 +285,9 @@ class ChartSelection extends React.Component {
       resData,
       boxData,
       showCrossModule: false,
-      showCorrelation: false
+      showCorrelation: false,
+      showIntelligence,
+      riseChartxAxis,
     })
     this.dealData()
   }
@@ -474,6 +491,15 @@ class ChartSelection extends React.Component {
       }
     }
     this.setState({ AnalysisCondition: arr, chartSelecting: data.selected })
+    if(arr.length === 1) {
+      let data = []
+      this.state.resData.paretoValue.series.forEach(item => {
+        if(item.name === arr[0]) {
+          data = item.data
+        }
+      })
+      this.setState({riseChartName: arr[0], riseChartData: data})
+    }
   }
 
   onGenerateChartOption = async () => {
@@ -940,7 +966,7 @@ class ChartSelection extends React.Component {
         <StyleChart id={`chart-${name}`} style={(formInline.xValue === 'st' || formInline.xValue === 'lwc') ? {height: '600px'} : {height: '400px'}}/>
 
         <StyleOperBtn>
-          <Button type='primary' onClick={this.crossModuleAnalysis}>
+          <Button type='primary' onClick={this.crossModuleAnalysis} disabled={this.state.AnalysisCondition.length !== 1 && this.state.showIntelligence}>
             Trend chart 智能识别
           </Button>
           <Button
@@ -958,6 +984,8 @@ class ChartSelection extends React.Component {
             Correlation Analysis
           </Button>
         </StyleOperBtn>
+
+        <RiseChart xAxis={ this.state.riseChartxAxis } name={this.state.riseChartName} data={this.state.riseChartData}/>
 
         {showCrossModule ? (
           <StyleCrossModuleForm>
