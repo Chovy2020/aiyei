@@ -38,6 +38,7 @@ class CrossModuleChart extends React.Component {
     this.state = {
       chartObj: null,
       legendData: [],
+      xAxisData: [],
       seriesData: [],
       btns: [
         { content: 'Trend Chart', i: 'line-chart', func: 'lineChart' },
@@ -45,13 +46,13 @@ class CrossModuleChart extends React.Component {
         { content: 'Box Chart', i: 'box-plot', func: 'boxChart' }
       ],
       selectedAction: 'line-chart',
-      tableData: []
+      tableData: [],
+      boxData: []
     }
   }
 
   componentDidMount() {
     const { data, name, index } = this.props
-    console.log('index', index);
     const chartDom = document.getElementById(`chart-${name}-${index}`)
     // const chartDom = this.refs.chart
     if (chartDom) {
@@ -61,9 +62,9 @@ class CrossModuleChart extends React.Component {
     } else {
       console.log('chartDom not found')
     }
-    this.init('line-chart')
     const legendData = []
     const tableData = []
+    let boxData = []
     data.series.forEach((item, index) => {
       legendData.push(item.type)
       let singleData = _.cloneDeep(item.data)
@@ -80,8 +81,17 @@ class CrossModuleChart extends React.Component {
         max: Math.max(...newSingleData),
         min: Math.min(...newSingleData)
       })
+      let sortItem = _.cloneDeep(item.data).filter(item => item !== null).sort()
+      console.log(sortItem)
+      let len = sortItem.length
+      let min = Math.min(...sortItem)
+      let max = Math.max(...sortItem)
+      let math25 = sortItem[Math.floor(len / 4)]
+      let math75 = len > 3 ? sortItem[Math.ceil((len * 3) / 4)-1] : max
+      boxData.push([math25, math75, min, max])
     })
-    this.setState({ legendData, tableData })
+    this.setState({ legendData, tableData, boxData, xAxisData: data.xAxis.data })
+    this.init('line-chart')
   }
 
   init = type => {
@@ -99,6 +109,7 @@ class CrossModuleChart extends React.Component {
           }
         })
       })
+      this.setState({xAxisData: data.xAxis.data,seriesData})
     } else if (type === 'database') {
       data.series.forEach(item => {
         seriesData.push({
@@ -110,49 +121,56 @@ class CrossModuleChart extends React.Component {
           }
         })
       })
+      this.setState({xAxisData: data.xAxis.data,seriesData})
     } else if (type === 'box-plot') {
-      const kData = []
-      data.series[0].data.forEach(() => {
-        kData.push([])
-      })
+      // const kData = []
+      // data.series[0].data.forEach(() => {
+      //   kData.push([])
+      // })
+      // data.series.forEach(item => {
+      //   item.data.forEach((jtem, j) => {
+      //     kData[j].push(jtem)
+      //   })
+      // })
+      // // 计算box图数据
+      // const boxArr = []
+      // kData.forEach(item => {
+      //   let sortItem = _.cloneDeep(item).sort()
+      //   console.log(sortItem)
+      //   let len = sortItem.length
+      //   let min = Math.min(...sortItem)
+      //   let max = Math.max(...sortItem)
+      //   let math25 = sortItem[Math.floor(len / 4)]
+      //   let math75 = len > 3 ? sortItem[Math.ceil((len * 3) / 4)-1] : max
+      //   boxArr.push([math25, math75, min, max])
+      // })
+      let xAxisData = []
       data.series.forEach(item => {
-        item.data.forEach((jtem, j) => {
-          kData[j].push(jtem)
-        })
-      })
-      // 计算box图数据
-      const boxArr = []
-      kData.forEach(item => {
-        let sortItem = _.cloneDeep(item).sort()
-        console.log(sortItem)
-        let len = sortItem.length
-        let min = Math.min(...sortItem)
-        let max = Math.max(...sortItem)
-        let math25 = sortItem[Math.floor(len / 4)]
-        let math75 = len > 3 ? sortItem[Math.ceil((len * 3) / 4)-1] : max
-        boxArr.push([math25, math75, min, max])
+        xAxisData.push(item.type)
       })
       seriesData = [
         {
           type: 'k',
-          data: boxArr
+          data: this.state.boxData
         }
       ]
-      console.log(boxArr)
+      console.log(xAxisData, seriesData,'he')
+      this.setState({xAxisData,seriesData})
     }
-    this.setState({ seriesData })
+    // this.setState({ seriesData })
     this.generateCMChartOption()
+      // console.log(this.state.seriesData,this.state.xAxisData,1111)
   }
   generateCMChartOption = async () => {
     await delay(1)
     const { data } = this.props
-    const { seriesData } = this.state
+    const { seriesData,legendData,xAxisData } = this.state
     const opt = {
       tooltip: {
         trigger: 'item'
       },
       legend: {
-        data: this.legendData,
+        data: legendData,
         x: 'center',
         y: '30'
       },
@@ -169,7 +187,7 @@ class CrossModuleChart extends React.Component {
           interval: 0,
           rotate: 90
         },
-        data: data.xAxis.data
+        data: xAxisData
       },
       yAxis: {
         type: 'value'
