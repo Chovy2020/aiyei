@@ -685,6 +685,7 @@ class ChartSelection extends React.Component {
     this.setState({ cmStepValue })
   }
   crossModuleAdd = async () => {
+    this.setState({ LineCharts: [] })
     const { formInline, filter, cmStepValue, cmStepArr } = this.state
     const singleWaferKey = this.getWafers()
     const filter1 = {}
@@ -717,7 +718,7 @@ class ChartSelection extends React.Component {
         })
       })
       this.setState({ LineCharts })
-      console.log(LineCharts)
+      console.log(LineCharts,'LineCharts')
     }
   }
   onCMremove = index => {
