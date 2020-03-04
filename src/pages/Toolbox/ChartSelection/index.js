@@ -102,7 +102,7 @@ class ChartSelection extends React.Component {
       },
       caRegression: {
         checked: false,
-        value: 0
+        value: null
       },
       caCharts: []
     }
@@ -786,6 +786,7 @@ class ChartSelection extends React.Component {
     this.setState({ caRegression })
   }
   onCASearch = async () => {
+    this.setState({ caCharts: [] })
     const { caWat, caRegression, formInline } = this.state
     const singleWaferKey = this.getWafers()
     const correlation = {
@@ -812,6 +813,7 @@ class ChartSelection extends React.Component {
   onCAReset = () => {
     this.setState({
       caDataSource: [],
+      caCharts: [],
       caMetrology: {
         product: [],
         step: [],
@@ -831,8 +833,8 @@ class ChartSelection extends React.Component {
         timeRage: []
       },
       caRegression: {
-        value: false,
-        filter: 0
+        checked: false,
+        value: null
       }
     })
   }
@@ -1018,7 +1020,7 @@ class ChartSelection extends React.Component {
             <h4>Correlation Analysis</h4>
             <Form layout='vertical' labelCol={{ span: 2 }}>
               <Form.Item label='Data Source:'>
-                <Checkbox.Group options={CA_DATA_SOURCES} onChange={this.onCADataSourceChange} />
+                <Checkbox.Group options={CA_DATA_SOURCES} value={this.state.caDataSource} onChange={this.onCADataSourceChange} />
               </Form.Item>
               {caDataSource.includes('Metrology') ? (
                 <Form.Item label='Metrology:'>
@@ -1146,10 +1148,10 @@ class ChartSelection extends React.Component {
                 </Form.Item>
               ) : null}
               <Form.Item label='Regression:'>
-                <Checkbox onChange={e => this.onCARegressionChange('checked', e.target.checked)}>
+                <Checkbox checked={this.state.caRegression.checked} onChange={e => this.onCARegressionChange('checked', e.target.checked)}>
                   Filter in R-Squared >=
                 </Checkbox>
-                <InputNumber min={0} max={1} step={0.01} onChange={v => this.onCARegressionChange('value', v)} />
+                <InputNumber value={this.state.caRegression.value} min={0} max={1} step={0.01} onChange={v => this.onCARegressionChange('value', v)} />
               </Form.Item>
               <Form.Item label=' '>
                 <Button onClick={this.onCASearch} type='primary'>
