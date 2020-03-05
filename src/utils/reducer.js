@@ -1,5 +1,6 @@
 // 全局数据
 const initialState = {
+  shiftMultipleMode: false,
   activeMenu: 'toolbox',
   toolBoxLoading: false,
   prevPage: null,
@@ -31,6 +32,11 @@ const initialState = {
 
 const initReducer = (state = initialState, action) => {
   switch (action.type) {
+    case 'CHANGE_SHIFT_MULTIPLE_MODE':
+      return {
+        ...state,
+        shiftMultipleMode: action.payload
+      }
     case 'CHANGE_MENU':
       return {
         ...state,

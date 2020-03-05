@@ -23,3 +23,8 @@ export const changeMenu = payload => ({
   type: 'CHANGE_MENU',
   payload
 })
+// shift按下连选模式
+export const changeShiftMultipleMode = payload => ({
+  type: 'CHANGE_SHIFT_MULTIPLE_MODE',
+  payload
+})

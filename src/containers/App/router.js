@@ -12,10 +12,14 @@ import Toolbox from '@/pages/Toolbox'
 import Setup from '@/pages/Setup'
 import Page404 from '@/pages/Account/404'
 
+// Test
+import TestHotkeys from '@/pages/Test/Hotkeys'
+
 const routes = {
   '/toolbox': Toolbox,
   '/setup': Setup,
   '/': Toolbox,
+  '/test/hotkeys': TestHotkeys,
   '/*': Page404
 }
 

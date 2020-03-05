@@ -417,29 +417,91 @@ class MapGallery extends React.Component {
     }
   }
 
-  // 点击选择
-  onWaferSelect = wafer => {
-    const { mapSelected, name } = this.props
+  /**
+   * 点击选择、反选、连选
+   * @param {Object} wafer 点击选择的wafer对象
+   * @param {String} group 分组名
+   */
+  onWaferSelect = (wafer, group) => {
+    const next = `${wafer.id}|${group}`
+    const { mapSelected, name, shiftMultipleMode } = this.props
     let { selected } = this.state
     let wafers = mapSelected[name] || []
-    if (selected.includes(wafer.id)) {
-      selected = _.remove(selected, n => wafer.id !== n)
-      wafers = _.remove(wafers, w => waferToId(w) !== wafer.id)
-    } else {
-      selected.push(wafer.id)
-      const { lotId, stepId, waferNo, productId, scanTm, defectCache } = wafer
-      wafers.push({
-        lotId,
-        stepId,
-        waferNo,
-        productId,
-        scanTm,
-        defects: [],
-        defectCache
+    // 反选直接走普通模式
+    // console.log('shiftMultipleMode', shiftMultipleMode)
+    if (shiftMultipleMode && !selected.includes(next)) {
+      // 筛选出当前组内 已经选中的数量
+      const currentSelected = selected.filter(item => {
+        const infos = item.split('|')
+        return group === infos[infos.length - 1]
       })
+      // 如果当前组内 已选择为0  直接选中
+      if (currentSelected.length === 0) {
+        selected.push(next)
+        const { lotId, stepId, waferNo, productId, scanTm, defectCache } = wafer
+        wafers.push({
+          lotId,
+          stepId,
+          waferNo,
+          productId,
+          scanTm,
+          defects: [],
+          defectCache
+        })
+      } else {
+        // 连选 - 当前组内 已经选中的最后一个元素。数组有序，上一次选中添加在最后
+        const prev = currentSelected[currentSelected.length - 1]
+        // 计算下标  比较出正序连选、反序连选
+        let lastIndex = 0
+        let nextIndex = 0
+        const { waferListGroup } = this.state
+        const currentGroup = waferListGroup[group]
+        for (const i in currentGroup) {
+          const temp = `${currentGroup[i].id}|${group}`
+          if (temp === prev) lastIndex = parseInt(i)
+          if (temp === next) nextIndex = parseInt(i)
+        }
+        // console.log('currentGroup', currentGroup.length, 'lastIndex', lastIndex, 'nextIndex', nextIndex)
+        for (const i in currentGroup) {
+          const temp = `${currentGroup[i].id}|${group}`
+          if (
+            (nextIndex > lastIndex && i > lastIndex && i <= nextIndex) ||
+            (nextIndex < lastIndex && i >= nextIndex && i < lastIndex)
+          ) {
+            const { lotId, stepId, waferNo, productId, scanTm, defectCache } = currentGroup[i]
+            selected.push(temp)
+            wafers.push({
+              lotId,
+              stepId,
+              waferNo,
+              productId,
+              scanTm,
+              defects: [],
+              defectCache
+            })
+          }
+        }
+      }
+    } else {
+      // 普通选择
+      if (selected.includes(next)) {
+        selected = _.remove(selected, n => next !== n)
+        wafers = _.remove(wafers, w => waferToId(w) !== next)
+      } else {
+        selected.push(next)
+        const { lotId, stepId, waferNo, productId, scanTm, defectCache } = wafer
+        wafers.push({
+          lotId,
+          stepId,
+          waferNo,
+          productId,
+          scanTm,
+          defects: [],
+          defectCache
+        })
+      }
     }
     this.setState({ selected })
-    // 同步缓存到store
     this.props.changeMapSelected({ name, selected: wafers })
   }
 
@@ -460,7 +522,7 @@ class MapGallery extends React.Component {
     const { mapSelected, name } = this.props
     let waferList = mapSelected[name] || []
     // 检查 defectCache 不能为空
-    waferList = waferList.filter(wafer => (wafer.defectCache && wafer.defectCache !== ''))
+    waferList = waferList.filter(wafer => wafer.defectCache && wafer.defectCache !== '')
     downloadCSV({ waferList })
   }
 
@@ -471,7 +533,7 @@ class MapGallery extends React.Component {
   }
 
   onSeletedReset = () => {
-    this.setState({ 
+    this.setState({
       pageNo: 1,
       selected: [],
       deleteIds: []
@@ -542,17 +604,15 @@ class MapGallery extends React.Component {
                 {waferListGroup[group].map(wafer => (
                   <li
                     key={wafer.id}
-                    className={selected.includes(wafer.id) ? 'selected' : ''}
-                    onClick={() => this.onWaferSelect(wafer)}
+                    className={selected.includes(`${wafer.id}|${group}`) ? 'selected' : ''}
+                    onClick={() => this.onWaferSelect(wafer, group)}
                   >
                     <div
                       id={`tab${name}-${wafer.id}`}
                       className={`wafer ${galleryType === 'Map' || galleryType === 'Heat Map' ? 'radius' : ''}`}
                       style={wafer.degrees > 0 ? { transform: `rotate(${wafer.degrees}deg)` } : {}}
                     />
-                    {wafer.existImages ? (
-                      <StyleExistImages />
-                    ) : null}
+                    {wafer.existImages ? <StyleExistImages /> : null}
                     <p>Lot ID: {wafer.lotId}</p>
                     <p>Wafer No: {wafer.waferNo}</p>
                     <p>Step ID: {wafer.stepId}</p>
@@ -574,18 +634,24 @@ class MapGallery extends React.Component {
         />
         <CommonDrawer ref={r => (drawer = r)} width={500}>
           <section>
-            <h3>Filtes</h3>
+            <h3>Filters</h3>
             <Form layout='vertical' labelCol={{ span: 5 }} wrapperCol={{ span: 19 }}>
               <Form.Item label='Defect Class:'>
                 <Radio.Group onChange={this.onDefectClassChange}>
                   {DEFECT_CLASS_LIST.map(o => (
-                    <Radio key={o[0]} value={o[0]}>{o[1]}</Radio>
+                    <Radio key={o[0]} value={o[0]}>
+                      {o[1]}
+                    </Radio>
                   ))}
                 </Radio.Group>
               </Form.Item>
               {defectClass ? (
                 <Form.Item label=' '>
-                  <Checkbox.Group value={filter[defectClass]} options={filterOption[defectClass]} onChange={this.onDefectClassDetailChange} />
+                  <Checkbox.Group
+                    value={filter[defectClass]}
+                    options={filterOption[defectClass]}
+                    onChange={this.onDefectClassDetailChange}
+                  />
                 </Form.Item>
               ) : null}
               <Form.Item label='Defect Size:'>

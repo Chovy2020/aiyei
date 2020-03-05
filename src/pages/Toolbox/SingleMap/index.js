@@ -340,17 +340,21 @@ class SingleMap extends React.Component {
       this.setState({ overlapDialog: true })
     }
   }
-  onDropDownReset = () => {
-    // const { name } = this.props
-    // this.props.changeSingleSelected({ name, selected: [] })
+  onDropDownReset = async () => {
     this.setState({
       angel: 0,
+      selectedPointsKey: [],
       selectAction: '',
       selectedAction: '',
       coordinate: [],
       selectedBar: [],
       disappearBar: []
     })
+    const { chosedArea } = this.state
+    chosedArea.forEach((item, index) => {
+      chosedArea.splice(index, 1)
+    })
+    // console.log('onDropDownReset', chosedArea, this.state.chosedArea)
     this.saveSelectedBar([])
     this.onMapAndParetoInit()
   }
@@ -414,7 +418,7 @@ class SingleMap extends React.Component {
   }
   onDoAction = async func => {
     this.setState({ selectedAction: func })
-    const { coordinate, group, chosedArea } = this.state
+    let { coordinate, group, chosedArea } = this.state
     const noSelectedPoints = coordinate.length === 0
     if (func === 'chooseArea') {
       this.setState({ angel: 0 })
@@ -469,6 +473,7 @@ class SingleMap extends React.Component {
     // 把区域内的坐标都找出来，存放到coordinate，后续绘制使用
     const { mapData, coordinate, selectedBar, group } = this.state
     let { chosedArea } = this.state
+    // console.log('onDoActionPodcast', coordinate, chosedArea)
     for (const wafer of mapData) {
       for (const mb in wafer.defectInfos) {
         for (const ob in wafer.defectInfos[mb]) {
@@ -485,7 +490,7 @@ class SingleMap extends React.Component {
       group.remove(item)
     })
     chosedArea = []
-    this.setState({ coordinate })
+    this.setState({ coordinate, chosedArea })
     this.renderMap()
     // - - - - - - singleSelected - - - - - -
     // 点击标记的时候计算：如果区域内存在defect，统计选中的defects，存到store，后续分类、删除或页面跳转
@@ -526,7 +531,7 @@ class SingleMap extends React.Component {
       }
       selectedPointsKey.push(w)
     }
-    this.setState({ selectedPointsKey, group, chosedArea })
+    this.setState({ selectedPointsKey, group })
   }
   /* - - - - - - - - - - - - Map - - - - - - - - - - - -  */
   onMapAndParetoInit = () => {
@@ -753,13 +758,17 @@ class SingleMap extends React.Component {
   // 分类
   onReclassify = async () => {
     this.setState({ reclassifyDialog: false })
-    const { reclassifyForm } = this.state
-    const singleWaferKey = this.getSelected()
+    const { reclassifyForm, selectedPointsKey } = this.state
     await updateCorrect({
-      singleWaferKey,
+      singleWaferKey: selectedPointsKey,
       correct: reclassifyForm
     })
-    this.onMapInit()
+    this.setState({ selectedAction: '', coordinate: [], selectedPointsKey: [] })
+    const { chosedArea } = this.state
+    chosedArea.forEach((item, index) => {
+      chosedArea.splice(index, 1)
+    })
+    this.onMapAndParetoInit()
   }
   // 分类 & 下载
   onReclassifyDownload = async () => {
@@ -996,7 +1005,6 @@ class SingleMap extends React.Component {
   // 从store取出当前页的selected
   getSelected = () => {
     const { singleSelected, name } = this.props
-    console.log(singleSelected, name)
     return singleSelected[name] || []
   }
   // 从store取出当前页的wafers
@@ -1303,7 +1311,6 @@ class SingleMap extends React.Component {
     filter[key] = value
     this.setState({ filter })
   }
-
   /* - - - - - - - - - - - - 绘图相关 - - - - - - - - - - - -  */
   //画外层大圆
   renderOutterCircle = () => {
