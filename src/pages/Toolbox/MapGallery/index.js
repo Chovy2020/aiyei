@@ -634,7 +634,7 @@ class MapGallery extends React.Component {
         />
         <CommonDrawer ref={r => (drawer = r)} width={500}>
           <section>
-            <h3>Filtes</h3>
+            <h3>Filters</h3>
             <Form layout='vertical' labelCol={{ span: 5 }} wrapperCol={{ span: 19 }}>
               <Form.Item label='Defect Class:'>
                 <Radio.Group onChange={this.onDefectClassChange}>
