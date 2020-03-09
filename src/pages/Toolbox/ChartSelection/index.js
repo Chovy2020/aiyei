@@ -648,8 +648,8 @@ class ChartSelection extends React.Component {
   onCMInit = async () => {
     await delay(1)
     const singleWaferKey = this.getWafers()
-    // const res = await getPcCmStep({ singleWaferKey })
-    const res = {"FLOW1":{"M1":["M1NBK","M1TEOS","M1PH","M1ET","M1ECP","M1CMP"]}}
+    const res = await getPcCmStep({ singleWaferKey })
+    // const res = {"FLOW1":{"M1":["M1NBK","M1TEOS","M1PH","M1ET","M1ECP","M1CMP"]}}
     if (res) {
       // res = _.uniq(res)
       const cmStepData = []
@@ -659,21 +659,12 @@ class ChartSelection extends React.Component {
           value: i,
           key: i,
           selectable: false,
-          children: []
-        }
-        for (const j in res[i]) {
-          obj.children.push({
-            title: j,
-            value: j,
-            key: `${i}-${j}`,
-            selectable: false,
-            children: res[i][j].map(item => {
-              return {
-                title: item,
-                value: item,
-                key: `${i}-${j}-${item}`
-              }
-            })
+          children: res[i].map(item => {
+            return {
+              title: item,
+              value: item,
+              key: `${i}-${item}`
+            }
           })
         }
         cmStepData.push(obj)
@@ -988,7 +979,7 @@ class ChartSelection extends React.Component {
           </Button>
         </StyleOperBtn>
 
-        <RiseChart xAxis={ this.state.riseChartxAxis } name={this.state.riseChartName} data={this.state.riseChartData}/>
+        {/* <RiseChart xAxis={ this.state.riseChartxAxis } name={this.state.riseChartName} data={this.state.riseChartData}/> */}
 
         {showCrossModule ? (
           <StyleCrossModuleForm>

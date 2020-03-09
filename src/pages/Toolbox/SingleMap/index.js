@@ -343,6 +343,7 @@ class SingleMap extends React.Component {
   onDropDownReset = async () => {
     this.setState({
       angel: 0,
+      overlapType: '',
       selectedPointsKey: [],
       selectAction: '',
       selectedAction: '',

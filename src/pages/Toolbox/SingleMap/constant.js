@@ -13,7 +13,7 @@ export const COMMANDS = [
   // 'Export to CSV',
   'Export klarf',
   // 'Send to review',
-  // 'Overlap'
+  'Overlap'
 ]
 
 export const TOOL_TIPS = [
