@@ -68,7 +68,7 @@ const parseColor = hexStr => {
 // 拼接5个主键 全局保持顺序统一
 export const waferToId = wafer => {
   if (!wafer || wafer === {}) return ''
-  return `${wafer.lotId}|${wafer.waferNo}|${wafer.productId}|${wafer.stepId}|${wafer.scanTm}`
+  return `${wafer.lotId}|${wafer.waferNo}|${wafer.productId}|${wafer.stepId}|${wafer.scanTm}|noGroup`
 }
 
 // 5个主键 + defectId 拼接的字符串 => 标准数据

@@ -509,7 +509,7 @@ class MapGallery extends React.Component {
     const { selected, waferListGroup, degrees } = this.state
     for (const key in waferListGroup) {
       waferListGroup[key].forEach(item => {
-        if (selected.includes(item.id)) item.degrees = degrees
+        if (selected.includes(item.id+'|noGroup')) item.degrees = degrees
       })
     }
     this.setState({
