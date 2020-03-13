@@ -2,7 +2,7 @@ import styled from 'styled-components'
 import logo from '@/assets/images/logo.png'
 
 export const Header = styled.header`
-  background: linear-gradient(-45deg, #2ccac1, #1c92ed);
+  background: linear-gradient(to left, #2ccac1, #1c92ed);
   height: 50px;
   color: #fff;
   display: flex;
@@ -71,3 +71,4 @@ export const Main = styled.div`
   overflow-y: auto;
   background-color: #fff;
 `
+export const LoginMes = styled.div``

@@ -1,3 +1,9 @@
+// 登录人
+export const changeUser = payload => ({
+  type: 'CHANGE_USER',
+  payload
+})
+
 // 修改页面传递需要使用的wafers
 export const changeWafers = payload => ({
   type: 'CHANGE_WAFERS',
