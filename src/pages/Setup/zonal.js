@@ -1,16 +1,14 @@
-/* eslint-disable */
 import React from 'react'
 import _ from 'lodash'
 import echarts from 'echarts'
 import { Form, Radio, Input, InputNumber, Select, Button, Modal, message, Table, Popconfirm, Icon } from 'antd'
 import { delay } from '@/utils/web'
+import moment from 'moment'
 import { getZone, updateZone } from './service'
 import { LayoutInline, LayoutVertical, DiePitch, StyleCluster } from './style'
 
 const { Option } = Select
-const { Column, ColumnGroup } = Table
-
-let pieChart = null
+const { Column } = Table
 
 class HorizontalLoginForm extends React.Component {
   constructor(props) {
@@ -31,7 +29,8 @@ class HorizontalLoginForm extends React.Component {
       radiusArr: [{ seq: 1, value: '' }],
       theaterArr: [{ seq: 1, value: '' }],
       generateType: '',
-      waferSize: '' }
+      waferSize: '',
+      zones: null }
   }
 
   componentDidMount() {
@@ -61,11 +60,11 @@ class HorizontalLoginForm extends React.Component {
           "annular": 1,
           "zoneCount": 1,
           "productId": addSubdieProduct, 
-          "stepId": addSubdieStepId,technology: "default",
+          "stepId": addSubdieStepId,
           "technology": "default",
           "createBy": "XRJ",
           "remarks": null,
-          "updateTm": null }]})
+          "updateTm": moment().format('YYYY-MM-DD HH:mm:ss') }]})
     } else {
       message.warning('Product和Step Id不能为空')
     }
@@ -82,14 +81,37 @@ class HorizontalLoginForm extends React.Component {
         this.setState({ 
           waferSize: res[0].waferSize, 
           generateType: res[0].generateType,
-          annularZone: res[0].annular,
-          radialZone: res[0].zoneCount,
+          annularZone: res[0].generateType === 'Manual' ? 1 : res[0].annular,
+          radialZone: res[0].generateType === 'Manual' ? 1 : res[0].zoneCount,
           productId: res[0].productId,
-          stepId: res[0].stepId
+          stepId: res[0].stepId,
+          zones: res[0].generateType === 'Manual' ? res[0].zones : null
         })
+        if(res[0].generateType === 'Manual' && res[0].zones !== null) {
+          let radiusGroup = []
+          let theaterGroup = []
+          res[0].zones.forEach(item => {
+            radiusGroup.splice(0,0,...item.radius.split("-"))
+            theaterGroup.splice(0,0,...item.central.split("-"))
+          })
+          let newRadiusGroup = [...new Set(radiusGroup)].sort((a,b) => a-b) 
+          let newTheaterGroup = [...new Set(theaterGroup)].sort((a,b) => a-b) 
+          let radiusArr = []
+          let theaterArr = []
+          newRadiusGroup.forEach((item, index) => {
+            if(index) {
+              radiusArr.push({seq: index, value: item/1000})
+            }
+          })
+          newTheaterGroup.forEach((item, index) => {
+            theaterArr.push({seq: index+1, value: item})
+          })
+          this.setState({radiusArr,theaterArr})
+        }
         this.drawPie()
       }
     })
+
   }
 
   changeSubProduct = e => {
@@ -113,10 +135,6 @@ class HorizontalLoginForm extends React.Component {
       return {seq: index+1, value: item.value}
     })
     this.setState({[objName]: newArr})
-  }
-
-  saveTable = () => {
-
   }
 
   changeCell = (value, id, cellName) => {
@@ -151,121 +169,132 @@ class HorizontalLoginForm extends React.Component {
     this.setState({ waferSize: value})
   }
   drawPie = () => {
-    const pieDom = document.getElementById('pieChart')
-    this.state.pieChart = echarts.init(pieDom)
-    let opt = {
-      width: this.state.waferSize,
-      height: this.state.waferSize,
-      series: [
-        // {
-        //   type: 'pie',
-        //   label: {
-        //     position: 'inner'
-        //   },
-        //   color: '#7099c9',
-        //   hoverAnimation:false,
-        //   itemStyle: {
-        //     normal: {
-        //       borderWidth: 2,
-        //       borderColor: '#235894'
-        //     }
-        //   },
-        //   radius: [0, '30%'],
-        //   data: [
-        //     {value: 335, name: '1'},
-        //     {value: 679, name: '2'},
-        //     {value: 1548, name: '3'}
-        //   ],
-        // },
-        // {
-        //   type: 'pie',
-        //   radius: ['30%', '55%'],
-        //   label: {
-        //     position: 'inner'
-        //   },
-        //   data: [
-        //     {value: 335, name: '4'},
-        //     {value: 679, name: '5'},
-        //     {value: 1548, name: '6'}
-        //   ],
-        //   color: '#7099c9',
-        //   hoverAnimation:false,
-        //   itemStyle: {
-        //     normal: {
-        //         borderWidth: 2,
-        //         borderColor: '#235894'
-        //     }
-        //   }
-        // }
-    ]
-    }
-    if(this.state.generateType === 'Automatic') {
-      let angel = opt.width/this.state.annularZone
-      let num = 1
-      for(let i=0; i<this.state.annularZone; i++) {
-        opt.series.push({
-          type: 'pie',
-          label: {
-            position: 'inner'
-          },
-          center: [200, 200],
-          color: '#7099c9',
-          hoverAnimation:false,
-          itemStyle: {
-            normal: {
-                borderWidth: 2,
-                borderColor: '#235894'
-            }
-          },
-          radius: [],
-          data: [],
-        })
-        opt.series[i].radius = [i*angel, (i+1)*angel ]
-        for(let j=0; j<this.state.radialZone; j++) {
-          opt.series[i].data.push({value:1,name:num})
-          num++
-        }
-      }
+    const {waferSize,generateType,annularZone,radialZone,productId,stepId,zones} = this.state
+    if(productId === '' && stepId === '') {
+      message.warn('请先选择product和step!')
     }else {
-      let num = 1
-      this.state.radiusArr.forEach((item, index) => {
-        opt.series.push({
-          type: 'pie',
-          label: {
-            position: 'inner'
-          },
-          center: [200, 200],
-          color: '#7099c9',
-          hoverAnimation:false,
-          itemStyle: {
-            normal: {
-                borderWidth: 2,
-                borderColor: '#235894'
+      const pieDom = document.getElementById('pieChart')
+      this.state.pieChart = echarts.init(pieDom)
+      let opt = {
+        width: waferSize,
+        height: waferSize,
+        series: []
+      }
+      let zonesArr = zones
+      if(generateType === 'Automatic') {
+        if(annularZone === null || radialZone === null) {
+          message.warn('请填写完整!')
+          return
+        }
+        let angel = opt.width/this.state.annularZone
+        let num = 1
+        for(let i=0; i<this.state.annularZone; i++) {
+          opt.series.push({
+            type: 'pie',
+            label: {
+              position: 'inner'
+            },
+            center: [200, 200],
+            color: '#7099c9',
+            hoverAnimation:false,
+            itemStyle: {
+              normal: {
+                  borderWidth: 2,
+                  borderColor: '#235894'
+              }
+            },
+            radius: [],
+            data: [],
+          })
+          opt.series[i].radius = [i*angel, (i+1)*angel ]
+          for(let j=0; j<this.state.radialZone; j++) {
+            opt.series[i].data.push({value:1,name:num})
+            num++
+          }
+        }
+        updateZone({
+          "cfgZoneDefinitions": [{
+            waferSize,
+            generateType,
+            productId, 
+            stepId,
+            "annular": annularZone,
+            "zoneCount": radialZone,
+            "technology": "default",
+            "createBy": "XRJ",
+            "remarks": null,
+            "updateTm": moment().format('YYYY-MM-DD HH:mm:ss') }]})
+      }else {
+        for(let i=0; i<this.state.radiusArr.length; i++) {
+          if(this.state.radiusArr[i].value === ''){
+            message.warn('请填写完整半径!')
+            return
+          }
+        }
+        for(let i=0; i<this.state.theaterArr.length; i++) {
+          if(this.state.theaterArr[i].value === ''){
+            message.warn('请填写完整分割角度!')
+            return
+          }
+        }
+        zonesArr = []
+        let num = 1
+        let no = 1
+        let firstReg = this.state.theaterArr[0].value
+        this.state.radiusArr.forEach((item, index) => {
+          opt.series.push({
+            type: 'pie',
+            label: {
+              position: 'inner'
+            },
+            center: [200, 200],
+            color: '#7099c9',
+            hoverAnimation:false,
+            itemStyle: {
+              normal: {
+                  borderWidth: 2,
+                  borderColor: '#235894'
+              }
+            },
+            startAngle: firstReg < 90 ? 90-firstReg : 450-firstReg,
+            radius: [index === 0 ? 0 : this.state.radiusArr[index-1].value, item.value],
+            data: [],
+          })
+          let totalPercent = 0
+          let radius = index === 0 ? "0-"+item.value*1000 : this.state.radiusArr[index-1].value*1000+'-'+item.value*1000
+          this.state.theaterArr.forEach((jtem, jdx) => {
+            zonesArr.push({
+              "zoneName": no++ + '',
+              radius,
+              central: jdx === this.state.theaterArr.length-1 ? jtem.value+'-'+this.state.theaterArr[0].value : jtem.value+'-'+this.state.theaterArr[jdx+1].value
+            })
+            if(jdx > 0) {
+              const lastValue = this.state.theaterArr[jdx-1].value
+              const currentPercent = (jtem.value-lastValue)/360
+              opt.series[index].data.push({value: currentPercent, name: num})
+              num++
+              totalPercent += currentPercent
             }
-          },
-          radius: [index === 0 ? 0 : this.state.radiusArr[index-1].value, item.value],
-          data: [],
+          })
+          opt.series[index].data.push({value: 1-totalPercent, name: num++})
         })
-        this.state.theaterArr.forEach(jtem => {
-          opt.series[index].data.push({value: jtem.value, name: num})
-          num++
-        })
-      })
+          updateZone({
+            "cfgZoneDefinitions": [{
+              waferSize,
+              generateType,
+              productId, 
+              stepId,
+              zones: zonesArr,
+              "annular": annularZone,
+              "zoneCount": radialZone,
+              "technology": "default",
+              "createBy": "XRJ",
+              "remarks": null,
+              "updateTm": moment().format('YYYY-MM-DD HH:mm:ss') }]})
+        
+      }
+      if(this.state.pieChart) {this.state.pieChart.setOption(opt,true)}
     }
-    if(this.state.pieChart) {this.state.pieChart.setOption(opt,true)}
-
-    updateZone({
-      "cfgZoneDefinitions": [{
-        "waferSize": this.state.waferSize,
-        "generateType": this.state.generateType,
-        "annular": this.state.annularZone,
-        "zoneCount": this.state.radialZone,
-        "productId": this.state.productId, 
-        "stepId": this.state.stepId,
-        "technology": "default",
-        "createBy": "XRJ",
-        "remarks": null,
-        "updateTm": null }]})
   }
 
   render() {
@@ -327,9 +356,9 @@ class HorizontalLoginForm extends React.Component {
             </Form>
             {this.state.generateType === 'Manual' &&  
             <LayoutInline>
-              <StyleCluster>
+              <StyleCluster style={{width: '45%'}}>
                 <h4>Radius</h4>
-                <Table dataSource={this.state.radiusArr} bordered rowKey={record => record.seq}>
+                <Table dataSource={this.state.radiusArr} bordered rowKey={record => record.seq} pagination={false}>
                   <Column title='SEQ' dataIndex='seq' key='seq' />
                   <Column
                     title='Value'
@@ -337,12 +366,13 @@ class HorizontalLoginForm extends React.Component {
                     key='value'
                     align='center'
                     render={(text, record) => (
-                      <InputNumber value={text} onChange={value => this.changeValue(value, record.seq, 'value')} />
+                      <InputNumber max={+this.state.waferSize} value={text} onChange={value => this.changeValue(value, record.seq, 'value')} />
                     )}
                   />
                   <Column
                     title='Action'
                     key='action'
+                    align="center"
                     render={(text, record) => (
                       <Popconfirm title='Sure to delete?' onConfirm={() => this.handleDelete(record.seq,this.state.radiusArr, 'radiusArr')}>
                         <Icon type='delete' />
@@ -352,9 +382,9 @@ class HorizontalLoginForm extends React.Component {
                 </Table>
                 <Button type='default' onClick={() => this.addTable(this.state.radiusArr, 'radiusArr')}><Icon type='plus' /></Button>
               </StyleCluster>
-              <StyleCluster>
+              <StyleCluster style={{width: '45%'}}>
                 <h4>Theater</h4>
-                <Table dataSource={this.state.theaterArr} bordered rowKey={record => record.seq}>
+                <Table dataSource={this.state.theaterArr} bordered rowKey={record => record.seq} pagination={false}>
                   <Column title='SEQ' dataIndex='seq' key='seq' />
                   <Column
                     title='Value'
@@ -362,12 +392,13 @@ class HorizontalLoginForm extends React.Component {
                     key='value'
                     align='center'
                     render={(text, record) => (
-                      <InputNumber value={text} onChange={value => this.changeTheaterValue(value, record.seq, 'value')} />
+                      <InputNumber max={360} value={text} onChange={value => this.changeTheaterValue(value, record.seq, 'value')} />
                     )}
                   />
                   <Column
                     title='Action'
                     key='action'
+                    align="center"
                     render={(text, record) => (
                       <Popconfirm title='Sure to delete?' onConfirm={() => this.handleDelete(record.seq,this.state.theaterArr,'theaterArr')}>
                         <Icon type='delete' />
@@ -378,7 +409,7 @@ class HorizontalLoginForm extends React.Component {
                 <Button type='default' onClick={()=>this.addTable(this.state.theaterArr,'theaterArr')}><Icon type='plus' /></Button>
               </StyleCluster>
             </LayoutInline>} 
-            <Button type="default" onClick={this.drawPie}>Save</Button>
+            <Button style={{width:'100px',margin: 'auto 20px auto auto'}} type="default" onClick={this.drawPie}>Save</Button>
           </LayoutVertical>
 
           <DiePitch>

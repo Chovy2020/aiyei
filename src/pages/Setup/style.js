@@ -15,6 +15,10 @@ export const StyleSetUp = styled.div`
 export const StyleCluster = styled.div`
   display: flex;
   flex-direction: column;
+  .ant-btn {
+    width: 50px;
+    margin: 10px 0;
+  }
 `
 export const DiePitch = styled.div`
   height: 400px;
@@ -26,7 +30,8 @@ export const DiePitch = styled.div`
 `
 export const LayoutInline = styled.div`
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
+  padding: 0 20px;
 `
 export const LayoutVertical = styled.div`
   display: flex;

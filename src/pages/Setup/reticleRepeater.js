@@ -2,6 +2,7 @@ import React from 'react'
 import _ from 'lodash'
 import { Table, Input, InputNumber, Button, Icon, Popconfirm } from 'antd'
 import Highlighter from 'react-highlight-words'
+import moment from 'moment'
 import { StyleCluster } from './style'
 import { getRepeater, updateRepeater, deleteRepeater } from './service'
 
@@ -62,7 +63,7 @@ class ReticleRepeater extends React.Component {
       dieCount: item.dieCount,
       createBy: 'xrj',
       remarks: null,
-      updateTm: null }))
+      updateTm: moment().format('YYYY-MM-DD HH:mm:ss') }))
     updateRepeater({ cfgRepeaters }).then(response => {
       this.init()
     })

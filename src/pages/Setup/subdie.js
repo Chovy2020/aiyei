@@ -3,6 +3,7 @@ import React from 'react'
 import _ from 'lodash'
 import { delay } from '@/utils/web'
 import { Form,Input,InputNumber, Select, Button,Icon,Modal,message,Table, Popconfirm} from 'antd'
+import moment from 'moment'
 import { getSubDie, updateSubDie, deleteSubDie } from './service'
 import {DiePitch,LayoutInline,LayoutVertical,DivStyle} from './style'
 
@@ -76,7 +77,7 @@ class HorizontalLoginForm extends React.Component {
               ],
               "createBy": "XRJ",
               "remarks": null,
-              "updateTm": null
+              "updateTm": moment().format('YYYY-MM-DD HH:mm:ss')
           }
       ]
       }).then(data => {
@@ -155,7 +156,7 @@ class HorizontalLoginForm extends React.Component {
               "subDieIds": newTable,
               "createBy": "XRJ",
               "remarks": null,
-              "updateTm": null
+              "updateTm": moment().format('YYYY-MM-DD HH:mm:ss')
           }
         ]
       })
@@ -173,7 +174,7 @@ class HorizontalLoginForm extends React.Component {
             "subDieIds": record,
             "createBy": "XRJ",
             "remarks": null,
-            "updateTm": null
+            "updateTm": moment().format('YYYY-MM-DD HH:mm:ss')
         }
     ]
     })

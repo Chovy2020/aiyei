@@ -2,6 +2,7 @@ import React from 'react'
 import _ from 'lodash'
 import { Table, Input, InputNumber, Button, Icon, Popconfirm } from 'antd'
 import Highlighter from 'react-highlight-words'
+import moment from 'moment'
 import { StyleCluster } from './style'
 import { getAdder, updateAdder, deleteAdder } from './service'
 
@@ -55,7 +56,7 @@ class Adder extends React.Component {
       tolerance: item.tolerance,
       createBy: 'xrj',
       remarks: null,
-      updateTm: null }))
+      updateTm: moment().format('YYYY-MM-DD HH:mm:ss')}))
     updateAdder({ cfgAdders }).then(response => {
       this.init()
     })

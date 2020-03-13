@@ -2,6 +2,7 @@ import React from 'react'
 import _ from 'lodash'
 import { Table, Input, InputNumber, Button, Icon, Popconfirm } from 'antd'
 import Highlighter from 'react-highlight-words'
+import moment from 'moment'
 import { StyleCluster } from './style'
 import { getCluster, updateCluster, deleteCluster } from './service'
 
@@ -57,7 +58,7 @@ class Cluster extends React.Component {
       minimalCnt: item.minimalCnt,
       createBy: 'xrj',
       remarks: null,
-      updateTm: null }))
+      updateTm: moment().format('YYYY-MM-DD HH:mm:ss') }))
     updateCluster({ cfgClusterDefinitions }).then(response => {
       this.init()
     })
