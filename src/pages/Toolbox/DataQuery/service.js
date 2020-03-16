@@ -4,5 +4,5 @@ import { post } from '@/utils/api'
 export const dataQuerySearch = data => post('gallery_map_filter/data_query', data)
 
 // 加载全局Filter的预选项
-export const getTags = data => post('gallery_map_bak/checkbox', data)
+export const getTags = data => post('gallery_map/checkbox', data)
 
