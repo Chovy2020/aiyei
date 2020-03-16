@@ -109,7 +109,7 @@ class MapGallery extends React.Component {
       deleteIds,
       comboBoxes: items.map((item, index) => ({
         key: item,
-        value: itemSelected[index] || []
+        value: itemSelected[index] && itemSelected[index].length > 0 ? itemSelected[index] : ['']
       }))
     }
     if (defectSize[0] === '') defectSize[0] = 0
@@ -616,7 +616,7 @@ class MapGallery extends React.Component {
                     <p>Lot ID: {wafer.lotId}</p>
                     <p>Wafer No: {wafer.waferNo}</p>
                     <p>Step ID: {wafer.stepId}</p>
-                    <p>Total: {wafer.dieDefects ? wafer.dieDefects.length : 0}</p>
+                    <p>Total: {wafer.defectCount || 0}</p >
                   </li>
                 ))}
               </StyleWaferMap>

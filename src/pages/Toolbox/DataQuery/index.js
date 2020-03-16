@@ -164,24 +164,29 @@ class DataQuery extends React.Component {
       endTm: endTm !== '' ? endTm : '2020-12-31',
       comboBoxes: items.map((item, index) => ({
         key: item,
-        value: itemSelected[index]
+        value: itemSelected[index].length === 0 ? [''] : itemSelected[index]
       }))
     }
     const res = await getTags(data)
     if (res && res !== {}) {
       this.props.changeFilterOption({
-        mb: res.mbs || [],
-        adc: res.adc || [],
-        rb: res.rbs || [],
-        testId: res.tests || [],
+        mb: this.responseFilter(res.mbs),
+        adc: this.responseFilter(res.adc),
+        rb: this.responseFilter(res.rbs),
+        testId: this.responseFilter(res.tests),
         cluster: ['NO'],
         adder: ['NO'],
         repeater: ['NO'],
-        zoneId: res.zoneIds || [],
-        subDie: res.subDieIds || []
+        zoneId: this.responseFilter(res.zoneIds),
+        subDie: this.responseFilter(res.subDieIds)
       })
     }
     this.props.addTab('Map Gallery')
+  }
+
+  responseFilter = arr => {
+    if (arr.length === 1 && arr[0] === null) return []
+    return arr
   }
 
   search = async index => {
@@ -202,7 +207,7 @@ class DataQuery extends React.Component {
         // 模糊查询 前后加上 *
         comboBoxes.push({
           key: items[i],
-          value: itemKeyword[i].split(',').map(k => `*${k}*`)
+          value: itemKeyword[i].split(',')
         })
         break
       }
@@ -219,7 +224,7 @@ class DataQuery extends React.Component {
       comboBoxes
     }
     const res = await dataQuerySearch(data)
-    return res.result
+    return res
   }
 
   render() {
