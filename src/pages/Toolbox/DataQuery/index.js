@@ -199,7 +199,7 @@ class DataQuery extends React.Component {
       if (i < index) {
         comboBoxes.push({
           key: items[i],
-          value: (itemSelected[i] && itemSelected[i].length > 0) ? itemSelected[i] : ['']
+          value: itemSelected[i] && itemSelected[i].length > 0 ? itemSelected[i] : ['']
         })
       }
       // 是当前列，带上关键词  当前列的选中数据会被覆盖
@@ -282,7 +282,10 @@ class DataQuery extends React.Component {
                             {p2 => (
                               <DragItem ref={p2.innerRef} {...p2.draggableProps} {...p2.dragHandleProps}>
                                 <DragCard>
-                                  <h4>{GET_LABEL(item)} 【{itemSelected[index] ? itemSelected[index].length : 0 || 0}/{itemData[index] ? itemData[index].length : 0}】</h4>
+                                  <h4>
+                                    {GET_LABEL(item)} 【{itemSelected[index] ? itemSelected[index].length : 0 || 0}/
+                                    {itemData[index] ? itemData[index].length : 0}】
+                                  </h4>
                                   <Input.Search
                                     onChange={e => this.onSearchInput(index, e.target.value)}
                                     onSearch={() => this.onSearchMark(index)}
@@ -313,8 +316,12 @@ class DataQuery extends React.Component {
               </Form.Item>
             ) : null}
             <Form.Item label=' '>
-              <Button onClick={this.loadItems} type='primary'>Load</Button>
-              <Button onClick={this.resetItems} type='dashed'>Reset</Button>
+              <Button onClick={this.loadItems} type='primary'>
+                Load
+              </Button>
+              <Button onClick={this.resetItems} type='dashed'>
+                Reset
+              </Button>
             </Form.Item>
           </Form>
         </LoaderDefect>
