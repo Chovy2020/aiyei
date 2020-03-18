@@ -203,11 +203,11 @@ class SingleMap extends React.Component {
     if (wafers.length === 0) {
       wafers = [
         {
-          lotId: "F0004.000",
+          lotId: "P19.196",
           stepId: "M1_CMP",
           waferNo: "1",
           productId: "Device01",
-          scanTm: "2020-01-05 23:43:35",
+          scanTm: "2020-01-01 13:43:35",
           defects: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28]
         },
       ]
@@ -679,7 +679,6 @@ class SingleMap extends React.Component {
           if (existBar && selectedBar.includes(`${mb}-${ob}`)) continue
           if (!singleMapColors[ob]) singleMapColors[ob] = '#' + getColor(ob)
           for (const coo in w.defectInfos[mb][ob]) {
-            // console.log('coo', coo)
             let [x, y] = coo.split(',')
             // 有图片的 绘制外部标记
             const defects = w.defectInfos[mb][ob][coo]
@@ -720,7 +719,9 @@ class SingleMap extends React.Component {
         for (const ob in w.defectInfos[mb]) {
           if (existBar && selectedBar.includes(`${mb}-${ob}`)) continue
           for (const coo in w.defectInfos[mb][ob]) {
-            wafer.defects = [...wafer.defects, ...w.defectInfos[mb][ob][coo]]
+            w.defectInfos[mb][ob][coo].forEach(item => {
+              wafer.defects.push(item)
+            })
           }
         }
       }

@@ -1,4 +1,3 @@
-/* eslint-disable */
 import React from 'react'
 import { Tooltip, Button, Table, Icon } from 'antd'
 import echarts from 'echarts'
