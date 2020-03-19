@@ -195,20 +195,23 @@ class ChartSelection extends React.Component {
     this.setState({ formInline })
   }
 
-  onChartInit = async () => {
-    await delay(1)
-    const { formInline } = this.state
-    const { xValue, x2ndValue, yValue, normalized } = formInline
-    // 每次请求接口前，将x,2x,y存储到Store，页面若跳转到singleMap，+selectedBar，可还原柱状图
-    const { chartParams, name } = this.props
-    const params = chartParams[name] || {}
-    params.x = xValue
-    params.x2n = x2ndValue
-    params.y = yValue
-    if (!params.bars) params.bars = []
-    this.props.changeChartParams({ name, params })
-    const singleWaferKey = this.getWafers()
-    this.setState({singleWaferKey})
+  onBoxChartInit = async (singleWaferKey,xValue, x2ndValue, yValue, normalized) => {
+    // 箱图数据
+    const boxData = await getboxChartData({
+      singleWaferKey,
+      canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
+      filter: {},
+      pareto: {
+        '1stXCode': xValue,
+        '2ndXCode': x2ndValue,
+        yCode: yValue,
+        normBy: normalized
+      }
+    })
+    this.setState({ boxData })
+  }
+
+  onCommonChartInit = async (singleWaferKey,xValue, x2ndValue, yValue, normalized) => {
     const resData = await getChartData({
       singleWaferKey,
       canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
@@ -228,27 +231,34 @@ class ChartSelection extends React.Component {
         riseChartData: resData.paretoValue.series[0].data
       }) 
     }
-    // 箱图数据
-    const boxData = await getboxChartData({
-      singleWaferKey,
-      canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
-      filter: {},
-      pareto: {
-        '1stXCode': xValue,
-        '2ndXCode': x2ndValue,
-        yCode: yValue,
-        normBy: normalized
-      }
-    })
     this.setState({
       resData,
-      boxData,
       showCrossModule: false,
       showCorrelation: false,
       showIntelligence,
       riseChartxAxis
     })
-    this.dealData()
+  }
+
+  onChartInit = async () => {
+    await delay(1)
+    const { formInline } = this.state
+    const { xValue, x2ndValue, yValue, normalized } = formInline
+    // 每次请求接口前，将x,2x,y存储到Store，页面若跳转到singleMap，+selectedBar，可还原柱状图
+    const { chartParams, name } = this.props
+    const params = chartParams[name] || {}
+    params.x = xValue
+    params.x2n = x2ndValue
+    params.y = yValue
+    if (!params.bars) params.bars = []
+    this.props.changeChartParams({ name, params })
+    const singleWaferKey = this.getWafers()
+    this.setState({singleWaferKey})
+    const p1 = this.onBoxChartInit(singleWaferKey,xValue, x2ndValue, yValue, normalized)
+    const p2 = this.onCommonChartInit(singleWaferKey,xValue, x2ndValue, yValue, normalized)
+    Promise.all([p1,p2]).then(res => {
+      this.dealData()
+    })
   }
   dealData = () => {
     const arr = []
