@@ -97,23 +97,25 @@ class ChartSelection extends React.Component {
   }
 
   async componentDidMount() {
-    // 如果前一个页面是chartSelection，获取params
+    // 如果前一个页面是Single Map，获取params
     const { name, prevPage } = this.props
     if (prevPage && prevPage.type === 'Single Map') {
       const { params } = this.props
+      console.log(params)
       const formInline = {
         xValue: params.x,
         x2ndValue: params.x2n,
         yValue: params.y,
-        normalized: ''
+        normalized: params.normBy
       }
       this.setState({ formInline, selectedBar: params.bars })
       this.props.changeChartParams({
         name,
         params: {
-          x: formInline['1stXCode'],
-          x2n: formInline['2ndXCode'],
-          y: formInline['yCode'],
+          x: formInline.xValue,
+          x2n: formInline.x2ndValue,
+          y: formInline.yValue,
+          normBy: params.normBy,
           bars: formInline.bars
         }
       })
@@ -125,6 +127,7 @@ class ChartSelection extends React.Component {
           x: formInline.xValue,
           x2n: formInline.x2ndValue,
           y: formInline.yValue,
+          normBy: params.normBy,
           bars: []
         }
       })
@@ -171,6 +174,7 @@ class ChartSelection extends React.Component {
       return
     }
     this.state.chartObj = echarts.init(chartDom)
+    this.setState({chartObj: echarts.init(chartDom)})
     this.state.chartObj.on('click', params => this.onChartClick(params))
     this.state.chartObj.on('legendselectchanged', params => this.onlegendselectchanged(params))
     this.onXInit()
@@ -189,12 +193,6 @@ class ChartSelection extends React.Component {
     return ['value:' + params.value[params.seriesIndex + 1], 'common:' + (tips[params.dataIndex] || '')].join('\n')
   }
 
-  onSelectChange = (key, value) => {
-    const { formInline } = this.state
-    formInline[key] = value
-    this.setState({ formInline })
-  }
-
   onBoxChartInit = async (singleWaferKey,xValue, x2ndValue, yValue, normalized) => {
     // 箱图数据
     const boxData = await getboxChartData({
@@ -205,6 +203,7 @@ class ChartSelection extends React.Component {
         '1stXCode': xValue,
         '2ndXCode': x2ndValue,
         yCode: yValue,
+        // 现在不为空的时候会报错,将来normalized接口好后要修改
         normBy: normalized
       }
     })
@@ -220,6 +219,7 @@ class ChartSelection extends React.Component {
         '1stXCode': xValue,
         '2ndXCode': x2ndValue,
         yCode: yValue,
+        // 现在不为空的时候会报错,将来normalized接口好后要修改
         normBy: normalized
       }
     })
@@ -339,7 +339,8 @@ class ChartSelection extends React.Component {
     const formInline = {
       xValue,
       x2ndValue: '',
-      yValue: '100'
+      yValue: '100',
+      normalized: 'all'
     }
     this.setState({ formInline })
     this.clearSelection()
@@ -354,6 +355,7 @@ class ChartSelection extends React.Component {
     const { formInline } = this.state
     formInline.x2ndValue = x2ndValue
     formInline.yValue = '100'
+    formInline.normalized = 'all'
     this.setState({ formInline })
     this.clearSelection()
     this.onYInit()
@@ -362,7 +364,7 @@ class ChartSelection extends React.Component {
   onYchange = yValue => {
     const { y, formInline } = this.state
     formInline.yValue = yValue
-    formInline.normalized = 'All Defect'
+    formInline.normalized = 'all'
     this.setState({
       normShow: y[yValue] && y[yValue].includes('NORM') ? true : false,
       formInline,
@@ -389,6 +391,7 @@ class ChartSelection extends React.Component {
       seriesType: 'bar', 
       ifStack: '', 
       selectedStar: '', 
+      selectedBar: [],
       LineCharts: [], 
       cmStepValue: []
     })
@@ -569,7 +572,9 @@ class ChartSelection extends React.Component {
         opt.dataset.source = _.cloneDeep(newData)
       }
     }
-    if (this.state.chartObj) this.state.chartObj.setOption(opt, true)
+    if (this.state.chartObj) {
+      this.state.chartObj.setOption(opt, true)
+    } 
   }
   // 折线图/柱状图时，显示选中或非选中点
   showLine = (opt, showLabel, source) => {
@@ -742,7 +747,7 @@ class ChartSelection extends React.Component {
                   onChange={this.onNormalizedChange}
                 >
                   {Object.keys(NORMALIZED).map(key => (
-                    <Select.Option value={NORMALIZED[key]} key={key}>
+                    <Select.Option value={key} key={key}>
                       {NORMALIZED[key]}
                     </Select.Option>
                   ))}

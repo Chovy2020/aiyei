@@ -40,7 +40,8 @@ import {
   OVER_LAP_TYPE_OPTIONS,
   DSA_TABLE_COLUMNS,
   INFO_COLUMNS,
-  YES_NO
+  YES_NO,
+  NORMALIZED
 } from './constant'
 import reducer from './reducer'
 import {
@@ -92,7 +93,8 @@ class SingleMap extends React.Component {
       paretoParams: {
         '1stXCode': 'mb',
         '2ndXCode': '',
-        yCode: '100'
+        yCode: '100',
+        normBy: ''
       },
       selectedBar: [],
       colorsObj: {},
@@ -117,6 +119,7 @@ class SingleMap extends React.Component {
       x: {},
       x2n: {},
       y: {},
+      normShow: false,
       ifAvg: 'sum',
       allBar: [],
       /* Image Detail */
@@ -171,7 +174,8 @@ class SingleMap extends React.Component {
       const paretoParams = {
         '1stXCode': params.x,
         '2ndXCode': params.x2n,
-        yCode: params.y
+        yCode: params.y,
+        normBy: params.normBy
       }
       this.setState({ paretoParams, selectedBar: params.bars })
       this.props.changeSingleParams({
@@ -180,6 +184,7 @@ class SingleMap extends React.Component {
           x: paretoParams['1stXCode'],
           x2n: paretoParams['2ndXCode'],
           y: paretoParams['yCode'],
+          normBy: paretoParams['normBy'],
           bars: paretoParams.bars
         }
       })
@@ -191,6 +196,7 @@ class SingleMap extends React.Component {
           x: paretoParams['1stXCode'],
           x2n: paretoParams['2ndXCode'],
           y: paretoParams['yCode'],
+          normBy: paretoParams['normBy'],
           bars: []
         }
       })
@@ -355,7 +361,6 @@ class SingleMap extends React.Component {
     chosedArea.forEach((item, index) => {
       chosedArea.splice(index, 1)
     })
-    // console.log('onDropDownReset', chosedArea, this.state.chosedArea)
     this.saveSelectedBar([])
     this.onMapAndParetoInit()
   }
@@ -474,7 +479,6 @@ class SingleMap extends React.Component {
     // 把区域内的坐标都找出来，存放到coordinate，后续绘制使用
     const { mapData, coordinate, selectedBar, group } = this.state
     let { chosedArea } = this.state
-    // console.log('onDoActionPodcast', coordinate, chosedArea)
     for (const wafer of mapData) {
       for (const mb in wafer.defectInfos) {
         for (const ob in wafer.defectInfos[mb]) {
@@ -817,12 +821,9 @@ class SingleMap extends React.Component {
   /* - - - - - - - - - - - - Pareto - - - - - - - - - - - -  */
   // Pareto 创建
   onParetoCreated = async () => {
-    const { paretoParams } = this.state
-    const x = await getX()
-    const x2n = await getX2nd(paretoParams['1stXCode'])
-    x2n[''] = 'None'
-    const y = await getY(paretoParams['1stXCode'], paretoParams['2ndXCode'])
-    this.setState({ x, x2n, y })
+    await this.onXInit()
+    await this.onX2nInit()
+    await this.onYInit()
     this.onParetoInit()
   }
   // Parato 初始化 (包含pareto 和 dsaParato)
@@ -841,7 +842,7 @@ class SingleMap extends React.Component {
     } else {
       const paretoData = await post('swp', formData)
       // 计算颜色
-      const { singleMapColors } = this.state
+      const { singleMapColors, paretoParams } = this.state
       if (paretoData && paretoData.paretoValue && paretoData.paretoValue.series.length > 0) {
         paretoData.paretoValue.series.forEach(({ name }) => {
           if (!singleMapColors[name]) singleMapColors[name] = '#' + getColor(name)
@@ -849,6 +850,17 @@ class SingleMap extends React.Component {
       }
       this.setState({ paretoData, singleMapColors })
       this.renderPareto()
+      const {name} = this.props
+      this.props.changeSingleParams({
+        name,
+        params: {
+          x: paretoParams['1stXCode'],
+          x2n: paretoParams['2ndXCode'],
+          y: paretoParams['yCode'],
+          normBy: paretoParams['normBy'],
+          bars: []
+        }
+      })
     }
   }
   // 渲染图表
@@ -941,30 +953,51 @@ class SingleMap extends React.Component {
     paretoChart.setOption(opt)
     this.setState({ paretoChart })
   }
+  onXInit = async () => {
+    const x = await getX()
+    this.setState({ x })
+  }
+  onX2nInit = async () => {
+    const { paretoParams } = this.state
+    const x2n = await getX2nd(paretoParams['1stXCode'])
+    x2n[''] = 'None'
+    this.setState({ x2n })
+  }
+  onYInit = async () => {
+    const { paretoParams } = this.state
+    const y = await getY(paretoParams['1stXCode'], paretoParams['2ndXCode'])
+    this.setState({ y })
+  }
   onChangeX = async x => {
     const { paretoParams } = this.state
     paretoParams['1stXCode'] = x
     paretoParams['2ndXCode'] = ''
-    paretoParams.yCode = ''
-    const x2n = await getX2nd(x)
-    x2n[''] = ''
-    const y = await getY(x, '')
-    this.setState({ paretoParams, x2n, y })
+    paretoParams.yCode = '100'
+    await this.onX2nInit()
+    await this.onYInit()
+    this.setState({ paretoParams })
+    this.onDropDownReset()
   }
   onChangeX2nd = async x2n => {
     const { paretoParams } = this.state
     paretoParams['2ndXCode'] = x2n
-    paretoParams.yCode = ''
-    const y = await getY(paretoParams['1stXCode'], x2n)
-    this.setState({ paretoParams, y })
-  }
-  onChangeY = y => {
-    const { paretoParams } = this.state
-    paretoParams.yCode = y
+    paretoParams.yCode = '100'
+    await this.onYInit()
     this.setState({ paretoParams })
+    this.onDropDownReset()
   }
-  // 搜索
-  onParetoSearch = () => {
+  onChangeY = async yValue => {
+    const { y, paretoParams } = this.state
+    paretoParams.yCode = yValue
+    paretoParams.normBy = 'all'
+    let normShow = y[yValue] && y[yValue].includes('NORM') ? true : false
+    this.setState({ paretoParams,normShow })
+    this.onDropDownReset()
+  }
+  onNormalizedChange = v => {
+    const { paretoParams } = this.state
+    paretoParams.normBy = v
+    this.setState({ paretoParams})
     this.onDropDownReset()
   }
   // 清空
@@ -1421,7 +1454,8 @@ class SingleMap extends React.Component {
     const { overlapDialog, deleteDefectsType } = this.state
     const { reclassifyDialog, correct } = this.state
     const { deleteDefectsDialog } = this.state
-    const { x, x2n, y, paretoParams, ifAvg } = this.state
+    const { x, x2n, y, paretoParams, normShow, ifAvg } = this.state
+    const { normBy } = paretoParams
     const { dsa, sortName, dsaOrder, dsaTableData } = this.state
     const { filterOption, filter, defectClass } = this.state
 
@@ -1667,15 +1701,31 @@ class SingleMap extends React.Component {
                     ))}
                   </Select>
                 </Form.Item>
+                { normShow ? (
+                  <Form.Item size='small' label='Norm by' style={{ width: 200 }}>
+                    <Select
+                      size='small'
+                      defaultValue={normBy}
+                      style={{ width: 120, marginRight: 10 }}
+                      onChange={this.onNormalizedChange}
+                    >
+                      {Object.keys(NORMALIZED).map(key => (
+                        <Select.Option value={key} key={key}>
+                          {NORMALIZED[key]}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                 ) : null}
                 <Form.Item>
-                  <Button
+                  {/* <Button
                     size='small'
                     onClick={this.onParetoSearch}
                     type='primary'
                     style={{ marginRight: 10, minWidth: 50 }}
                   >
                     Search
-                  </Button>
+                  </Button> */}
                   <Button size='small' onClick={this.onParetoClear} type='dashed' style={{ minWidth: 50 }}>
                     Clear
                   </Button>
