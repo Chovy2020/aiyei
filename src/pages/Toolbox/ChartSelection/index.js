@@ -115,7 +115,7 @@ class ChartSelection extends React.Component {
           x: formInline.xValue,
           x2n: formInline.x2ndValue,
           y: formInline.yValue,
-          normBy: params.normBy,
+          normBy: formInline.normBy,
           bars: formInline.bars
         }
       })
@@ -127,7 +127,7 @@ class ChartSelection extends React.Component {
           x: formInline.xValue,
           x2n: formInline.x2ndValue,
           y: formInline.yValue,
-          normBy: params.normBy,
+          normBy: formInline.normBy,
           bars: []
         }
       })
@@ -193,8 +193,9 @@ class ChartSelection extends React.Component {
     return ['value:' + params.value[params.seriesIndex + 1], 'common:' + (tips[params.dataIndex] || '')].join('\n')
   }
 
+  // 箱图数据
   onBoxChartInit = async (singleWaferKey,xValue, x2ndValue, yValue, normalized) => {
-    // 箱图数据
+    await delay(1)
     const boxData = await getboxChartData({
       singleWaferKey,
       canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
