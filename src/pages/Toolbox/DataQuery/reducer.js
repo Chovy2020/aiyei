@@ -4,7 +4,7 @@ const initState = {
   items: DATA_QUERY_INIT.map(i => DATA_QUERY_QUERY[i]),
   itemSelected: [],
   params: {
-    existsImg: false, // 有照片
+    existsImg: true, // 有照片
     mbHave: true, // Manual Classified
     secondScan: false, // 有前层scan结果
     seeLastScan: false, // 多次scan只看最后一次

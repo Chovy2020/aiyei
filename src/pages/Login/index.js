@@ -13,19 +13,23 @@ class NormalLoginForm extends React.Component {
     this.props.form.validateFields((err, values) => {
       if (!err) {
         console.log('Received values of form: rerere', values);
-        this.props.changeUser(values.username)
-        localStorage.setItem("username",values.username)
-        setTimeout(() => {
-          console.log(localStorage.getItem("username"),'拿到了')
-        },2000)
-        axios.post('http://161.189.56.38/jems/auth/login', values).then(res => {
-          if(res.code = 20000) {
-            this.props.changeUser(values.username)
-            localStorage.setItem("username",values.username)
-          }else {
-            message.warn(res.message)
-          }
-        })
+        if(values.username === 'admin' && values.password === '123456') {
+          this.props.changeUser(values.username)
+          localStorage.setItem("username",values.username)
+          setTimeout(() => {
+            console.log(localStorage.getItem("username"),'拿到了')
+          },2000)
+        } else {
+          message.warn('用户名密码不正确!')
+        }
+        // axios.post('http://161.189.56.38/jems/auth/login', values).then(res => {
+        //   if(res.code = 20000) {
+        //     this.props.changeUser(values.username)
+        //     localStorage.setItem("username",values.username)
+        //   }else {
+        //     message.warn(res.message)
+        //   }
+        // })
       }
     });
   };

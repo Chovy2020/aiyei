@@ -45,7 +45,6 @@ class RiseChart extends React.Component {
         {
           name: '',
           type: 'line',
-          smooth: true,
           data: this.props.data,
         }
       ]
@@ -103,7 +102,7 @@ class RiseChart extends React.Component {
   render() {
     this.init ()
     return (
-      <div style={{height: '400px'}} ref="riseChart">ddd</div>
+      <div style={{height: '400px'}} ref="riseChart"></div>
     )
   }
 }

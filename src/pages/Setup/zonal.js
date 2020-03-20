@@ -168,7 +168,7 @@ class HorizontalLoginForm extends React.Component {
   changeWaferSize = value => {
     this.setState({ waferSize: value})
   }
-  drawPie = () => {
+  drawPie = async () => {
     const {waferSize,generateType,annularZone,radialZone,productId,stepId,zones} = this.state
     if(productId === '' && stepId === '') {
       message.warn('请先选择product和step!')
@@ -241,6 +241,10 @@ class HorizontalLoginForm extends React.Component {
         let num = 1
         let no = 1
         let firstReg = this.state.theaterArr[0].value
+        if(this.state.radiusArr[this.state.radiusArr.length-1].value !== waferSize) {
+          this.setState({radiusArr: [...this.state.radiusArr, {seq: this.state.radiusArr.length+1, value: waferSize}]})
+        }
+        await delay(1)
         this.state.radiusArr.forEach((item, index) => {
           opt.series.push({
             type: 'pie',
@@ -256,7 +260,8 @@ class HorizontalLoginForm extends React.Component {
                   borderColor: '#235894'
               }
             },
-            startAngle: firstReg < 90 ? 90-firstReg : 450-firstReg,
+            clockwise: false,
+            startAngle: firstReg,
             radius: [index === 0 ? 0 : this.state.radiusArr[index-1].value, item.value],
             data: [],
           })

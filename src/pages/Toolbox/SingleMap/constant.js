@@ -58,3 +58,14 @@ export const YES_NO = [
   'YES',
   'NO'
 ]
+
+export const NORMALIZED = {
+  all: 'All Defect',
+  rb: 'Rough Bin',
+  ab: 'ADC Bin',
+  clu: 'Cluster',
+  sdi: 'Sub Die ID',
+  tid: 'Test ID',
+  steps: 'Steps',
+  zid: 'Zone ID'
+}

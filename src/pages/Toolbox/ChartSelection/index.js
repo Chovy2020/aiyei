@@ -1,28 +1,28 @@
 /* eslint-disable */
 import React from 'react'
 import { connect } from 'react-redux'
-import { Form, Select, Tooltip, Checkbox, Button, Input, InputNumber, Modal, Icon, TreeSelect, message } from 'antd'
+import { Form, Select, Tooltip, Checkbox, Button, InputNumber, Icon, TreeSelect, message,Collapse } from 'antd'
 import _ from 'lodash'
 import echarts from 'echarts'
 import { injectReducer } from '@/utils/store'
 import { delay, toPercent} from '@/utils/web'
 import { changeChartSelected, changeChartWafers, changeChartParams } from './action'
-import { BUTTONS, CA_DATA_SOURCES, NORMALIZED, CA_METROLOGY_PRODUCTS } from './constant'
+import { BUTTONS, NORMALIZED } from './constant'
 import reducer from './reducer'
-import { getX, getX2n, getY, getChartData, getboxChartData, getPcCmStep, getPcCm, getCaWatTreeData, searchCA } from './service'
+import { getX, getX2n, getY, getChartData, getboxChartData, getPcCmStep, getPcCm} from './service'
 import {
   StyleChartSelection,
   StyleTooltip,
   StyleChart,
   StyleOperBtn,
   StyleCrossModuleForm,
-  StyleCorrelationForm,
   FormItemLabel
 } from './style'
+// import CrossModuleForm from './component/CrossModuleForm'
+import CorrelationForm from './component/CorrelationForm'
 import CrossModuleChart from './component/CrossModuleChart'
-import CorrelationChart from './component/CorrelationChart'
 import RiseChart from './component/RiseChart'
-
+const { Panel } = Collapse
 class ChartSelection extends React.Component {
   constructor(props) {
     super(props)
@@ -31,6 +31,7 @@ class ChartSelection extends React.Component {
       chartSelecting: {},
       singleWaferKey: [],
       selectedAction: 'bar-chart',
+      selectedStar: '',
       allBar: [],
       selectedBar: [],
       formInline: {
@@ -72,39 +73,7 @@ class ChartSelection extends React.Component {
       /* LineCharts */
       LineCharts: [],
       /* Correlation Analysis */
-      caDataSource: [],
-      caMetrologySteps: [],
-      caMetrologyParameters: [],
-      caMetrology: {
-        product: [],
-        step: [],
-        parameter: []
-      },
-      caWatTreeData: null,
-      caWatProducts: [],
-      caWat: {
-        product: [],
-        tree: []
-      },
-      caCpProducts: [],
-      caCpBins: [],
-      caCp: {
-        product: [],
-        bin: []
-      },
-      caIFTools: [],
-      caIFParameters: [],
-      caIFTimeRages: [],
-      caIF: {
-        tool: [],
-        parameter: [],
-        timeRage: []
-      },
-      caRegression: {
-        checked: false,
-        value: null
-      },
-      caCharts: []
+      caWatProducts: []
     }
   }
 
@@ -128,23 +97,25 @@ class ChartSelection extends React.Component {
   }
 
   async componentDidMount() {
-    // 如果前一个页面是chartSelection，获取params
+    // 如果前一个页面是Single Map，获取params
     const { name, prevPage } = this.props
     if (prevPage && prevPage.type === 'Single Map') {
       const { params } = this.props
+      console.log(params)
       const formInline = {
         xValue: params.x,
         x2ndValue: params.x2n,
         yValue: params.y,
-        normalized: ''
+        normalized: params.normBy
       }
       this.setState({ formInline, selectedBar: params.bars })
       this.props.changeChartParams({
         name,
         params: {
-          x: formInline['1stXCode'],
-          x2n: formInline['2ndXCode'],
-          y: formInline['yCode'],
+          x: formInline.xValue,
+          x2n: formInline.x2ndValue,
+          y: formInline.yValue,
+          normBy: formInline.normBy,
           bars: formInline.bars
         }
       })
@@ -156,6 +127,7 @@ class ChartSelection extends React.Component {
           x: formInline.xValue,
           x2n: formInline.x2ndValue,
           y: formInline.yValue,
+          normBy: formInline.normBy,
           bars: []
         }
       })
@@ -173,15 +145,6 @@ class ChartSelection extends React.Component {
           defects: [],
           defectCache: '5255f356-0558-414c-ba28-6a4a88774f0e'
         }
-        // {
-        //   lotId: "B0001.000",
-        //   stepId: "M1_CMP",
-        //   waferNo: "1",
-        //   productId: "Device01",
-        //   scanTm: "2018-05-31 12:30:35",
-        //   defects: [],
-        //   defectCache: "f87bae15-d431-474b-8f4e-e6f6b9babab6"
-        // }
       ]
     }
     let existDefects = false
@@ -211,6 +174,7 @@ class ChartSelection extends React.Component {
       return
     }
     this.state.chartObj = echarts.init(chartDom)
+    this.setState({chartObj: echarts.init(chartDom)})
     this.state.chartObj.on('click', params => this.onChartClick(params))
     this.state.chartObj.on('legendselectchanged', params => this.onlegendselectchanged(params))
     this.onXInit()
@@ -229,10 +193,52 @@ class ChartSelection extends React.Component {
     return ['value:' + params.value[params.seriesIndex + 1], 'common:' + (tips[params.dataIndex] || '')].join('\n')
   }
 
-  onSelectChange = (key, value) => {
-    const { formInline } = this.state
-    formInline[key] = value
-    this.setState({ formInline })
+  // 箱图数据
+  onBoxChartInit = async (singleWaferKey,xValue, x2ndValue, yValue, normalized) => {
+    await delay(1)
+    const boxData = await getboxChartData({
+      singleWaferKey,
+      canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
+      filter: {},
+      pareto: {
+        '1stXCode': xValue,
+        '2ndXCode': x2ndValue,
+        yCode: yValue,
+        // 现在不为空的时候会报错,将来normalized接口好后要修改
+        normBy: normalized
+      }
+    })
+    this.setState({ boxData })
+  }
+
+  onCommonChartInit = async (singleWaferKey,xValue, x2ndValue, yValue, normalized) => {
+    const resData = await getChartData({
+      singleWaferKey,
+      canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
+      filter: {},
+      pareto: {
+        '1stXCode': xValue,
+        '2ndXCode': x2ndValue,
+        yCode: yValue,
+        // 现在不为空的时候会报错,将来normalized接口好后要修改
+        normBy: normalized
+      }
+    })
+    const showIntelligence = resData.paretoValue.series.length !== 1
+    const riseChartxAxis = resData.paretoValue.xAxisData
+    if(!showIntelligence) {
+      this.setState({
+        riseChartName: resData.paretoValue.series[0].name,
+        riseChartData: resData.paretoValue.series[0].data
+      }) 
+    }
+    this.setState({
+      resData,
+      showCrossModule: false,
+      showCorrelation: false,
+      showIntelligence,
+      riseChartxAxis
+    })
   }
 
   onChartInit = async () => {
@@ -248,48 +254,12 @@ class ChartSelection extends React.Component {
     if (!params.bars) params.bars = []
     this.props.changeChartParams({ name, params })
     const singleWaferKey = this.getWafers()
-    const resData = await getChartData({
-      singleWaferKey,
-      canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
-      filter: {},
-      pareto: {
-        '1stXCode': xValue,
-        '2ndXCode': x2ndValue,
-        yCode: yValue,
-        normBy: normalized
-      }
+    this.setState({singleWaferKey})
+    const p1 = this.onBoxChartInit(singleWaferKey,xValue, x2ndValue, yValue, normalized)
+    const p2 = this.onCommonChartInit(singleWaferKey,xValue, x2ndValue, yValue, normalized)
+    Promise.all([p1,p2]).then(res => {
+      this.dealData()
     })
-    const showIntelligence = resData.paretoValue.series.length !== 1
-    const riseChartxAxis = resData.paretoValue.xAxisData
-    console.log(resData.paretoValue.series[0].name, resData.paretoValue.series[0].data, '1')
-    console.log(showIntelligence)
-    if(!showIntelligence) {
-      this.setState({
-        riseChartName: resData.paretoValue.series[0].name,
-        riseChartData: resData.paretoValue.series[0].data
-      }) 
-    }
-    // 箱图数据
-    const boxData = await getboxChartData({
-      singleWaferKey,
-      canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
-      filter: {},
-      pareto: {
-        '1stXCode': xValue,
-        '2ndXCode': x2ndValue,
-        yCode: yValue,
-        normBy: normalized
-      }
-    })
-    this.setState({
-      resData,
-      boxData,
-      showCrossModule: false,
-      showCorrelation: false,
-      showIntelligence,
-      riseChartxAxis,
-    })
-    this.dealData()
   }
   dealData = () => {
     const arr = []
@@ -370,9 +340,11 @@ class ChartSelection extends React.Component {
     const formInline = {
       xValue,
       x2ndValue: '',
-      yValue: '100'
+      yValue: '100',
+      normalized: 'all'
     }
-    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', LineCharts: [],cmStepValue: []})
+    this.setState({ formInline })
+    this.clearSelection()
     this.onX2nInit()
     this.onYInit()
     this.onChartInit()
@@ -384,25 +356,28 @@ class ChartSelection extends React.Component {
     const { formInline } = this.state
     formInline.x2ndValue = x2ndValue
     formInline.yValue = '100'
-    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', LineCharts: [],cmStepValue: []})
+    formInline.normalized = 'all'
+    this.setState({ formInline })
+    this.clearSelection()
     this.onYInit()
     this.onChartInit()
   }
   onYchange = yValue => {
     const { y, formInline } = this.state
     formInline.yValue = yValue
-    formInline.normalized = 'All Defect'
+    formInline.normalized = 'all'
     this.setState({
       normShow: y[yValue] && y[yValue].includes('NORM') ? true : false,
       formInline,
-      selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', LineCharts: [],cmStepValue: []
     })
+    this.clearSelection()
     this.onChartInit()
   }
   onNormalizedChange = v => {
     const { formInline } = this.state
     formInline.normalized = v
-    this.setState({ formInline,selectedAction: 'bar-chart',seriesType: 'bar',ifStack: '', LineCharts: [],cmStepValue: []})
+    this.setState({ formInline})
+    this.clearSelection()
     this.onChartInit()
   }
   onYAxisOperChange = (key, value) => {
@@ -410,19 +385,30 @@ class ChartSelection extends React.Component {
     yAxisOper[key] = parseFloat(value)
     this.setState({ yAxisOper })
   }
+  // 切换选择条件, 清空之前选择
+  clearSelection = () => {
+    this.setState({ 
+      selectedAction: 'bar-chart',
+      seriesType: 'bar', 
+      ifStack: '', 
+      selectedStar: '', 
+      selectedBar: [],
+      LineCharts: [], 
+      cmStepValue: []
+    })
+    // this.ref.correlationFrom.onCAReset()
+  }
   // 切换图表
   onDoAction = func => {
+    this.setState({ selectedStar: '' })
     if (func === 'trendChart') {
-      const { selectedAction } = this.state
-      if (selectedAction !== 'star' && selectedAction !== 'star-o') {
-        this.setState({ selectedBar: [] })
-        this.changeChartParamsBar([])
-      }
       this.setState({
+        selectedBar: [],
         selectedAction: 'line-chart',
         seriesType: 'line',
         ifStack: ''
       })
+      this.changeChartParamsBar([])
     } else if (func === 'barChart') {
       const { newData, newNoData } = this.state
       this.setState({
@@ -448,16 +434,17 @@ class ChartSelection extends React.Component {
       this.changeChartParamsBar([])
     } else if (func === 'boxChart') {
       this.setState({ selectedAction: 'box-plot' })
-    } else if (func === 'star') {
-      this.setState({ selectedAction: 'star' })
-    } else if (func === 'star-o') {
-      this.setState({ selectedAction: 'star-o' })
-    }
+    } 
+  
+  }
+  // 选择'选中'或'未选中'
+  showSelected = star => {
+    this.setState({ selectedStar: star })
   }
   // lineChart和barChart时, 点击列表显示或隐藏
   onChartClick = async data => {
-    const { selectedAction, newData, selectedBar } = this.state
-    if (['line-chart', 'bar-chart', 'database'].includes(selectedAction)) {
+    const { selectedAction, newData, selectedBar, selectedStar } = this.state
+    if (selectedAction !== 'box-plot' && selectedStar === '') {
       data.seriesName = data.seriesName.substring(0, 6) === 'series' ? '' : data.seriesName
       const index = selectedBar.indexOf(data.name + '-' + data.seriesName)
       if (~index) {
@@ -467,8 +454,7 @@ class ChartSelection extends React.Component {
       }
       this.setState({ selectedBar })
       this.changeChartParamsBar(selectedBar)
-    }
-    if (selectedAction === 'line-chart') {
+      // 记录选中和非选中的数据
       const { selectData, selectNoData } = this.state
       const selDataSingle = selectData[data.dataIndex + 1][data.seriesIndex + 1]
       const newDataSingle = newData[data.dataIndex + 1][data.seriesIndex + 1]
@@ -503,14 +489,8 @@ class ChartSelection extends React.Component {
   }
 
   onGenerateChartOption = async () => {
-    await delay(1)
-    // if(this.state.chartObj) {
-    //   window.addEventListener('resize', function () {
-    //     this.setState({chartObj: this.state.chartObj.resize()})
-    //   });
-    // }
-    
-    const { resData, yAxisOper, chartSelecting } = this.state
+    await delay(1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
+    const { resData, yAxisOper, chartSelecting, selectedStar } = this.state
     if (!resData) return
     const opt = {
       legend: { type: 'scroll', selected: chartSelecting },
@@ -541,68 +521,71 @@ class ChartSelection extends React.Component {
     }
     const { showLabel, selectedAction, selectData, selectNoData } = this.state
     // 处理数据
-    if (selectedAction === 'star') {
-      this.showLine(opt, showLabel, selectData)
-    } else if (selectedAction === 'star-o') {
-      this.showLine(opt, showLabel, selectNoData)
-    } else if (selectedAction === 'box-plot') {
-      const { boxChartData } = this.state
-      opt.xAxis.data = resData.paretoValue.xAxisData
-      opt.series = [
-        {
-          type: 'k',
-          data: boxChartData
-        }
-      ]
-      opt.dataset.source = []
+    if (selectedStar !== '') {
+      if (selectedStar === 'star') {
+        this.showLine(opt, showLabel, selectData)
+      }else {
+        this.showLine(opt, showLabel, selectNoData)
+      }
     } else {
-      const seriesArr = []
-      const { selectedBar, seriesType, ifStack, newData, formInline } = this.state
-      const yCode = parseInt(formInline['yValue'])
-      if (resData.paretoValue.xAxisData.length && resData.paretoValue.series.length) {
-        resData.paretoValue.series.forEach((item,index) => {
-          seriesArr.push({
-            type: seriesType,
-            stack: ifStack,
-            itemStyle: {
-              color: param => {
-                param.seriesName = param.seriesName.substring(0, 6) === 'series' ? '' : param.seriesName
-                const idx = selectedBar.indexOf(param.name + '-' + param.seriesName)
-                return ~idx ? '#ccc' : opt.color[index % 11]
-              }
-            },
-            label: {
-              normal: {
-                show: showLabel,
-                position: 'top',
-                formatter: params => {
-                  if (yCode >= 300) return toPercent(params.data[index+1])
-                  if (yCode >= 200) return params.data[1].toFixed(2)
-                  return params.data[index+1]
+      if (selectedAction === 'box-plot') {
+        const { boxChartData } = this.state
+        opt.xAxis.data = resData.paretoValue.xAxisData
+        opt.series = [
+          {
+            type: 'k',
+            data: boxChartData
+          }
+        ]
+        opt.dataset.source = []
+      } else {
+        const seriesArr = []
+        const { selectedBar, seriesType, ifStack, newData, formInline } = this.state
+        const yCode = parseInt(formInline['yValue'])
+        if (resData.paretoValue.xAxisData.length && resData.paretoValue.series.length) {
+          resData.paretoValue.series.forEach((item,index) => {
+            seriesArr.push({
+              type: seriesType,
+              stack: ifStack,
+              itemStyle: {
+                color: param => {
+                  param.seriesName = param.seriesName.substring(0, 6) === 'series' ? '' : param.seriesName
+                  const idx = selectedBar.indexOf(param.name + '-' + param.seriesName)
+                  return ~idx ? '#ccc' : opt.color[index % 11]
+                }
+              },
+              label: {
+                normal: {
+                  show: showLabel,
+                  position: 'top',
+                  formatter: params => {
+                    if (yCode >= 300) return toPercent(params.data[index+1])
+                    if (yCode >= 200) return params.data[1].toFixed(2)
+                    return params.data[index+1]
+                  }
                 }
               }
-            }
+            })
           })
-        })
+        }
+        // 填充值
+        opt.series = seriesArr
+        opt.dataset.source = _.cloneDeep(newData)
       }
-      // 填充值
-      opt.series = seriesArr
-      opt.dataset.source = _.cloneDeep(newData)
     }
-    if (this.state.chartObj) this.state.chartObj.setOption(opt, true)
-    // let unSelectedBar = this.state.allBar.filter(item => {
-    //   return !this.state.selectedBar.includes(item)
-    // })
-    // console.log(this.state.selectedBar, this.state.allBar, unSelectedBar)
+    if (this.state.chartObj) {
+      this.state.chartObj.setOption(opt, true)
+    } 
   }
-  // 折线图时，显示选中或非选中点
+  // 折线图/柱状图时，显示选中或非选中点
   showLine = (opt, showLabel, source) => {
     const seriesArr = []
-    const { resData } = this.state
+    const { resData, seriesType, ifStack } = this.state
     resData.paretoValue.series.forEach((item,index) => {
       seriesArr.push({
         connectNulls: true,
-        type: 'line',
+        type: seriesType,
+        stack: ifStack,
         label: {
           normal: { show: showLabel, position: 'top' }
         }
@@ -619,13 +602,13 @@ class ChartSelection extends React.Component {
     opt.series = seriesArr
     opt.dataset.source = filterNull
   }
-
+  // 清除所有选中
   clearAllBar = () => {
-    const { selectedAction,newData,newNoData } = this.state
-    if(selectedAction === 'line-chart' || selectedAction === 'bar-chart' || selectedAction === 'database') {
+    const { resData, selectedAction, newData, newNoData } = this.state
+    if(selectedAction !== 'box-plot') {
       let arr = []
-      this.state.resData.paretoValue.xAxisData.forEach((item, index) => {
-        this.state.resData.paretoValue.series.forEach(jtem => {
+      resData.paretoValue.xAxisData.forEach((item, index) => {
+        resData.paretoValue.series.forEach(jtem => {
           arr.push(item + '-' + jtem.name)
         })
       })
@@ -643,7 +626,6 @@ class ChartSelection extends React.Component {
   }
   correlationAnalysis = () => {
     this.setState({ showCorrelation: true })
-    this.onCAInit()
   }
   onCMInit = async () => {
     await delay(1)
@@ -709,7 +691,6 @@ class ChartSelection extends React.Component {
         })
       })
       this.setState({ LineCharts })
-      console.log(LineCharts,'LineCharts')
     }
   }
   onCMremove = index => {
@@ -718,141 +699,15 @@ class ChartSelection extends React.Component {
     this.setState({ LineCharts})
   }
 
-  /* Correlation Analysis */
-  onCAInit = async () => {
-    const singleWaferKey = this.getWafers()
-    let res = await getCaWatTreeData({ singleWaferKey })
-    if (res) {
-      const caWatTreeData = []
-      for (const i in res) {
-        const arr = _.uniq(res[i])
-        caWatTreeData.push({
-          title: i,
-          value: i,
-          key: i,
-          selectable: false,
-          children: arr.map(item => {
-            return {
-              title: item,
-              value: item,
-              key: `${i}-${item}`
-            }
-          })
-        })
-      }
-      this.setState({ caWatTreeData })
-    }
-  }
-  onCADataSourceChange = caDataSource => {
-    this.setState({ caDataSource })
-  }
-  onCAMetrologyChange = (key, value) => {
-    const { caMetrology } = this.state
-    caMetrology[key] = value
-    this.setState({ caMetrology })
-  }
-  onCAWatProductChange = value => {
-    const { caWat } = this.state
-    caWat.product = value
-    this.setState({ caWat })
-  }
-  onCACPChange = (key, value) => {
-    const { caCp } = this.state
-    caCp[key] = value
-    this.setState({ caCp })
-  }
-  onCAWatTreeChange = value => {
-    const { caWat } = this.state
-    caWat.tree = value
-    this.setState({ caWat })
-  }
-  onCAIFChange = (key, value) => {
-    const { caIF } = this.state
-    caIF[key] = value
-    this.setState({ caIF })
-  }
-  onCARegressionChange = (key, value) => {
-    const { caRegression } = this.state
-    caRegression[key] = value
-    this.setState({ caRegression })
-  }
-  onCASearch = async () => {
-    this.setState({ caCharts: [] })
-    const { caWat, caRegression, formInline } = this.state
-    const singleWaferKey = this.getWafers()
-    const correlation = {
-      wat: caWat.tree
-    }
-    if (caRegression.checked) correlation.greaterThanValue = caRegression.value
-    const filter = {
-      add: ['Y']
-    }
-    // filter[formInline.x2ndValue] = AnalysisCondition
-    const pareto = {
-      '1stXCode': formInline.xValue,
-      '2ndXCode': formInline.x2ndValue,
-      yCode: formInline.yValue
-    }
-    const caCharts = await searchCA({
-      singleWaferKey,
-      filter,
-      pareto,
-      correlation
-    })
-    this.setState({ caCharts })
-  }
-  onCAReset = () => {
-    this.setState({
-      caDataSource: [],
-      caCharts: [],
-      caMetrology: {
-        product: [],
-        step: [],
-        parameter: []
-      },
-      caWat: {
-        product: [],
-        tree: []
-      },
-      caCp: {
-        product: [],
-        bin: []
-      },
-      caIF: {
-        tool: [],
-        parameter: [],
-        timeRage: []
-      },
-      caRegression: {
-        checked: false,
-        value: null
-      }
-    })
-  }
-
   render() {
     const { name } = this.props
     const { formInline, x, x2n, y, normShow, showLabel } = this.state
     const { xValue, x2ndValue, yValue, normalized } = formInline
-    const { selectedAction } = this.state
+    const { selectedAction, selectedStar } = this.state
     const { AnalysisCondition, showCrossModule, showCorrelation } = this.state
-    const { cmStepData, cmStepValue, LineCharts } = this.state
+    const { cmStepData, cmStepValue, LineCharts,singleWaferKey } = this.state
+    const { caWatProducts } = this.state
     this.onGenerateChartOption()
-
-    const {
-      caDataSource,
-      caMetrologySteps,
-      caMetrologyParameters,
-      caWatProducts,
-      caWat,
-      caWatTreeData,
-      caCpProducts,
-      caCpBins,
-      caIFTools,
-      caIFParameters,
-      caIFTimeRages,
-      caCharts
-    } = this.state
 
     return (
       <StyleChartSelection>
@@ -893,7 +748,7 @@ class ChartSelection extends React.Component {
                   onChange={this.onNormalizedChange}
                 >
                   {Object.keys(NORMALIZED).map(key => (
-                    <Select.Option value={NORMALIZED[key]} key={key}>
+                    <Select.Option value={key} key={key}>
                       {NORMALIZED[key]}
                     </Select.Option>
                   ))}
@@ -937,19 +792,19 @@ class ChartSelection extends React.Component {
               />
             </Tooltip>
           ))}
-          {['star', 'star-o', 'line-chart'].includes(selectedAction) ? (
+          {selectedAction !== 'box-plot' ? (
             <div>
               <Tooltip className='item' placement='top' title='显示选中'>
                 <Icon
-                  onClick={() => this.onDoAction('star')}
-                  className={`fa ${selectedAction === 'star' ? 'checked' : ''}`}
+                  onClick={() => this.showSelected('star')}
+                  className={`fa ${selectedStar === 'star' ? 'checked' : ''}`}
                   type='check-circle'
                 />
               </Tooltip>
               <Tooltip className='item' placement='top' title='显示非选中'>
                 <Icon
-                  onClick={() => this.onDoAction('star-o')}
-                  className={`fa ${selectedAction === 'star-o' ? 'checked' : ''}`}
+                  onClick={() => this.showSelected('star-o')}
+                  className={`fa ${selectedStar === 'star-o' ? 'checked' : ''}`}
                   type='close-circle'
                 />
               </Tooltip>
@@ -959,10 +814,14 @@ class ChartSelection extends React.Component {
 
         <StyleChart id={`chart-${name}`} style={(formInline.xValue === 'st' || formInline.xValue === 'lwc') ? {height: '600px'} : {height: '400px'}}/>
 
+        {!(this.state.AnalysisCondition.length !== 1 && this.state.showIntelligence) ? 
+          <Collapse defaultActiveKey={['1']} style={{margin: '10px 0'}}>
+            <Panel header="Trend chart 智能识别" key="1">
+              <RiseChart xAxis={ this.state.riseChartxAxis } name={this.state.riseChartName} data={this.state.riseChartData}/>
+            </Panel>
+          </Collapse> : null}
+
         <StyleOperBtn>
-          <Button type='primary' onClick={this.crossModuleAnalysis} disabled={this.state.AnalysisCondition.length !== 1 && this.state.showIntelligence}>
-            Trend chart 智能识别
-          </Button>
           <Button
             type='primary'
             onClick={this.crossModuleAnalysis}
@@ -978,8 +837,7 @@ class ChartSelection extends React.Component {
             Correlation Analysis
           </Button>
         </StyleOperBtn>
-
-        {/* <RiseChart xAxis={ this.state.riseChartxAxis } name={this.state.riseChartName} data={this.state.riseChartData}/> */}
+        
 
         {showCrossModule ? (
           <StyleCrossModuleForm>
@@ -1007,156 +865,7 @@ class ChartSelection extends React.Component {
         ) : null}
 
         {showCorrelation ? (
-          <StyleCorrelationForm>
-            <h4>Correlation Analysis</h4>
-            <Form layout='vertical' labelCol={{ span: 2 }}>
-              <Form.Item label='Data Source:'>
-                <Checkbox.Group options={CA_DATA_SOURCES} value={this.state.caDataSource} onChange={this.onCADataSourceChange} />
-              </Form.Item>
-              {caDataSource.includes('Metrology') ? (
-                <Form.Item label='Metrology:'>
-                  <Select
-                    allowClear
-                    mode='multiple'
-                    style={{ width: 300 }}
-                    placeholder='Please select'
-                    onChange={v => this.onCAMetrologyChange('product', v)}
-                  >
-                    {CA_METROLOGY_PRODUCTS.map(item => (
-                      <Select.Option key={item}>{item}</Select.Option>
-                    ))}
-                  </Select>
-                  <Select
-                    allowClear
-                    mode='multiple'
-                    style={{ width: 300 }}
-                    placeholder='Please select'
-                    onChange={v => this.onCAMetrologyChange('step', v)}
-                  >
-                    {caMetrologySteps.map(item => (
-                      <Select.Option key={item}>{item}</Select.Option>
-                    ))}
-                  </Select>
-                  <Select
-                    allowClear
-                    mode='multiple'
-                    style={{ width: 300 }}
-                    placeholder='Please select'
-                    onChange={v => this.onCAMetrologyChange('parameter', v)}
-                  >
-                    {caMetrologyParameters.map(item => (
-                      <Select.Option key={item}>{item}</Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              ) : null}
-              {caDataSource.includes('WAT') ? (
-                <Form.Item label='WAT:'>
-                  <Select
-                    allowClear
-                    style={{ width: 300 }}
-                    placeholder='Please select'
-                    onChange={this.onCAWatProductChange}
-                  >
-                    {caWatProducts.map(item => (
-                      <Select.Option key={item}>{item}</Select.Option>
-                    ))}
-                  </Select>
-                  <TreeSelect
-                    style={{ width: 610, marginLeft: 10 }}
-                    value={caWat.tree}
-                    allowClear
-                    multiple
-                    treeDefaultExpandAll
-                    dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
-                    treeData={caWatTreeData}
-                    placeholder='Please select'
-                    onChange={this.onCAWatTreeChange}
-                  />
-                </Form.Item>
-              ) : null}
-              {caDataSource.includes('iEMS/FDC') ? (
-                <Form.Item label='iEMS/FDC:'>
-                  <Select
-                    allowClear
-                    mode='multiple'
-                    style={{ width: 300 }}
-                    placeholder='Please select'
-                    onChange={v => this.onCAIFChange('tool', v)}
-                  >
-                    {caIFTools.map(item => (
-                      <Select.Option key={item}>{item}</Select.Option>
-                    ))}
-                  </Select>
-                  <Select
-                    allowClear
-                    mode='multiple'
-                    style={{ width: 300 }}
-                    placeholder='Please select'
-                    onChange={v => this.onCAIFChange('parameter', v)}
-                  >
-                    {caIFParameters.map(item => (
-                      <Select.Option key={item}>{item}</Select.Option>
-                    ))}
-                  </Select>
-                  <Select
-                    allowClear
-                    mode='multiple'
-                    style={{ width: 300 }}
-                    placeholder='Please select'
-                    onChange={v => this.onCAIFChange('timeRage', v)}
-                  >
-                    {caIFTimeRages.map(item => (
-                      <Select.Option key={item}>{item}</Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              ) : null}
-              {caDataSource.includes('CP') ? (
-                <Form.Item label='CP:'>
-                  <Select
-                    allowClear
-                    mode='multiple'
-                    style={{ width: 300 }}
-                    placeholder='Please select'
-                    onChange={v => this.onCACPChange('product', v)}
-                  >
-                    {caCpProducts.map(item => (
-                      <Select.Option key={item}>{item}</Select.Option>
-                    ))}
-                  </Select>
-                  <Select
-                    allowClear
-                    mode='multiple'
-                    style={{ width: 300 }}
-                    placeholder='Please select'
-                    onChange={v => this.onCACPChange('bin', v)}
-                  >
-                    {caCpBins.map(item => (
-                      <Select.Option key={item}>{item}</Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              ) : null}
-              <Form.Item label='Regression:'>
-                <Checkbox checked={this.state.caRegression.checked} onChange={e => this.onCARegressionChange('checked', e.target.checked)}>
-                  Filter in R-Squared >=
-                </Checkbox>
-                <InputNumber value={this.state.caRegression.value} min={0} max={1} step={0.01} onChange={v => this.onCARegressionChange('value', v)} />
-              </Form.Item>
-              <Form.Item label=' '>
-                <Button onClick={this.onCASearch} type='primary'>
-                  Search
-                </Button>
-                <Button onClick={this.onCAReset} type='danger'>
-                  Reset
-                </Button>
-              </Form.Item>
-            </Form>
-            {caCharts.map((chart, index) => (
-              <CorrelationChart data={chart} name={name} key={index} index={index} />
-            ))}
-          </StyleCorrelationForm>
+          <CorrelationForm caWatProducts={caWatProducts} singleWaferKey={singleWaferKey} formInline={formInline}/>
         ) : null}
       </StyleChartSelection>
     )

@@ -58,7 +58,7 @@ class MapGallery extends React.Component {
       degrees: 0, // 角度 输入框
       rotationVisible: false, // 旋转弹出层是否显示
       total: 0,
-      pageSize: 30,
+      pageSize: 32,
       pageNo: 1
     }
   }
@@ -616,7 +616,7 @@ class MapGallery extends React.Component {
                     <p>Lot ID: {wafer.lotId}</p>
                     <p>Wafer No: {wafer.waferNo}</p>
                     <p>Step ID: {wafer.stepId}</p>
-                    <p>Total: {wafer.defectCount || 0}</p>
+                    <p>Total: {wafer.defectCount || 0}</p >
                   </li>
                 ))}
               </StyleWaferMap>
