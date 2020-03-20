@@ -156,10 +156,10 @@ class DataQuery extends React.Component {
     const { items, itemSelected, params } = this.props
     const { existsImg, mbHave, scanedFlag, seeLastScan, startTm, endTm } = params
     const data = {
-      existsImg: existsImg ? 'Y' : 'N',
-      mbHave: mbHave ? 'Y' : 'N',
-      scanedFlag: scanedFlag ? 'Y' : 'N',
-      seeLastScan: seeLastScan ? 'Y' : 'N',
+      existsImg: existsImg ? 'Y' : '',
+      mbHave: mbHave ? 'Y' : '',
+      scanedFlag: scanedFlag ? 'Y' : '',
+      seeLastScan: seeLastScan ? 'Y' : '',
       startTm: startTm !== '' ? startTm : '1970-01-01',
       endTm: endTm !== '' ? endTm : '2020-12-31',
       comboBoxes: items.map((item, index) => ({
@@ -215,10 +215,10 @@ class DataQuery extends React.Component {
     // 实时更新，store的params仅点击load 才更新，用于其他非dataQuery页面的查询
     const { existsImg, mbHave, scanedFlag, seeLastScan, startTm, endTm } = this.props.params
     const data = {
-      existsImg: existsImg ? 'Y' : 'N',
-      mbHave: mbHave ? 'Y' : 'N',
-      scanedFlag: scanedFlag ? 'Y' : 'N',
-      seeLastScan: seeLastScan ? 'Y' : 'N',
+      existsImg: existsImg ? 'Y' : '',
+      mbHave: mbHave ? 'Y' : '',
+      scanedFlag: scanedFlag ? 'Y' : '',
+      seeLastScan: seeLastScan ? 'Y' : '',
       startTm: startTm !== '' ? startTm : '1970-01-01',
       endTm: endTm !== '' ? endTm : '2020-12-31',
       comboBoxes
