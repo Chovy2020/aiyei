@@ -108,6 +108,24 @@ export function post(url, data) {
   })
 }
 
+export function put(url, data) {
+  return new Promise(resolve => {
+    axios
+      .put(url, data)
+      .then(res => resolve(res))
+      .catch(() => {})
+  })
+}
+
+export function Delete(url) {
+  return new Promise(resolve => {
+    axios
+      .delete(url)
+      .then(res => resolve(res))
+      .catch(() => {})
+  })
+}
+
 /**
  * axios post 下载文件
  * @param {String} url
