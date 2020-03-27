@@ -9,14 +9,14 @@ import { changePage } from '@/utils/action'
 
 export const MODULES = [
   {
-    title: 'Basic Configuration',
-    link: '/basicConfig',
-    icon: 'bank',
+    title: 'Key Defect Trend Chart',
+    link: '/keyDefect',
+    icon: 'line-chart',
   },
   {
-    title: 'Reporting',
-    link: '/reporting',
-    icon: 'container',
+    title: 'HOL Chart',
+    link: '/hol',
+    icon: 'bar-chart',
   }
 ]
 const StyleModuleContainer = styled.div`
@@ -65,10 +65,10 @@ const StyleModule = styled(Link)`
 `
 
 
-class Setup extends React.Component {
+class Baseline extends React.Component {
   onChangePage = link => {
     this.props.changePage(link.substr(1))
-    localStorage.setItem("activeMenu",'setup')
+    localStorage.setItem("activeMenu",'baseline')
   }
   render() {
     return (
@@ -91,4 +91,4 @@ class Setup extends React.Component {
 
 const mapStateToProps = state => ({ ...state.Init })
 const mapDispatchToProps = { changePage }
-export default connect(mapStateToProps, mapDispatchToProps)(Setup)
+export default connect(mapStateToProps, mapDispatchToProps)(Baseline)

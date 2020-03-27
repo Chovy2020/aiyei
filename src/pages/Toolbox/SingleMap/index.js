@@ -1395,7 +1395,7 @@ class SingleMap extends React.Component {
     const fillStyle = { fill: 'none', stroke: '#14f1ff', opacity: 0.5 }
     dies.forEach(({ bin, x, y }) => {
       if (mapType === 'Map/Pareto' && overlapType === 'Bin Map') {
-        fillStyle.fill = bin === '0' ? '#67c23a' : bgColor[bin]
+        fillStyle.fill = bin === '1' ? '#67c23a' : bgColor[bin]
       }
       const boundingRect = new zrender.Rect({ shape: { x, y, width, height }, style: fillStyle })
       group.add(boundingRect)
@@ -1451,7 +1451,7 @@ class SingleMap extends React.Component {
       zoomTimes,
       rotationDialog
     } = this.state
-    const { overlapDialog, deleteDefectsType } = this.state
+    const { overlapDialog, overlapType, deleteDefectsType } = this.state
     const { reclassifyDialog, correct } = this.state
     const { deleteDefectsDialog } = this.state
     const { x, x2n, y, paretoParams, normShow, ifAvg } = this.state
@@ -1602,7 +1602,7 @@ class SingleMap extends React.Component {
               okText='Ok'
               cancelText='Cancel'
             >
-              <Radio.Group onChange={e => this.setState({ overlapType: e.target.value })}>
+              <Radio.Group value={overlapType} onChange={e => this.setState({ overlapType: e.target.value })}>
                 {OVER_LAP_TYPE_OPTIONS.map(item => (
                   <Radio key={item} value={item}>
                     {item}

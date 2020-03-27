@@ -1,6 +1,7 @@
 // 全局数据
 const initialState = {
   username: '',
+  changePage: '',
   shiftMultipleMode: false,
   activeMenu: 'toolbox',
   toolBoxLoading: false,
@@ -37,6 +38,11 @@ const initReducer = (state = initialState, action) => {
       return {
         ...state,
         username: action.payload
+      }
+    case 'CHANGE_PAGE': 
+      return {
+        ...state,
+        changePage: action.payload
       }
     case 'CHANGE_SHIFT_MULTIPLE_MODE':
       return {

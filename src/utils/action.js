@@ -3,7 +3,11 @@ export const changeUser = payload => ({
   type: 'CHANGE_USER',
   payload
 })
-
+// 切换其它页面
+export const changePage = payload => ({
+  type: 'CHANGE_PAGE',
+  payload
+})
 // 修改页面传递需要使用的wafers
 export const changeWafers = payload => ({
   type: 'CHANGE_WAFERS',

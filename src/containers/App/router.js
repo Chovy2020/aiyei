@@ -9,8 +9,11 @@ import { MENUS } from '@/utils/constant'
 // Router
 import Login from '@/pages/Login'
 import HomePage from '@/pages/Home/Loadable'
+import Baseline from '@/pages/Baseline'
 import Toolbox from '@/pages/Toolbox'
 import Setup from '@/pages/Setup'
+import Reporting from '@/pages/Setup/reporting'
+import BasicConfig from '@/pages/Setup/basicConfig'
 import Page404 from '@/pages/Account/404'
 
 // Test
@@ -18,8 +21,11 @@ import TestHotkeys from '@/pages/Test/Hotkeys'
 
 const routes = {
   '/login': Login,
+  '/baseline': Baseline,
   '/toolbox': Toolbox,
   '/setup': Setup,
+  '/reporting': Reporting,
+  '/basicConfig': BasicConfig,
   '/': Toolbox,
   '/test/hotkeys': TestHotkeys,
   '/*': Page404
@@ -31,7 +37,7 @@ class App extends React.Component {
 
   componentDidMount() {
     const path = window.location.pathname || ''
-    let activeMenu = 'toolbox'
+    let activeMenu = localStorage.getItem("activeMenu") || 'toolbox'
     for (const menu of MENUS) {
       if (path.indexOf(menu.link) >= 0) {
         activeMenu = menu.link
