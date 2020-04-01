@@ -11,7 +11,7 @@ import Login from '@/pages/Login'
 import HomePage from '@/pages/Home/Loadable'
 import Baseline from '@/pages/Baseline'
 import KeyDefect from '@/pages/Baseline/keyDefect'
-import Hol from '@/pages/Baseline/hol'
+// import Hol from '@/pages/Baseline/hol'
 import Toolbox from '@/pages/Toolbox'
 import Setup from '@/pages/Setup'
 import Reporting from '@/pages/Setup/reporting'
@@ -25,7 +25,7 @@ const routes = {
   '/login': Login,
   '/baseline': Baseline,
   '/keyDefect': KeyDefect,
-  '/hol': Hol,
+  // '/hol': Hol,
   '/toolbox': Toolbox,
   '/setup': Setup,
   '/reporting': Reporting,
