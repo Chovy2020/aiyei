@@ -1,9 +1,10 @@
 /* eslint-disable */
 import React from 'react'
 import echarts from 'echarts'
+import moment from 'moment'
 import { delay } from '@/utils/web'
 
-class RiseChart extends React.Component {
+class KeyDefectChart extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
@@ -13,41 +14,73 @@ class RiseChart extends React.Component {
   }
 
   componentDidMount() {
-    const chartDom = this.refs['riseChart']
+    const chartDom = this.refs['keyDefectChart']
     if (chartDom) {
       this.state.chartObj = echarts.init(chartDom)
     } else {
       console.log('chartDom not found')
     }
     this.dealData()
+    this.init()
   }
 
-  init = () => {
+  init = async () => {
+    const { data, yValue } = this.props
+    const addDay = data.lastmonth*(-30)
     let opt = {
       title: {
-        text: '数据连续上升图例'
+        text: `${data.product},${data.step},${data.mb},${yValue},`+ moment().add(addDay, 'day').format('YYYY.MM.DD') + '-' + moment().format('YYYY.MM.DD'),
+        textStyle: {
+          fontSize: 14,
+        },
+        left: 'center'
       },
       tooltip: {
         trigger: 'item'
       },
-      color: 'green',
-      legend: {
-        data: this.props.name,
-        x: 'center',
-        y: '30'
+      grid: {
+        top: '80',
+        left: '3%',
+        right: '4%',
+        bottom: '10%',
+        containLabel: true
       },
+      color: 'green',
+      // legend: {
+      //   data: this.props.name,
+      //   x: 'center',
+      //   y: '30'
+      // },
       xAxis: {
           type: 'category',
-          data: this.props.xAxis
+          axisLabel: {
+            interval: 0,
+            rotate: 90
+          },
+          data: data.series.name
       },
-      yAxis: { type: 'value'},
-      series: [
-        {
-          name: '',
-          type: 'line',
-          data: this.props.data,
+      yAxis: { 
+        type: 'value',
+        max: (value) => {
+          return Math.max(value.max, data.spec)
         }
-      ]
+      },
+      series: {
+        name: '',
+        type: 'line',
+        data: data.series.data
+      }
+    }
+    if(data.spec) {
+      opt.series = {
+        ...opt.series,
+        markLine: {
+          silent: true,
+          data: [{
+            yAxis: data.spec
+          }]
+        }
+      }
     }
     if(this.state.pieces.length > 0) {
       opt.visualMap = {
@@ -60,7 +93,7 @@ class RiseChart extends React.Component {
   }
   // 识别连续上升5个以上的点
   dealData = () => {
-    let arr = this.props.data
+    let arr = this.props.data.series.data
     let newArr = []
     let total = 1
     for(let i=0; i<arr.length; i++) {
@@ -100,11 +133,11 @@ class RiseChart extends React.Component {
   }
 
   render() {
-    this.init ()
+    this.init()
     return (
-      <div style={{height: '400px'}} ref="riseChart"></div>
+      <div style={{height: '600px'}} ref="keyDefectChart"></div>
     )
   }
 }
 
-export default RiseChart
+export default KeyDefectChart

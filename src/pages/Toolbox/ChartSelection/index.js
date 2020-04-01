@@ -9,20 +9,16 @@ import { delay, toPercent} from '@/utils/web'
 import { changeChartSelected, changeChartWafers, changeChartParams } from './action'
 import { BUTTONS, NORMALIZED } from './constant'
 import reducer from './reducer'
-import { getX, getX2n, getY, getChartData, getboxChartData, getPcCmStep, getPcCm} from './service'
+import { getX, getX2n, getY, getChartData, getboxChartData } from './service'
 import {
   StyleChartSelection,
   StyleTooltip,
   StyleChart,
   StyleOperBtn,
-  StyleCrossModuleForm,
   FormItemLabel
 } from './style'
-// import CrossModuleForm from './component/CrossModuleForm'
+import CrossModuleForm from './component/CrossModuleForm'
 import CorrelationForm from './component/CorrelationForm'
-import CrossModuleChart from './component/CrossModuleChart'
-import RiseChart from './component/RiseChart'
-const { Panel } = Collapse
 class ChartSelection extends React.Component {
   constructor(props) {
     super(props)
@@ -50,8 +46,6 @@ class ChartSelection extends React.Component {
       x2n: {},
       y: {},
       showIntelligence: false,
-      riseChartxAxis: [],
-      riseChartName: '',
       riseChartData: [],
       boxData: null,
       resData: null,
@@ -69,7 +63,7 @@ class ChartSelection extends React.Component {
       boxChartData: [],
       cmStepData: null,
       cmStepValue: [],
-      cmStepArr: [],
+      pieces: [],
       /* LineCharts */
       LineCharts: [],
       /* Correlation Analysis */
@@ -225,10 +219,8 @@ class ChartSelection extends React.Component {
       }
     })
     const showIntelligence = resData.paretoValue.series.length !== 1
-    const riseChartxAxis = resData.paretoValue.xAxisData
     if(!showIntelligence) {
       this.setState({
-        riseChartName: resData.paretoValue.series[0].name,
         riseChartData: resData.paretoValue.series[0].data
       }) 
     }
@@ -237,7 +229,6 @@ class ChartSelection extends React.Component {
       showCrossModule: false,
       showCorrelation: false,
       showIntelligence,
-      riseChartxAxis
     })
   }
 
@@ -484,15 +475,55 @@ class ChartSelection extends React.Component {
           data = item.data
         }
       })
-      this.setState({riseChartName: arr[0], riseChartData: data})
+      this.setState({ riseChartData: data})
     }
   }
 
+  // 识别连续5点上升
+  upData = () => {
+    let arr = this.state.riseChartData
+    let newArr = []
+    let total = 1
+    for(let i=0; i<arr.length; i++) {
+      if(arr[i]<arr[i+1]) {
+        total++
+      }else {
+        if(total >=5){
+          newArr.push([i-total+1,i])
+        }
+        total = 1
+      }
+    }
+    if(newArr.length>0) {
+      let pieces = [{
+        lte: newArr[0][0],
+        color: 'green'
+      },{
+        gt: newArr[newArr.length-1][1],
+        color: 'green'
+      }]
+      newArr.forEach((item, index) => {
+        pieces.push({
+          gt: item[0],
+          lte: item[1],
+          color: 'red'
+        })
+        if(newArr[index+1]) {
+          pieces.push({
+            gt: item[1],
+            lte: newArr[index+1][0],
+            color: 'green'
+          })
+        }
+      })
+      this.setState({pieces})
+    }
+  }
   onGenerateChartOption = async () => {
-    await delay(1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
+    await delay(100)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
     const { resData, yAxisOper, chartSelecting, selectedStar } = this.state
     if (!resData) return
-    const opt = {
+    let opt = {
       legend: { type: 'scroll', selected: chartSelecting },
       tooltip: { trigger: 'item' },
       grid: {
@@ -543,30 +574,93 @@ class ChartSelection extends React.Component {
         const { selectedBar, seriesType, ifStack, newData, formInline } = this.state
         const yCode = parseInt(formInline['yValue'])
         if (resData.paretoValue.xAxisData.length && resData.paretoValue.series.length) {
-          resData.paretoValue.series.forEach((item,index) => {
-            seriesArr.push({
-              type: seriesType,
-              stack: ifStack,
-              itemStyle: {
-                color: param => {
+          if(selectedAction === 'line-chart' && (this.state.AnalysisCondition.length === 1 || !this.state.showIntelligence)) {
+            await this.upData()
+            if(this.state.pieces.length > 0) {
+              opt = {
+                ...opt,
+                visualMap: {
+                  show: false,
+                  dimension: 0,
+                  pieces: this.state.pieces
+                },
+              }
+              opt.color = ['green']
+            }
+            resData.paretoValue.series.forEach((item,index) => {
+              seriesArr.push({
+                type: seriesType,
+                stack: ifStack,
+                symbolSize: 8,
+                symbol : (value, param) => {
                   param.seriesName = param.seriesName.substring(0, 6) === 'series' ? '' : param.seriesName
                   const idx = selectedBar.indexOf(param.name + '-' + param.seriesName)
-                  return ~idx ? '#ccc' : opt.color[index % 11]
-                }
-              },
-              label: {
-                normal: {
-                  show: showLabel,
-                  position: 'top',
-                  formatter: params => {
-                    if (yCode >= 300) return toPercent(params.data[index+1])
-                    if (yCode >= 200) return params.data[1].toFixed(2)
-                    return params.data[index+1]
+                  return ~idx ? 'emptyCircle' : 'arrow'
+                },
+                label: {
+                  normal: {
+                    show: showLabel,
+                    position: 'top',
+                    formatter: params => {
+                      if (yCode >= 300) return toPercent(params.data[index+1])
+                      if (yCode >= 200) return params.data[1].toFixed(2)
+                      return params.data[index+1]
+                    }
                   }
                 }
-              }
+              })
+            }) 
+          }else if(selectedAction === 'line-chart' && !(this.state.AnalysisCondition.length === 1 || !this.state.showIntelligence)){
+            resData.paretoValue.series.forEach((item,index) => {
+              seriesArr.push({
+                type: seriesType,
+                stack: ifStack,
+                symbolSize: 8,
+                symbol : (value, param) => {
+                  param.seriesName = param.seriesName.substring(0, 6) === 'series' ? '' : param.seriesName
+                  const idx = selectedBar.indexOf(param.name + '-' + param.seriesName)
+                  return ~idx ? 'emptyCircle' : 'arrow'
+                },
+                label: {
+                  normal: {
+                    show: showLabel,
+                    position: 'top',
+                    formatter: params => {
+                      if (yCode >= 300) return toPercent(params.data[index+1])
+                      if (yCode >= 200) return params.data[1].toFixed(2)
+                      return params.data[index+1]
+                    }
+                  }
+                }
+              })
+            }) 
+          }else {
+            resData.paretoValue.series.forEach((item,index) => {
+              seriesArr.push({
+                type: seriesType,
+                stack: ifStack,
+                itemStyle: {
+                  color: param => {
+                    param.seriesName = param.seriesName.substring(0, 6) === 'series' ? '' : param.seriesName
+                    const idx = selectedBar.indexOf(param.name + '-' + param.seriesName)
+                    return ~idx ? '#ccc' : opt.color[index % 11]
+                  }
+                },
+                label: {
+                  normal: {
+                    show: showLabel,
+                    position: 'top',
+                    formatter: params => {
+                      if (yCode >= 300) return toPercent(params.data[index+1])
+                      if (yCode >= 200) return params.data[1].toFixed(2)
+                      return params.data[index+1]
+                    }
+                  }
+                }
+              })
             })
-          })
+          }
+          
         }
         // 填充值
         opt.series = seriesArr
@@ -622,90 +716,17 @@ class ChartSelection extends React.Component {
   /* crossModuleForm */
   crossModuleAnalysis = () => {
     this.setState({ showCrossModule: true })
-    this.onCMInit()
   }
   correlationAnalysis = () => {
     this.setState({ showCorrelation: true })
   }
-  onCMInit = async () => {
-    await delay(1)
-    const singleWaferKey = this.getWafers()
-    const res = await getPcCmStep({ singleWaferKey })
-    // const res = {"FLOW1":{"M1":["M1NBK","M1TEOS","M1PH","M1ET","M1ECP","M1CMP"]}}
-    if (res) {
-      // res = _.uniq(res)
-      const cmStepData = []
-      for (const i in res) {
-        const obj = {
-          title: i,
-          value: i,
-          key: i,
-          selectable: false,
-          children: res[i].map(item => {
-            return {
-              title: item,
-              value: item,
-              key: `${i}-${item}`
-            }
-          })
-        }
-        cmStepData.push(obj)
-      }
-      this.setState({ cmStepData })
-    }
-  }
-  onCMTreeChange = cmStepValue => {
-    this.setState({ cmStepValue })
-  }
-  crossModuleAdd = async () => {
-    this.setState({ LineCharts: [] })
-    const { formInline, filter, cmStepValue, cmStepArr } = this.state
-    const singleWaferKey = this.getWafers()
-    const filter1 = {}
-    let arr = [...new Set(cmStepValue, cmStepArr)]
-    this.setState({cmStepArr: arr})
-    filter1[formInline.x2ndValue] = filter
-    const res = await getPcCm({
-      singleWaferKey,
-      filter: filter1,
-      flowStep: arr
-    })
-    if (res && res.length>0) {
-      let LineCharts = []
-      res.forEach(item => {
-        const series = []
-        item.series.forEach(jtem => {
-          series.push({
-            type: jtem.name,
-            data: jtem.data,
-            remark: jtem.remark
-          })
-        })
-        LineCharts.push({
-          series,
-          xAxis: {
-            data: item.xAxisData
-          },
-          yAxis: null,
-          step: item.step
-        })
-      })
-      this.setState({ LineCharts })
-    }
-  }
-  onCMremove = index => {
-    const { LineCharts } = this.state
-    LineCharts.splice(index, 1)
-    this.setState({ LineCharts})
-  }
 
   render() {
     const { name } = this.props
-    const { formInline, x, x2n, y, normShow, showLabel } = this.state
+    const { singleWaferKey, formInline, x, x2n, y, normShow, showLabel } = this.state
     const { xValue, x2ndValue, yValue, normalized } = formInline
     const { selectedAction, selectedStar } = this.state
     const { AnalysisCondition, showCrossModule, showCorrelation } = this.state
-    const { cmStepData, cmStepValue, LineCharts,singleWaferKey } = this.state
     const { caWatProducts } = this.state
     this.onGenerateChartOption()
 
@@ -814,13 +835,6 @@ class ChartSelection extends React.Component {
 
         <StyleChart id={`chart-${name}`} style={(formInline.xValue === 'st' || formInline.xValue === 'lwc') ? {height: '600px'} : {height: '400px'}}/>
 
-        {!(this.state.AnalysisCondition.length !== 1 && this.state.showIntelligence) ? 
-          <Collapse defaultActiveKey={['1']} style={{margin: '10px 0'}}>
-            <Panel header="Trend chart 智能识别" key="1">
-              <RiseChart xAxis={ this.state.riseChartxAxis } name={this.state.riseChartName} data={this.state.riseChartData}/>
-            </Panel>
-          </Collapse> : null}
-
         <StyleOperBtn>
           <Button
             type='primary'
@@ -837,32 +851,8 @@ class ChartSelection extends React.Component {
             Correlation Analysis
           </Button>
         </StyleOperBtn>
-        
 
-        {showCrossModule ? (
-          <StyleCrossModuleForm>
-            <h4>Cross Module Chart</h4>
-            <div style={{ display: 'flex' }}>
-              <TreeSelect
-                style={{ width: 'calc(100% - 110px)', marginRight: 10 }}
-                value={cmStepValue}
-                allowClear
-                multiple
-                treeDefaultExpandAll
-                dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
-                treeData={cmStepData}
-                placeholder='Please select'
-                onChange={this.onCMTreeChange}
-              />
-              <Button type='primary' onClick={this.crossModuleAdd}>
-                Add
-              </Button>
-            </div>
-            {LineCharts.map((data, index) => (
-              <CrossModuleChart name={name} data={data} index={index} key={index} onCMremove={this.onCMremove} />
-            ))}
-          </StyleCrossModuleForm>
-        ) : null}
+        {showCrossModule ? (<CrossModuleForm singleWaferKey={singleWaferKey}/>) : null} 
 
         {showCorrelation ? (
           <CorrelationForm caWatProducts={caWatProducts} singleWaferKey={singleWaferKey} formInline={formInline}/>

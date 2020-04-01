@@ -66,7 +66,11 @@ class CrossModuleChart extends React.Component {
     const tableData = []
     let boxData = []
     data.series.forEach((item, index) => {
-      legendData.push(item.type)
+      if(item.type === '') {
+        legendData.push('N/A')
+      } else {
+        legendData.push(item.type)
+      }
       let singleData = _.cloneDeep(item.data)
       let newSingleData = singleData.filter(item => item !== null)
       let total = 0
@@ -101,7 +105,7 @@ class CrossModuleChart extends React.Component {
       data.series.forEach(item => {
         seriesData.push({
           connectNulls: true,
-          name: item.type,
+          name: item.type === '' ? 'N/A' : item.type,
           type: 'line',
           data: item.data,
           markPoint: {
@@ -115,6 +119,7 @@ class CrossModuleChart extends React.Component {
         seriesData.push({
           type: 'bar',
           stack: 'one',
+          name: item.type === '' ? 'N/A' : item.type,
           data: item.data,
           markPoint: {
             data: []
