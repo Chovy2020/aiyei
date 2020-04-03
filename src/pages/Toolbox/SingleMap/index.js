@@ -55,7 +55,7 @@ import {
   getDp,
   getDSATableData
 } from './service'
-import { StyleSingleMap, StyleWafer, StylePareto, StyleChart, StyleDSA, StyleImages, StyleTable } from './style'
+import { StyleSingleMap, StyleWafer, StylePareto, StyleChart, StyleDSA, StyleImages, StyleTable, StyleBinLegend, StylePrevBin, StyleNextBin, StyleBinUl, StyleNextPage, StyleBinColorBlock } from './style'
 
 class SingleMap extends React.Component {
   constructor(props) {
@@ -115,6 +115,11 @@ class SingleMap extends React.Component {
       heatmapInstance: null,
       deleteDefectsDialog: false,
       deleteDefectsType: '清除选中点',
+      // bin时legend翻页
+      bgColor: [],
+      binLegendObj: {},
+      currentPage: 1,
+      maxPage: null,
       /* Pareto */
       x: {},
       x2n: {},
@@ -537,6 +542,36 @@ class SingleMap extends React.Component {
       selectedPointsKey.push(w)
     }
     this.setState({ selectedPointsKey, group })
+  }
+
+  // bin时legend显示和翻页
+  onPrevBin = () => {
+    const { bgColor } = this.state
+    if(this.state.currentPage !== 1) {
+      this.changeBinLegend(-1, bgColor)
+    }
+  }
+
+  onNextBin = () => {
+    const { maxPage, bgColor } = this.state
+    if(this.state.currentPage !== maxPage) {
+      this.changeBinLegend(1, bgColor)
+    }
+  }
+
+  changeBinLegend = (step, bgColor) => {
+    const { binLegend } = this.state
+    const currentPage = this.state.currentPage+step
+    let currentBinLengend = binLegend.slice((currentPage-1)*8, (currentPage-1)*8+8)
+    let binLegendObj = {}
+    currentBinLengend.forEach(item => {
+      if(item === '1') {
+        binLegendObj[item] = '#67c23a'
+      } else {
+        binLegendObj[item] = bgColor[item]
+      }
+    })
+    this.setState({ binLegendObj, currentPage })
   }
   /* - - - - - - - - - - - - Map - - - - - - - - - - - -  */
   onMapAndParetoInit = () => {
@@ -1370,7 +1405,7 @@ class SingleMap extends React.Component {
     rectRecords.forEach(item => {
       group.remove(item)
     })
-    this.setState({ rectRecords, group })
+    this.setState({ rectRecords, group, currentPage: 1 })
   }
   // 渲染方格
   renderRects = () => {
@@ -1382,17 +1417,24 @@ class SingleMap extends React.Component {
     const firstDie = dies[0] || { bin: 0 }
     let binMax = firstDie.bin
     let binMin = firstDie.bin
+    let binLegend = []
     dies.forEach(({ bin }) => {
       binMax = binMax > +bin ? binMax : +bin
       binMin = binMin < +bin ? binMin : +bin
+      binLegend.includes(bin) ? null : binLegend.push(bin)
     })
+    this.setState({binLegend})
     // 条状渐变色填充
     let bgColor = []
     const { mapType, overlapType } = this.state
-    if (mapType === 'Map/Pareto' && overlapType === 'Bin Map')
-      bgColor = gradientColors('#ff0', '#f00', binMax - binMin + 1)
+    if (mapType === 'Map/Pareto' && overlapType === 'Bin Map') {
+      bgColor = gradientColors('#ff0', '#f00', binMax - binMin + 2)
+      const maxPage = Math.ceil(binLegend.length/10)
+      this.changeBinLegend(0, bgColor)
+      this.setState({ maxPage, bgColor })
+    }
     // 有效方格渲染（填充色获取+方格渲染）
-    const fillStyle = { fill: 'none', stroke: '#14f1ff', opacity: 0.5 }
+    const fillStyle = { fill: 'none', stroke: '#14f1ff', opacity: 0.7 }
     dies.forEach(({ bin, x, y }) => {
       if (mapType === 'Map/Pareto' && overlapType === 'Bin Map') {
         fillStyle.fill = bin === '1' ? '#67c23a' : bgColor[bin]
@@ -1458,6 +1500,8 @@ class SingleMap extends React.Component {
     const { normBy } = paretoParams
     const { dsa, sortName, dsaOrder, dsaTableData } = this.state
     const { filterOption, filter, defectClass } = this.state
+    // bin时legend翻页
+    const { binLegendObj, currentPage, maxPage } = this.state
 
     return (
       <StyleSingleMap>
@@ -1506,6 +1550,25 @@ class SingleMap extends React.Component {
                 </Form>
               ) : null}
             </div>
+            
+            {
+              mapType === 'Map/Pareto' && overlapType === 'Bin Map' ? 
+              <StyleBinLegend>
+                <StylePrevBin onClick={this.onPrevBin}></StylePrevBin>
+                <StyleBinUl>
+                  {Object.keys(binLegendObj).map(key => (
+                    <li key={key}>
+                      <StyleBinColorBlock style={{backgroundColor: binLegendObj[key]}}></StyleBinColorBlock>
+                      <span>{key}</span>
+                    </li>
+                  ))}
+                </StyleBinUl>
+                <StyleNextPage>
+                  <StyleNextBin onClick={this.onNextBin}></StyleNextBin>
+                  <span>{currentPage}/{maxPage}</span>
+                </StyleNextPage>
+              </StyleBinLegend> : <StyleBinLegend></StyleBinLegend>
+            }
 
             <div className='mapContent'>
               <div id={`content-${name}`} className='single-map-content'>
@@ -1718,14 +1781,6 @@ class SingleMap extends React.Component {
                   </Form.Item>
                  ) : null}
                 <Form.Item>
-                  {/* <Button
-                    size='small'
-                    onClick={this.onParetoSearch}
-                    type='primary'
-                    style={{ marginRight: 10, minWidth: 50 }}
-                  >
-                    Search
-                  </Button> */}
                   <Button size='small' onClick={this.onParetoClear} type='dashed' style={{ minWidth: 50 }}>
                     Clear
                   </Button>

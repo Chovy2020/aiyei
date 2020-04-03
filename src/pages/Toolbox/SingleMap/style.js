@@ -156,3 +156,52 @@ export const StyleTable = styled(Table)`
     padding: 2px 8px;
   }
 `
+
+// bin时, 增加legend
+export const StyleBinLegend = styled.div`
+  width: 428px;
+  height: 24px;
+  margin-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`
+export const StylePrevBin = styled.div`
+  height: 0;
+  width: 0;
+  border-top:6px solid transparent;
+  border-bottom:6px solid transparent;
+  border-right:6px solid #2f4554;
+  cursor: pointer;
+`
+export const StyleNextBin = styled.div`
+  height: 0;
+  width: 0;
+  border-top:6px solid transparent;
+  border-bottom:6px solid transparent;
+  border-left:6px solid #2f4554;
+  cursor: pointer;
+  margin-right: 5px;
+`
+export const StyleNextPage = styled.div`
+  display: flex;
+  align-items: center;
+`
+export const StyleBinUl = styled.span`
+  list-style-type: none;
+  display: flex;
+  li {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    padding: 5px;
+  }
+`
+export const StyleBinColorBlock = styled.span`
+  display: inline-block;
+  height: 12px;
+  width: 20px;
+  border-radius: 4px;
+  margin-right: 5px;
+  opacity: 0.7;
+`

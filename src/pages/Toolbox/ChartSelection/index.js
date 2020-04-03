@@ -36,6 +36,7 @@ class ChartSelection extends React.Component {
         yValue: '100',
         normalized: ''
       },
+      ifAvg: 'sum',
       showLabel: true,
       yAxisOper: {
         min: 0,
@@ -260,7 +261,8 @@ class ChartSelection extends React.Component {
     const allBar = []
     arr[0] = ['product']
     arrNo[0] = ['product']
-    const { resData, boxData } = this.state
+    const { resData, boxData, singleWaferKey, ifAvg } = this.state
+    const len = singleWaferKey.length
     if (resData.paretoValue.xAxisData.length > 0 && resData.paretoValue.series.length > 0) {
       resData.paretoValue.xAxisData.forEach((item, index) => {
         arr[index + 1] = [item]
@@ -276,14 +278,14 @@ class ChartSelection extends React.Component {
         arrNo[0].push(item.name)
         AnalysisCondition.push(item.name)
         item.data.forEach((jtem, j) => {
-          arr[j + 1].push(jtem)
+          arr[j + 1].push(ifAvg === 'avg' ? Math.round(jtem / len) : jtem)
           arrNo[j + 1].push(null)
         })
       })
 
       boxData.paretoValue.series.forEach(item => {
         item.data.forEach((jtem, j) => {
-          kData[j].push(jtem)
+          kData[j].push(ifAvg === 'avg' ? Math.round(jtem / len) : jtem)
         })
       })
     }
@@ -334,7 +336,7 @@ class ChartSelection extends React.Component {
       yValue: '100',
       normalized: 'all'
     }
-    this.setState({ formInline })
+    this.setState({ formInline, ifAvg: 'sum' })
     this.clearSelection()
     this.onX2nInit()
     this.onYInit()
@@ -348,7 +350,7 @@ class ChartSelection extends React.Component {
     formInline.x2ndValue = x2ndValue
     formInline.yValue = '100'
     formInline.normalized = 'all'
-    this.setState({ formInline })
+    this.setState({ formInline, ifAvg: 'sum' })
     this.clearSelection()
     this.onYInit()
     this.onChartInit()
@@ -360,6 +362,7 @@ class ChartSelection extends React.Component {
     this.setState({
       normShow: y[yValue] && y[yValue].includes('NORM') ? true : false,
       formInline,
+      ifAvg: 'sum'
     })
     this.clearSelection()
     this.onChartInit()
@@ -367,7 +370,7 @@ class ChartSelection extends React.Component {
   onNormalizedChange = v => {
     const { formInline } = this.state
     formInline.normalized = v
-    this.setState({ formInline})
+    this.setState({ formInline, ifAvg: 'sum'})
     this.clearSelection()
     this.onChartInit()
   }
@@ -375,6 +378,12 @@ class ChartSelection extends React.Component {
     const { yAxisOper } = this.state
     yAxisOper[key] = parseFloat(value)
     this.setState({ yAxisOper })
+  }
+  onAvgChange = async (ifAvg) => {
+    this.setState({ ifAvg })
+    await delay(1)
+    await this.dealData()
+    this.onGenerateChartOption()
   }
   // 切换选择条件, 清空之前选择
   clearSelection = () => {
@@ -723,7 +732,7 @@ class ChartSelection extends React.Component {
 
   render() {
     const { name } = this.props
-    const { singleWaferKey, formInline, x, x2n, y, normShow, showLabel } = this.state
+    const { singleWaferKey, formInline, x, x2n, y, normShow, showLabel , ifAvg} = this.state
     const { xValue, x2ndValue, yValue, normalized } = formInline
     const { selectedAction, selectedStar } = this.state
     const { AnalysisCondition, showCrossModule, showCorrelation } = this.state
@@ -775,6 +784,12 @@ class ChartSelection extends React.Component {
                   ))}
                 </Select>
               </>
+            ) : null}
+            {singleWaferKey.length > 1 ? (
+              <Select size='small' onChange={this.onAvgChange} value={ifAvg} style={{ width: 70 }}>
+                <Select.Option value='sum'>SUM</Select.Option>
+                <Select.Option value='avg'>AVG</Select.Option>
+              </Select>
             ) : null}
           </Form.Item>
           <Form.Item>
