@@ -76,6 +76,10 @@ class KeyDefectChart extends React.Component {
         ...opt.series,
         markLine: {
           silent: true,
+          lineStyle: {
+            color: '#c23531',
+            width: 3,
+          },
           data: [{
             yAxis: data.spec
           }]

@@ -67,7 +67,7 @@ axios.interceptors.response.use(
         window.URL.revokeObjectURL(href) // 释放掉blob对象
         return Promise.resolve()
       }
-      message.error(ERROR_CODE[res.data.code] || '未知错误!')
+      message.error(res.data.data || ERROR_CODE[res.data.code] || '未知错误!')
     } else console.log('服务器错误!')
     return Promise.reject()
   },

@@ -78,3 +78,8 @@ button + button,
 .ant-spin-nested-loading > div > .ant-spin {
   max-height: inherit;
 }
+
+/* 点击表格行变色 */
+.click-row-styl {
+  background-color: #e6f7ff;
+}

@@ -18,11 +18,9 @@ export const addKeyDefectList = (product, step, mb, yxais, lastmonth) => get(`tc
 export const deleteKeyDefectList = (product, step, mb, yxais, lastmonth) => Delete(`tc/remove/${product}/${step}/${mb}/${yxais}/${lastmonth}`)
 
 // Hol Setting 
-// 表单MB Value
-export const getMbValue = data => get('swp/yaxis/mb,')
-// 表格
-export const getHolList = data => get('setup/hol/list')
-// 批量增加表格
-export const addHol = data => post('setup/hol/add', data)
+// chart初始化查询
+export const getHolList = data => get('hc/list')
+// 增加chart
+export const addHol = (product, lastmonth) => get(`hc/getandsave/${product}/${lastmonth}`)
 // 删除
-export const deleteHol = (product, step, doi) => Delete(`setup/hol/delete/${product}/${step}/${doi}`)
+export const deleteHol = (product, lastmonth) => Delete(`hc/remove/${product}/${lastmonth}`)

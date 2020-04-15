@@ -124,73 +124,73 @@ class KeyDefect extends React.Component {
     return (
       <StyleBaseline>
         <Card title='Key Defect Trend Chart' headStyle={{backgroundColor: '#8bc5ff'}}>
-        <Form layout="inline" onSubmit={this.handleSubmit} style={{marginBottom: '20px'}}>
-          <Form.Item label="Product">
-            <Select style={{width: '120px'}}
-              value={product}
-              onChange={this.productChange}
-            >
-              {productArr.map((item, index) => (
-                <Option value={item} key={index}>{item}</Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item label="Step">
-            <Select style={{width: '120px'}}
-              value={step}
-              onChange={this.stepChange}
-            >
-              {stepArr.map((item, index) => (
-                <Option value={item} key={index}>{item}</Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item label="MB">
-            <Select style={{width: '120px'}}
-              value={mb}
-              onChange={this.mbChange}
-            >
-              {mbArr.map((item, index) => (
-                <Option value={item} key={index}>{item}</Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item label="Y">
-            <Select style={{width: '200px'}}
-              value={yValue}
-              onChange={this.yValueChange}
-            >
-              {Object.keys(yObj).map(key => (
-                <Select.Option value={key} key={key}>
-                  {yObj[key]}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item label="Time">
-            过去<InputNumber min={0} step={1} precision={0} value={ time } onChange={this.timeChange} style={{margin: '0 5px'}}/>月
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" disabled={!(product !== '' && step !== '' && mb !== '' && yValue !== '' && time !== '')}>
-              Add
-            </Button>
-          </Form.Item>
-        </Form>
+          <Form layout="inline" onSubmit={this.handleSubmit} style={{marginBottom: '20px'}}>
+            <Form.Item label="Product">
+              <Select style={{width: '120px'}}
+                value={product}
+                onChange={this.productChange}
+              >
+                {productArr.map((item, index) => (
+                  <Option value={item} key={index}>{item}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+            <Form.Item label="Step">
+              <Select style={{width: '120px'}}
+                value={step}
+                onChange={this.stepChange}
+              >
+                {stepArr.map((item, index) => (
+                  <Option value={item} key={index}>{item}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+            <Form.Item label="MB">
+              <Select style={{width: '120px'}}
+                value={mb}
+                onChange={this.mbChange}
+              >
+                {mbArr.map((item, index) => (
+                  <Option value={item} key={index}>{item}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+            <Form.Item label="Y">
+              <Select style={{width: '200px'}}
+                value={yValue}
+                onChange={this.yValueChange}
+              >
+                {Object.keys(yObj).map(key => (
+                  <Select.Option value={key} key={key}>
+                    {yObj[key]}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+            <Form.Item label="Time">
+              过去<InputNumber min={0} step={1} precision={0} value={ time } onChange={this.timeChange} style={{margin: '0 5px'}}/>月
+            </Form.Item>
+            <Form.Item>
+              <Button type="primary" htmlType="submit" disabled={!(product !== '' && step !== '' && mb !== '' && yValue !== '' && time !== '')}>
+                Add
+              </Button>
+            </Form.Item>
+          </Form>
+          
+          {
+            keyDefectList.map((item, index) => (
+              <div key={index}>
+                <StyleBtn>
+                  <Popconfirm title='Sure to delete?' onConfirm={() => this.deleteItem(item)}>
+                    <Button type="danger">Delete</Button>
+                  </Popconfirm>
+                </StyleBtn>
+                <KeyDefectChart data={item} yValue={yObj[item.yxais]}/>
+              </div>
+            ))
+          }
         
-        {
-          keyDefectList.map((item, index) => (
-            <div key={index}>
-              <StyleBtn>
-                <Popconfirm title='Sure to delete?' onConfirm={() => this.deleteItem(item)}>
-                  <Button type="danger">Delete</Button>
-                </Popconfirm>
-              </StyleBtn>
-              <KeyDefectChart data={item} yValue={yObj[item.yxais]}/>
-            </div>
-          ))
-        }
-      
-      </Card>
+        </Card>
       </StyleBaseline>
     )
   }
