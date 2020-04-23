@@ -117,7 +117,7 @@ class MapPareto extends React.Component {
             <Map mapData={ mapData } emitUrl={this.changeEmitUrl} selectedBar = {selectedBar} ref={`map`}/>
             <div style={{width: 'calc(100% - 402px)'}}>
               <ImgList imgInfo={imgInfo}/>
-              <Pareto paretoData={ paretoData } selectedBar = {selectedBar} emitSelectedBar={this.changeSelectedBar} emitUrl={this.changeEmitUrl} ref={`pareto`}/>
+              <Pareto yCode={yValue} paretoData={ paretoData } selectedBar = {selectedBar} emitSelectedBar={this.changeSelectedBar} emitUrl={this.changeEmitUrl} ref={`pareto`}/>
             </div>
           </div>
         </StyleMapPareto>

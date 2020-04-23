@@ -1,7 +1,7 @@
 import React from 'react'
 import echarts from 'echarts'
 import _ from 'lodash'
-import { delay, getColor } from '@/utils/web'
+import { delay, toPercent } from '@/utils/web'
 class Pareto extends React.Component {
   constructor(props) {
     super(props)
@@ -99,6 +99,9 @@ class Pareto extends React.Component {
               show: true,
               position: 'top',
               formatter: params => {
+                console.log(this.props.yCode,'yCode')
+                if (this.props.yCode >= 300) return toPercent(params.data[index + 1])
+                if (this.props.yCode >= 200) return params.data[1].toFixed(2)
                 return params.data[index + 1]
               }
             }
