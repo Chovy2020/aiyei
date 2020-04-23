@@ -9,7 +9,7 @@ import { MENUS } from '@/utils/constant'
 // Router
 import Login from '@/pages/Login'
 import HomePage from '@/pages/Home/Loadable'
-// import Excursion from '@/pages/Excursion'
+import Excursion from '@/pages/Excursion'
 import Baseline from '@/pages/Baseline'
 import KeyDefect from '@/pages/Baseline/keyDefect'
 import Hol from '@/pages/Baseline/hol'
@@ -24,7 +24,7 @@ import TestHotkeys from '@/pages/Test/Hotkeys'
 
 const routes = {
   '/login': Login,
-  // '/excursion': Excursion,
+  '/excursion': Excursion,
   '/baseline': Baseline,
   '/keyDefect': KeyDefect,
   '/hol': Hol,

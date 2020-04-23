@@ -1,6 +1,6 @@
 /* eslint-disable */
 import React from 'react'
-import { Tooltip, Button, Table, Icon } from 'antd'
+import { Tooltip, Button, Table, Icon, Popconfirm } from 'antd'
 import echarts from 'echarts'
 import styled from 'styled-components'
 import { delay } from '@/utils/web'
@@ -35,8 +35,8 @@ const StyleChart = styled.div`
 class CrossModuleChart extends React.Component {
   constructor(props) {
     super(props)
+    this.chartObj = null
     this.state = {
-      chartObj: null,
       legendData: [],
       xAxisData: [],
       seriesData: [],
@@ -52,16 +52,18 @@ class CrossModuleChart extends React.Component {
   }
 
   componentDidMount() {
-    const { data, name, index } = this.props
-    const chartDom = document.getElementById(`chart-${name}-${index}`)
-    // const chartDom = this.refs.chart
+    // const chartDom = document.getElementById(`chart-${name}-${index}`)
+    const chartDom = this.refs.chartDom
     if (chartDom) {
-      this.state.chartObj = echarts.init(chartDom)
-      // chart.on('click', params => this.onChartClick(params))
-      // chart.on('dblclick', params => this.onChartDbclick(params))
+      this.chartObj = echarts.init(chartDom)
     } else {
       console.log('chartDom not found')
     }
+    this.dealData()
+  }
+
+  dealData = () => {
+    const { data, name, index } = this.props
     const legendData = []
     const tableData = []
     let boxData = []
@@ -199,8 +201,7 @@ class CrossModuleChart extends React.Component {
       },
       series: seriesData
     }
-    if (this.state.chartObj) this.state.chartObj.setOption(opt, true)
-    // if (chart) chart.setOption(opt, true)
+    if (this.chartObj) this.chartObj.setOption(opt, true)
   }
 
   onCMshowPM = () => {
@@ -237,8 +238,16 @@ class CrossModuleChart extends React.Component {
     }
   }
 
+  // 传递baseUrl64
+  exportChart = () => {
+    return this.chartObj.getDataURL({
+        pixelRatio: 2,
+        backgroundColor: '#fff'
+    })
+  }
+
   render() {
-    const { name, index, onCMremove } = this.props
+    const { name, index } = this.props
     const { btns, selectedAction, tableData } = this.state
     const cmTableColumns = [
       {
@@ -272,14 +281,17 @@ class CrossModuleChart extends React.Component {
       <StyleCrossModuleChart>
         <StyleOperBtn>
           <div>Step ID: {this.props.data.step}</div>
-          <div>{selectedAction !== 'boxChart' ? (
-            <Button type='primary' onClick={this.onCMshowPM}>
-              Show PM
-            </Button>
-          ) : null}
-          <Button type='danger' onClick={() => onCMremove(index)}>
-            Remove
-          </Button></div>
+          <div>
+            {selectedAction !== 'boxChart' ? (
+              <Button type='primary' onClick={this.onCMshowPM}>
+                Show PM
+              </Button>
+            ) : null}
+
+            <Popconfirm title='Sure to delete?' onConfirm={() => this.props.onCMremove(index)}>
+              <Button type='danger'>Remove</Button>
+            </Popconfirm>
+          </div>
         </StyleOperBtn>
         <StyleTooltip>
           {btns.map(item => (
@@ -292,8 +304,8 @@ class CrossModuleChart extends React.Component {
             </Tooltip>
           ))}
         </StyleTooltip>
-        <StyleChart id={`chart-${name}-${index}`} />
-        {/* <StyleChart ref="chart" /> */}
+        {/* <StyleChart id={`chart-${name}-${index}`} /> */}
+        <StyleChart ref="chartDom" />
         {selectedAction === 'boxChart' ? <Table columns={cmTableColumns} dataSource={tableData} /> : null}
       </StyleCrossModuleChart>
     )

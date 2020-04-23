@@ -1,4 +1,9 @@
 import React from 'react'
+// 拖拽
+import { DndProvider, DragSource, DropTarget } from 'react-dnd';
+import HTML5Backend from 'react-dnd-html5-backend';
+import update from 'immutability-helper';
+// 拖拽
 import _ from 'lodash'
 import { Form, Select, Table, Input, Button, Icon, Popconfirm, message } from 'antd'
 import Highlighter from 'react-highlight-words'
@@ -7,6 +12,63 @@ import moment from 'moment'
 import { StyleReporting } from './style'
 import { getProduct, getStep, getDoi, getMbValue, getHolList, addHol, deleteHol } from './service'
 const { Option, OptGroup } = Select;
+
+// 拖拽
+// import { DndProvider, DragSource, DropTarget } from 'react-dnd';
+// import HTML5Backend from 'react-dnd-html5-backend';
+// import update from 'immutability-helper';
+let dragingIndex = -1;
+class BodyRow extends React.Component {
+  render() {
+    const { isOver, connectDragSource, connectDropTarget, moveRow, ...restProps } = this.props;
+    const style = { ...restProps.style, cursor: 'move' };
+
+    let { className } = restProps;
+    if (isOver) {
+      if (restProps.index > dragingIndex) {
+        className += ' drop-over-downward';
+      }
+      if (restProps.index < dragingIndex) {
+        className += ' drop-over-upward';
+      }
+    }
+
+    return connectDragSource(
+      connectDropTarget(<tr {...restProps} className={className} style={style} />),
+    );
+  }
+}
+const rowSource = {
+  beginDrag(props) {
+    dragingIndex = props.index;
+    return {
+      index: props.index,
+    };
+  },
+}
+const rowTarget = {
+  drop(props, monitor) {
+    const dragIndex = monitor.getItem().index;
+    const hoverIndex = props.index;
+
+    if (dragIndex === hoverIndex) {
+      return;
+    }
+
+    props.moveRow(dragIndex, hoverIndex);
+
+    monitor.getItem().index = hoverIndex;
+  },
+}
+const DragableBodyRow = DropTarget('row', rowTarget, (connect, monitor) => ({
+  connectDropTarget: connect.dropTarget(),
+  isOver: monitor.isOver(),
+}))(
+  DragSource('row', rowSource, connect => ({
+    connectDragSource: connect.dragSource(),
+  }))(BodyRow),
+);
+// 拖拽
 
 class HolSetting extends React.Component {
   constructor(props) {
@@ -76,6 +138,7 @@ class HolSetting extends React.Component {
       }
     }
     this.setState({ tableData, rowSpan })
+    console.log(tableData,'tableData')
   }
   // product改变
   productChange = async value => {
@@ -169,6 +232,27 @@ class HolSetting extends React.Component {
     }
     this.setState({formInline})
   }
+
+  // 拖拽
+  components = {
+    body: {
+      row: DragableBodyRow,
+    },
+  };
+
+  moveRow = (dragIndex, hoverIndex) => {
+    const { data } = this.state;
+    const dragRow = data[dragIndex];
+
+    this.setState(
+      update(this.state, {
+        data: {
+          $splice: [[dragIndex, 1], [hoverIndex, 0, dragRow]],
+        },
+      }),
+    );
+  };
+  // 拖拽
   
   render() {
     const { rowSpan, productArr, stepArr, truembCodeArr, falsembCodeArr, mbValueObj, formInline, tableData, showAddBtn, showDeleteBtn } = this.state
@@ -272,6 +356,16 @@ class HolSetting extends React.Component {
             </Popconfirm>
           </Form.Item>
         </Form>
+        {/* <DndProvider backend={HTML5Backend}>
+          <Table rowKey={record => `${record.product},${record.step},${record.mbCode}`} dataSource={tableData} columns={columns} bordered size='small' pagination={false}
+            components={this.components}
+            onRow={(record, index) => ({
+              index,
+              moveRow: this.moveRow,
+            })}
+          ></Table>
+
+        </DndProvider> */}
         <Table rowKey={record => `${record.product},${record.step},${record.mbCode}`} dataSource={tableData} columns={columns} bordered size='small' pagination={false}></Table>
       </StyleReporting>
     )

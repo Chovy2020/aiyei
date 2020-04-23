@@ -38,7 +38,14 @@ class HolChart extends React.Component {
     if (_.isEmpty(data)) return
     const opt = {
       width: 'auto',
-      legend: { type: 'scroll' },
+      title: {
+        text: `${data.product}, Last ${data.lastmonth} Month`,
+        textStyle: {
+          fontSize: 14,
+        },
+        left: 'center'
+      },
+      legend: { type: 'scroll',top:"40" },
       tooltip: {},
       grid: {
         top: '80',

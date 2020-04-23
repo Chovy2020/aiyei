@@ -99,10 +99,10 @@ export function get(url) {
  * @param {Object} data
  * @returns {Promise}
  */
-export function post(url, data) {
+export function post(url, data, time = '') {
   return new Promise(resolve => {
     axios
-      .post(url, data)
+      .post(url+time, data)
       .then(res => resolve(res))
       .catch(() => {})
   })
@@ -132,11 +132,11 @@ export function Delete(url) {
  * @param {Object} data
  * @returns {Promise}
  */
-export function download(url, data) {
+export function download(url, data, type = 'post') {
   return new Promise(resolve => {
     axios({
       url,
-      method: 'post',
+      method: type,
       data,
       responseType: 'arraybuffer'
     })

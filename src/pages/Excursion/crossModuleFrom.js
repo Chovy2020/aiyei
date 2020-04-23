@@ -3,15 +3,15 @@ import React from 'react'
 import { Button, TreeSelect } from 'antd'
 import _ from 'lodash'
 import { delay } from '@/utils/web'
-import { getPcCmStep, getPcCm } from '../service'
-import {StyleCrossModuleForm} from '../style'
-import CrossModuleChart from './CrossModuleChart'
+import { getStep, getCrossModule } from './service'
+import {StyleCrossModuleForm} from '../Toolbox/ChartSelection/style'
+import CrossModuleChart from '../Toolbox/ChartSelection/component/CrossModuleChart'
 
 class CrossModuleForm extends React.Component {
   constructor(props) {
     super(props)
+    this.base64s = []
     this.state = {
-      singleWaferKey: this.props.singleWaferKey,
       x: {},
       x2n: {},
       y: {},
@@ -19,6 +19,7 @@ class CrossModuleForm extends React.Component {
       cmStepValue: [],
       /* LineCharts */
       LineCharts: [],
+      
     }
   }
   componentDidMount() {
@@ -27,8 +28,12 @@ class CrossModuleForm extends React.Component {
   
   onCMInit = async () => {
     await delay(1)
-    const singleWaferKey = this.props.singleWaferKey
-    const res = await getPcCmStep({ singleWaferKey })
+    const res = await getStep(this.props.lastMonth, {
+      singleWaferKey: [],
+      canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
+      filter: {},
+      pareto: this.props.paretoPara
+    })
     if (res) {
       const cmStepData = []
       for (const i in res) {
@@ -56,9 +61,11 @@ class CrossModuleForm extends React.Component {
   crossModuleAdd = async () => {
     this.setState({ LineCharts: [] })
     const { cmStepValue } = this.state
-    const res = await getPcCm({
-      singleWaferKey:this.state.singleWaferKey,
+    const res = await getCrossModule(this.props.lastMonth, {
+      singleWaferKey: [],
+      canvas: { canvasSize: 400, magnification: 1, centralLocation: '200,200' },
       filter: {},
+      pareto: this.props.paretoPara,
       flowStep: cmStepValue
     })
     if (res && res.length>0) {
@@ -88,6 +95,18 @@ class CrossModuleForm extends React.Component {
     const { LineCharts } = this.state
     LineCharts.splice(index, 1)
     this.setState({ LineCharts})
+    // this.refs.crossModule.dealData()
+    console.log(LineCharts,'LineCharts')
+  }
+
+  emitUrl = () => {
+    this.base64s = []
+    _.each(this.refs, (ref, key) => {
+      if(key.startsWith(`crossModule_`)) {
+        this.base64s.push(ref.exportChart())
+      }
+    })
+    return this.base64s
   }
 
   render() {
@@ -112,7 +131,7 @@ class CrossModuleForm extends React.Component {
           </Button>
         </div>
         {LineCharts.map((data, index) => (
-          <CrossModuleChart name={name} data={data} index={index} key={data.step} onCMremove={this.onCMremove} />
+          <CrossModuleChart ref={`crossModule_${index}`} name={name} data={data} index={index} key={data.step} onCMremove={this.onCMremove}/>
         ))}
       </StyleCrossModuleForm>
         
