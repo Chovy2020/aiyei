@@ -46,3 +46,8 @@ export const StyleImgList = styled.ul`
     margin: 0 auto;
   }
 `
+export const ReduceSpacing = styled.div`
+  .ant-table-thead > tr > th, .ant-table-tbody > tr > td {
+    padding: 5px;
+  }
+`

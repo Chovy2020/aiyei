@@ -1,6 +1,7 @@
 import React from 'react'
 import _ from 'lodash'
 import { Table } from 'antd'
+import { ReduceSpacing } from './style'
 
 class HistoryList extends React.Component {
   constructor(props) {
@@ -75,9 +76,11 @@ class HistoryList extends React.Component {
       }
     ];
     return (
-      <Table dataSource={dataSource} columns={columns} bordered
-        rowKey={r => `${r.key}`}
-      />
+      <ReduceSpacing>
+        <Table dataSource={dataSource} columns={columns} bordered
+          rowKey={r => `${r.key}`}
+        />
+      </ReduceSpacing>
     )
   }
 }

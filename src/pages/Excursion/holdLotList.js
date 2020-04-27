@@ -1,6 +1,7 @@
 import React from 'react'
 import _ from 'lodash'
 import { Table } from 'antd'
+import { ReduceSpacing } from './style'
 
 class HoldLotList extends React.Component {
   constructor(props) {
@@ -101,15 +102,17 @@ class HoldLotList extends React.Component {
       },
     ];
     return (
-      <Table dataSource={dataSource} columns={columns} bordered
-        rowKey={r => `${r.key}`}
-        rowClassName={this.setRowClassName} 
-        onRow={record => {
-          return {
-            onClick: event => { this.onRowClick(record) }, 
-          }
-        }}
-      />
+      <ReduceSpacing>
+        <Table dataSource={dataSource} columns={columns} bordered pagination={false}
+          rowKey={r => `${r.key}`}
+          rowClassName={this.setRowClassName} 
+          onRow={record => {
+            return {
+              onClick: event => { this.onRowClick(record) }, 
+            }
+          }}
+        />
+      </ReduceSpacing>
     )
   }
 }
